@@ -1,19 +1,14 @@
-// user_model.dart
-// Base User model — shared by JobSeeker, Company, Admin.
-// password is stored in Firestore so the user can read/update it themselves.
-
 class UserModel {
   final String userID;
   final String name;
   final String email;
-  final String password; // stored in Firestore; user manages this themselves
-  final String userType; // 'JobSeeker' | 'Company' | 'Admin'
+  final String password;
+  final String userType; // JobSeeker, Company, Admin
   final String profilePic;
   final String location;
   final String about;
   final String securityQuestion;
   final String securityAnswer;
-  final DateTime createdAt;
 
   UserModel({
     required this.userID,
@@ -26,8 +21,7 @@ class UserModel {
     this.about = '',
     this.securityQuestion = '',
     this.securityAnswer = '',
-    DateTime? createdAt,
-  }) : createdAt = createdAt ?? DateTime.now();
+  });
 
   Map<String, dynamic> toMap() {
     return {
@@ -41,7 +35,6 @@ class UserModel {
       'about': about,
       'securityQuestion': securityQuestion,
       'securityAnswer': securityAnswer,
-      'createdAt': createdAt.toIso8601String(),
     };
   }
 
@@ -57,9 +50,6 @@ class UserModel {
       about: map['about'] ?? '',
       securityQuestion: map['securityQuestion'] ?? '',
       securityAnswer: map['securityAnswer'] ?? '',
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'])
-          : DateTime.now(),
     );
   }
 }

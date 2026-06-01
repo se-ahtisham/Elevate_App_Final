@@ -18,7 +18,7 @@ class CompanyModel {
   final List<String> achievements;
   final List<String> receivedApplicationIDs;
   final List<String> postedJobIDs;
-  final List<String> becomeEmployeeRequestIDs; // ADDED — was missing
+  final List<String> becomeEmployeeRequestIDs;
 
   CompanyModel({
     required this.userID,
@@ -75,11 +75,13 @@ class CompanyModel {
       companyWeaknesses: List<String>.from(map['companyWeaknesses'] ?? []),
       companyStrengths: List<String>.from(map['companyStrengths'] ?? []),
       achievements: List<String>.from(map['achievements'] ?? []),
-      receivedApplicationIDs:
-          List<String>.from(map['receivedApplicationIDs'] ?? []),
+      receivedApplicationIDs: List<String>.from(
+        map['receivedApplicationIDs'] ?? [],
+      ),
       postedJobIDs: List<String>.from(map['postedJobIDs'] ?? []),
-      becomeEmployeeRequestIDs:
-          List<String>.from(map['becomeEmployeeRequestIDs'] ?? []),
+      becomeEmployeeRequestIDs: List<String>.from(
+        map['becomeEmployeeRequestIDs'] ?? [],
+      ),
     );
   }
 }

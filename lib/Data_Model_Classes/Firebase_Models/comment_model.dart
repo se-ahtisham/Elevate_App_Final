@@ -1,7 +1,3 @@
-// comment_model.dart
-// Comment entity — shown as a separate model in the diagram.
-// Comments are stored as a list inside each POST document in Firestore.
-
 class CommentModel {
   final String commentText;
   final String authorID;
