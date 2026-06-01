@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:elevate_app/Data_Model_Classes/api_job_model.dart';
+import 'package:elevate_app/Data_Model_Classes/Api_Models/api_job_model.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import '../utils/job_cleaner.dart';

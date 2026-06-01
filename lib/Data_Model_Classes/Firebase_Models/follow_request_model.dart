@@ -1,10 +1,12 @@
-
+// follow_request_model.dart
+// Sent when a user wants to follow another user.
+// Collection: 'followRequests' — doc ID = requestID.
 
 class FollowRequestModel {
-  final String requestID;   // PK
-  final String fromID;      // userID of the person SENDING the request
-  final String toID;        // userID of the person RECEIVING the request
-  final bool status;        // false = Pending, true = Accepted
+  final String requestID;
+  final String fromID;
+  final String toID;
+  final bool status; // false = pending, true = accepted
   final DateTime timeDate;
 
   FollowRequestModel({

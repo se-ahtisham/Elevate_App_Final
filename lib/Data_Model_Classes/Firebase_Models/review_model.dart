@@ -1,13 +1,17 @@
+// review_model.dart
+// NLP-analyzed review of a Company written by a JobSeeker.
+// Collection: 'reviews' — doc ID = reviewID.
+
 class ReviewModel {
-  final String reviewID; // PK
-  final String companyID; // FK → users/
-  final String reviewerID; // FK → users/ (the JobSeeker)
-  final double rating; // 1.0 – 5.0
-  final String rawReview; // the actual text the user wrote
-  final List<String> analyzedStrengths; // extracted by NLP
-  final List<String> analyzedWeaknesses; // extracted by NLP
+  final String reviewID;
+  final String companyID;
+  final String reviewerID;
+  final double rating; // 1.0 to 5.0
+  final String rawReview;
+  final List<String> analyzedStrengths;
+  final List<String> analyzedWeaknesses;
   final String sentiment; // 'Positive' | 'Neutral' | 'Negative'
-  final bool isFirstTime; // true if first review of this company
+  final bool isFirstTime;
   final DateTime reviewDate;
 
   ReviewModel({

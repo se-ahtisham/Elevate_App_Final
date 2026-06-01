@@ -1,12 +1,15 @@
-
+// employee_model.dart
+// A JobSeeker who got hired by a Company.
+// Collection: 'employees' — doc ID = employeeID.
 
 class EmployeeModel {
-  final String employeeID;        // PK
-  final String jobSeekerID;       // FK → users/
-  final String companyID;         // FK → users/
-  final String position;          // job title / role
-  final String employeeStatus;    // 'Active' | 'Terminated'
+  final String employeeID;
+  final String jobSeekerID;
+  final String companyID;
+  final String position;
+  final String employeeStatus; // 'Active' | 'Terminated'
   final DateTime hiredAt;
+  final DateTime? terminatedAt; // null while still active
 
   EmployeeModel({
     required this.employeeID,
@@ -15,6 +18,7 @@ class EmployeeModel {
     this.position = '',
     this.employeeStatus = 'Active',
     DateTime? hiredAt,
+    this.terminatedAt,
   }) : hiredAt = hiredAt ?? DateTime.now();
 
   Map<String, dynamic> toMap() {
@@ -25,6 +29,7 @@ class EmployeeModel {
       'position': position,
       'employeeStatus': employeeStatus,
       'hiredAt': hiredAt.toIso8601String(),
+      'terminatedAt': terminatedAt?.toIso8601String(),
     };
   }
 
@@ -38,6 +43,9 @@ class EmployeeModel {
       hiredAt: map['hiredAt'] != null
           ? DateTime.parse(map['hiredAt'])
           : DateTime.now(),
+      terminatedAt: map['terminatedAt'] != null
+          ? DateTime.parse(map['terminatedAt'])
+          : null,
     );
   }
 }

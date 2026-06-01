@@ -1,14 +1,19 @@
+// user_model.dart
+// Base User model — shared by JobSeeker, Company, Admin.
+// password is stored in Firestore so the user can read/update it themselves.
+
 class UserModel {
-  final String userID; // PK — same as Firebase Auth uid
+  final String userID;
   final String name;
   final String email;
-  final String password; // user sets this; Firebase Auth is the real source
+  final String password; // stored in Firestore; user manages this themselves
   final String userType; // 'JobSeeker' | 'Company' | 'Admin'
-  final String profilePic; // URL to image
+  final String profilePic;
   final String location;
   final String about;
   final String securityQuestion;
   final String securityAnswer;
+  final DateTime createdAt;
 
   UserModel({
     required this.userID,
@@ -21,9 +26,9 @@ class UserModel {
     this.about = '',
     this.securityQuestion = '',
     this.securityAnswer = '',
-  });
+    DateTime? createdAt,
+  }) : createdAt = createdAt ?? DateTime.now();
 
-  // toMap() → converts this object to a Map so Firebase can store it
   Map<String, dynamic> toMap() {
     return {
       'userID': userID,
@@ -36,10 +41,10 @@ class UserModel {
       'about': about,
       'securityQuestion': securityQuestion,
       'securityAnswer': securityAnswer,
+      'createdAt': createdAt.toIso8601String(),
     };
   }
 
-  // fromMap() → reads data from Firebase and creates a UserModel object
   factory UserModel.fromMap(Map<String, dynamic> map) {
     return UserModel(
       userID: map['userID'] ?? '',
@@ -52,6 +57,9 @@ class UserModel {
       about: map['about'] ?? '',
       securityQuestion: map['securityQuestion'] ?? '',
       securityAnswer: map['securityAnswer'] ?? '',
+      createdAt: map['createdAt'] != null
+          ? DateTime.parse(map['createdAt'])
+          : DateTime.now(),
     );
   }
 }

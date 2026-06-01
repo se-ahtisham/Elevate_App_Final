@@ -4,7 +4,7 @@ import 'package:elevate_app/Custom_Widgets/Search_Bar/custom_search_bar.dart';
 import 'package:elevate_app/Custom_Widgets/Text/icon_text.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/job_compact_tile.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/platform_filter_chip.dart';
-import 'package:elevate_app/Data_Model_Classes/api_job_model.dart';
+import 'package:elevate_app/Data_Model_Classes/Api_Models/api_job_model.dart';
 import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Jobs_Screens/job_selection.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';

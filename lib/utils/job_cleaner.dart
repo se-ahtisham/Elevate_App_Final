@@ -1,4 +1,4 @@
-import 'package:elevate_app/Data_Model_Classes/api_job_model.dart';
+import 'package:elevate_app/Data_Model_Classes/Api_Models/api_job_model.dart';
 import 'text_normalizer.dart';
 
 class JobCleaner {

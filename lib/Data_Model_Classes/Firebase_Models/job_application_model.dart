@@ -1,11 +1,14 @@
-class RequestJobModel {
-  final String applicationID; // PK
-  final String jobID; // FK → jobs/
-  final String jobSeekerID; // FK → users/
-  final String status; // 'Pending' | 'Accepted' | 'Rejected'
+// JobApplication model (called "Request Job" in diagram)
+// Created when a JobSeeker applies to a job
+
+class JobApplicationModel {
+  final String applicationID;
+  final String jobID;
+  final String jobSeekerID;
+  final String status; // 'Pending', 'Accepted', 'Rejected'
   final DateTime appliedAt;
 
-  RequestJobModel({
+  JobApplicationModel({
     required this.applicationID,
     required this.jobID,
     required this.jobSeekerID,
@@ -23,8 +26,8 @@ class RequestJobModel {
     };
   }
 
-  factory RequestJobModel.fromMap(Map<String, dynamic> map) {
-    return RequestJobModel(
+  factory JobApplicationModel.fromMap(Map<String, dynamic> map) {
+    return JobApplicationModel(
       applicationID: map['applicationID'] ?? '',
       jobID: map['jobID'] ?? '',
       jobSeekerID: map['jobSeekerID'] ?? '',

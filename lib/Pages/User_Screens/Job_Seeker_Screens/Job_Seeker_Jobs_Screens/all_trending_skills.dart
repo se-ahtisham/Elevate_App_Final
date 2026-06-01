@@ -1,6 +1,4 @@
 import 'package:elevate_app/Custom_Widgets/Tiles/skill_card.dart';
-import 'package:elevate_app/Data_Model_Classes/api_skill_model.dart';
-import 'package:elevate_app/Services/skill_api_Services.dart';
 import 'package:flutter/material.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 /*

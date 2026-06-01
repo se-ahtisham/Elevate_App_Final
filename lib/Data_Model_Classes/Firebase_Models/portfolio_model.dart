@@ -1,19 +1,19 @@
-
+// Portfolio model — a project added by a JobSeeker
 
 class PortfolioModel {
-  final String portfolioID;          // PK — unique ID for this portfolio
-  final String jobSeekerID;          // FK → users/ (who owns this portfolio)
+  final String portfolioID;
+  final String jobSeekerID;
   final String projectTitle;
   final String projectDescription;
   final String projectURL;
-  final List<String> techStack;      // e.g. ['Flutter', 'Firebase', 'Dart']
-  final List<String> mediaFiles;     // URLs to images/videos of the project
+  final List<String> techStack;
+  final List<String> mediaFiles; // URLs
   final DateTime createdAt;
 
   PortfolioModel({
     required this.portfolioID,
     required this.jobSeekerID,
-    required this.projectTitle,
+    this.projectTitle = '',
     this.projectDescription = '',
     this.projectURL = '',
     this.techStack = const [],

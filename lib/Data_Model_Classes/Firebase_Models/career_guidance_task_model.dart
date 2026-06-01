@@ -1,20 +1,20 @@
-
+// CareerGuidanceTask — learning tasks for a JobSeeker, can be AI generated
 
 class CareerGuidanceTaskModel {
-  final String taskID;            // PK
-  final String jobSeekerID;       // FK → users/
-  final String title;             // learning topic, e.g. "Learn Flutter"
+  final String taskID;
+  final String jobSeekerID;
+  final String title;
   final String description;
-  final String priority;          // 'High' | 'Medium' | 'Low'
+  final String priority; // 'High', 'Medium', 'Low'
   final bool isCompleted;
-  final bool aiGenerated;         // true if AI created this task
+  final bool aiGenerated;
   final DateTime createdAt;
-  final DateTime? completedAt;    // null if not yet completed
+  final DateTime? completedAt;
 
   CareerGuidanceTaskModel({
     required this.taskID,
     required this.jobSeekerID,
-    required this.title,
+    this.title = '',
     this.description = '',
     this.priority = 'Medium',
     this.isCompleted = false,

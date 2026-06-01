@@ -3,9 +3,10 @@ import 'package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/company_tile.dart';
+import 'package:elevate_app/Data_Model_Classes/Api_Models/api_job_model.dart';
 import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Jobs_Screens/user_cold_email.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
-import 'package:elevate_app/Data_Model_Classes/api_job_model.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
