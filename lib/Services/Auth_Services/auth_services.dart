@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
+// Stream<User?> get authStateChanges => _auth.authStateChanges(); replaced : final user = ref.watch(authProvider).user;
 class AuthService {
   // Connects to Firebase Authentication.
   final FirebaseAuth auth = FirebaseAuth.instance;

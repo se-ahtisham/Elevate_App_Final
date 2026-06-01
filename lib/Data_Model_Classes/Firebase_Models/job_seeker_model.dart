@@ -85,12 +85,15 @@ class JobSeekerModel {
       postIDs: List<String>.from(map['postIDs'] ?? []),
       mySkillTestIDs: List<String>.from(map['mySkillTestIDs'] ?? []),
       earnedBadgeIDs: List<String>.from(map['earnedBadgeIDs'] ?? []),
-      careerGuidanceTaskIDs:
-          List<String>.from(map['careerGuidanceTaskIDs'] ?? []),
-      appliedJobRequestIDs:
-          List<String>.from(map['appliedJobRequestIDs'] ?? []),
-      becomeEmployeeRequestIDs:
-          List<String>.from(map['becomeEmployeeRequestIDs'] ?? []),
+      careerGuidanceTaskIDs: List<String>.from(
+        map['careerGuidanceTaskIDs'] ?? [],
+      ),
+      appliedJobRequestIDs: List<String>.from(
+        map['appliedJobRequestIDs'] ?? [],
+      ),
+      becomeEmployeeRequestIDs: List<String>.from(
+        map['becomeEmployeeRequestIDs'] ?? [],
+      ),
       followRequestIDs: List<String>.from(map['followRequestIDs'] ?? []),
     );
   }
