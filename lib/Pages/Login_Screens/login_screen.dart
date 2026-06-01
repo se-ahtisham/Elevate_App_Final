@@ -7,22 +7,23 @@ import 'package:elevate_app/Custom_Widgets/Test_Fields/custom_Text_Field.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Pages/Login_Screens/SignUp_Screen.dart';
 import 'package:elevate_app/Pages/Login_Screens/forget_password_screen.dart';
-import 'package:elevate_app/Pages/Login_Screens/user_select.dart';
 import 'package:elevate_app/Pages/admin_main.dart';
 import 'package:elevate_app/Pages/company_main.dart';
 import 'package:elevate_app/Pages/job_Seeker_main.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
+import 'package:elevate_app/Services/Auth/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   late TextEditingController emailController;
   late TextEditingController passwordController;
 
@@ -75,7 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         textAlign: TextAlign.left,
                       ),
 
-                      SizedBox(height: 25),
+                      SizedBox(height: 40),
 
                       CustomText(
                         text: "Email",
@@ -84,6 +85,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         fontWeight: FontWeight.w600,
                         textAlign: TextAlign.left,
                       ),
+                      SizedBox(height: 8),
                       Container(
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.black, width: 1),
@@ -100,7 +102,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
 
-                      SizedBox(height: 20),
+                      SizedBox(height: 30),
 
                       CustomText(
                         text: "Password",
@@ -128,7 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
 
-                      SizedBox(height: 20),
+                      SizedBox(height: 30),
 
                       CustomText(
                         text: "Login As",
@@ -154,28 +156,81 @@ class _LoginScreenState extends State<LoginScreen> {
                         },
                       ),
 
-                      SizedBox(height: 20),
+                      SizedBox(height: 30),
 
-                      Center(
-                        child: TexxtButton(
-                          text: "Forget Password?",
-                          textSize: 13,
-                          textColor: Colors.black,
-                          textWeight: FontWeight.w500,
-                          textAlign: TextAlign.center,
-                          backgroundColor: Colors.white,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ForgetPasswordScreen(),
-                              ),
-                            );
-                          },
+                      Padding(
+                        padding: const EdgeInsets.only(left: 50.0),
+                        child: Row(
+                          children: [
+                            TexxtButton(
+                              text: "Forget Password          |        ",
+                              textSize: 13,
+                              textColor: Colors.black,
+                              textWeight: FontWeight.w500,
+                              textAlign: TextAlign.center,
+                              backgroundColor: Colors.white,
+                              onTap: () async {
+                                if (emailController.text.trim().isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text("Please enter your email"),
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                try {
+                                  await ref
+                                      .read(authProvider.notifier)
+                                      .forgotPassword(
+                                        emailController.text.trim(),
+                                      );
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        "Password reset email sent. Check your inbox.",
+                                      ),
+                                    ),
+                                  );
+
+                                  Navigator.pushReplacement(
+                                    context,
+                                    SlideLeftRoute(page: const LoginScreen()),
+                                  );
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(e.toString())),
+                                  );
+                                }
+                              },
+                            ),
+                            SizedBox(width: 10),
+
+                            TexxtButton(
+                              text: "Resend Email",
+                              textSize: 13,
+                              textColor: const Color.fromARGB(255, 4, 103, 253),
+                              textWeight: FontWeight.w500,
+                              textAlign: TextAlign.center,
+                              backgroundColor: Colors.white,
+                              onTap: () async {
+                                await ref
+                                    .read(authProvider.notifier)
+                                    .resendVerificationEmail();
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("Verification email sent."),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
                         ),
                       ),
 
-                      SizedBox(height: 20),
+                      SizedBox(height: 30),
 
                       TextButtonGradient(
                         text: "Log In",
@@ -183,49 +238,89 @@ class _LoginScreenState extends State<LoginScreen> {
                         textSize: 16,
                         textWeight: FontWeight.w500,
                         borderRadius: 30,
-                        onTap: () {
-                          if (selectedRole == "Job Seeker") {
+
+                        onTap: () async {
+                          if (emailController.text.trim().isEmpty ||
+                              passwordController.text.trim().isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  "Please enter email and password",
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+
+                          if (selectedRole == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Please select a role"),
+                              ),
+                            );
+                            return;
+                          }
+
+                          final error = await ref
+                              .read(authProvider.notifier)
+                              .login(
+                                email: emailController.text.trim(),
+                                password: passwordController.text.trim(),
+                              );
+
+                          if (error != null) {
+                            if (error.contains("EMAIL_NOT_VERIFIED")) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    "Please verify your email before logging in.",
+                                  ),
+                                ),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Invalid email or password."),
+                                ),
+                              );
+                            }
+
+                            return;
+                          }
+
+                          final user = ref.read(authProvider);
+
+                          if (user == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("User data not found"),
+                              ),
+                            );
+                            return;
+                          }
+
+                          if (user.userType == "JobSeeker") {
                             Navigator.pushReplacement(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => JobSeekerMain(
+                                builder: (_) => JobSeekerMain(
                                   niche: 'Flutter Developer',
                                   experience: '2 Year',
-                                ), // Job Seeker Screen
+                                ),
                               ),
                             );
-                          } else if (selectedRole == "Company") {
+                          } else if (user.userType == "Company") {
                             Navigator.pushReplacement(
                               context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    CompanyMain(), // Company Screen
-                              ),
+                              MaterialPageRoute(builder: (_) => CompanyMain()),
                             );
-                          } else if (selectedRole == "Admin") {
+                          } else if (user.userType == "Admin") {
                             Navigator.pushReplacement(
                               context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    AdminMain(), // Admin Screen
-                              ),
-                            );
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text("Please select a role")),
+                              MaterialPageRoute(builder: (_) => AdminMain()),
                             );
                           }
                         },
-
-                        /*
-                        onTap: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => UserSelect(),
-                            ),
-                          );
-                        },*/
                       ),
 
                       SizedBox(height: 20),

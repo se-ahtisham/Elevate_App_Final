@@ -7,8 +7,6 @@ class UserModel {
   final String profilePic;
   final String location;
   final String about;
-  final String securityQuestion;
-  final String securityAnswer;
 
   UserModel({
     required this.userID,
@@ -19,8 +17,6 @@ class UserModel {
     this.profilePic = '',
     this.location = '',
     this.about = '',
-    this.securityQuestion = '',
-    this.securityAnswer = '',
   });
 
   Map<String, dynamic> toMap() {
@@ -33,8 +29,6 @@ class UserModel {
       'profilePic': profilePic,
       'location': location,
       'about': about,
-      'securityQuestion': securityQuestion,
-      'securityAnswer': securityAnswer,
     };
   }
 
@@ -48,8 +42,6 @@ class UserModel {
       profilePic: map['profilePic'] ?? '',
       location: map['location'] ?? '',
       about: map['about'] ?? '',
-      securityQuestion: map['securityQuestion'] ?? '',
-      securityAnswer: map['securityAnswer'] ?? '',
     );
   }
 }

@@ -9,32 +9,26 @@ import 'package:elevate_app/Pages/Login_Screens/login_screen.dart';
 import 'package:elevate_app/Pages/Login_Screens/user_select.dart';
 // import 'package:elevate_app/Pages/admin_main.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
+import 'package:elevate_app/Services/Auth/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class SignUpScreen extends StatefulWidget {
+class SignUpScreen extends ConsumerStatefulWidget {
   const SignUpScreen({super.key});
 
   @override
-  State<SignUpScreen> createState() => _SignUpScreenState();
+  ConsumerState<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-class _SignUpScreenState extends State<SignUpScreen> {
+class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   late TextEditingController nameController;
   late TextEditingController emailController;
   late TextEditingController passwordController;
   late TextEditingController answerController;
 
-  String? selectedQuestion;
-  String? selectedRole;
-
-  List<String> questions = [
-    "What's your hobby?",
-    "Your first school?",
-    "Favorite food?",
-  ];
-
   List<String> roleOptions = ["Job Seeker", "Company"];
+  String? selectedRole;
 
   @override
   void initState() {
@@ -86,6 +80,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         fontWeight: FontWeight.w600,
                         textAlign: TextAlign.left,
                       ),
+                      SizedBox(height: 10),
                       Container(
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.black, width: 1),
@@ -111,6 +106,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         fontWeight: FontWeight.w600,
                         textAlign: TextAlign.left,
                       ),
+                      SizedBox(height: 10),
                       Container(
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.black, width: 1),
@@ -130,12 +126,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       SizedBox(height: 20),
 
                       CustomText(
-                        text: "Set Password",
+                        text: "Password",
                         fontSize: 14,
                         color: Colors.black,
                         fontWeight: FontWeight.w600,
                         textAlign: TextAlign.left,
                       ),
+                      SizedBox(height: 10),
                       Container(
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.black, width: 1),
@@ -153,58 +150,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                       ),
 
-                      SizedBox(height: 20),
-
-                      CustomText(
-                        text: "Security Question",
-                        fontSize: 14,
-                        color: Colors.black,
-                        fontWeight: FontWeight.w600,
-                        textAlign: TextAlign.left,
-                      ),
-
-                      SizedBox(height: 8),
-
-                      CustomDropDown(
-                        hintText: "What's your hobby?",
-                        items: questions,
-                        value: selectedQuestion,
-                        width: double.infinity,
-                        borderWidth: 1,
-                        backgroundColor: const Color(0xffF2F2F2),
-                        onChanged: (value) {
-                          setState(() {
-                            selectedQuestion = value;
-                          });
-                        },
-                      ),
-
-                      SizedBox(height: 20),
-
-                      CustomText(
-                        text: "Answer",
-                        fontSize: 14,
-                        color: Colors.black,
-                        fontWeight: FontWeight.w600,
-                        textAlign: TextAlign.left,
-                      ),
-                      Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.black, width: 1),
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: CustomTextField(
-                            hintText: "Coding",
-                            controller: answerController,
-                            cursorColor: ElevateColor.black,
-                            underlineColor: Colors.transparent,
-                          ),
-                        ),
-                      ),
-
-                      SizedBox(height: 20),
+                      SizedBox(height: 28),
 
                       CustomText(
                         text: "Join as",
@@ -230,7 +176,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         },
                       ),
 
-                      SizedBox(height: 25),
+                      SizedBox(height: 40),
 
                       TextButtonGradient(
                         text: "Register",
@@ -238,14 +184,58 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         textSize: 16,
                         textWeight: FontWeight.w500,
                         borderRadius: 30,
-                        onTap: () {
-                          /*
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => UserSelect(),
-                            ),
-                          );*/
+                        onTap: () async {
+                          if (nameController.text.trim().isEmpty ||
+                              emailController.text.trim().isEmpty ||
+                              passwordController.text.trim().isEmpty ||
+                              selectedRole == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  "Please fill all required fields",
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+
+                          String userType;
+
+                          if (selectedRole == "Job Seeker") {
+                            userType = "JobSeeker";
+                          } else {
+                            userType = "Company";
+                          }
+
+                          final success = await ref
+                              .read(authProvider.notifier)
+                              .signUp(
+                                name: nameController.text.trim(),
+                                email: emailController.text.trim(),
+                                password: passwordController.text.trim(),
+                                userType: userType,
+                              );
+
+                          if (!mounted) return;
+
+                          if (success) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  "Account created successfully. Verification email sent.",
+                                ),
+                              ),
+                            );
+
+                            Navigator.pushReplacement(
+                              context,
+                              SlideLeftRoute(page: const LoginScreen()),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Try Other Email")),
+                            );
+                          }
                         },
                       ),
 
