@@ -48,7 +48,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     super.dispose();
   }
 
-  Future<void> _pollVerification(String userType) async {
+  Future<void> pollVerification(String userType) async {
     setState(() => _waitingForVerification = true);
 
     while (mounted) {
@@ -58,31 +58,30 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       if (FirebaseAuth.instance.currentUser?.emailVerified == true) {
         if (!mounted) return;
         setState(() => _waitingForVerification = false);
-        _navigateToDashboard(userType);
+
+        if (userType == 'JobSeeker') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => JobSeekerMain(
+                niche: 'Flutter Developer',
+                experience: '2 Year',
+              ),
+            ),
+          );
+        } else if (userType == 'Company') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => CompanyMain()),
+          );
+        } else if (userType == 'Admin') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => AdminMain()),
+          );
+        }
         return;
       }
-    }
-  }
-
-  void _navigateToDashboard(String userType) {
-    if (userType == 'JobSeeker') {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) =>
-              JobSeekerMain(niche: 'Flutter Developer', experience: '2 Year'),
-        ),
-      );
-    } else if (userType == 'Company') {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => CompanyMain()),
-      );
-    } else if (userType == 'Admin') {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => AdminMain()),
-      );
     }
   }
 
@@ -210,27 +209,24 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
                       SizedBox(height: 20),
 
-                      if (_waitingForVerification) ...[
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            ),
-                            const SizedBox(width: 10),
-                            CustomText(
-                              text: "Waiting for email verification...",
-                              fontSize: 13,
-                              color: Colors.grey,
-                              fontWeight: FontWeight.w400,
-                              textAlign: TextAlign.left,
-                            ),
-                          ],
+                      if (_waitingForVerification)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 10),
+                          child: Row(
+                            children: [
+                              SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  color: ElevateColor.gray,
+                                  strokeWidth: 2,
+                                ),
+                              ),
+                              SizedBox(width: 10),
+                              Text("Waiting for email verification..."),
+                            ],
+                          ),
                         ),
-                        const SizedBox(height: 10),
-                      ],
 
                       TexxtButton(
                         text: "Resend Email",
@@ -314,7 +310,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                                       ),
                                     ),
                                   );
-                                  _pollVerification(userType);
+                                  pollVerification(userType);
                                 } else {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
