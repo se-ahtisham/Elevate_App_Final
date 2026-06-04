@@ -4,8 +4,7 @@
 
 class AdminModel {
   final String userID;
-  final List<String>
-  permissions; // e.g. ['manageUsers','manageBadges','manageTests','manageSkills']
+  final List<String> permissions; // e.g. ['manageUsers','manageBadges','manageTests','manageSkills']
 
   AdminModel({required this.userID, this.permissions = const []});
 

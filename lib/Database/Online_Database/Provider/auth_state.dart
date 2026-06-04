@@ -13,17 +13,25 @@ class AuthState {
     this.user,
   });
 
+  /// Update some fields, keep the res
   AuthState copyWith({
     bool? isLoading,
     String? errorMessage,
     String? successMessage,
     UserModel? user,
   }) => AuthState(
-    isLoading: isLoading ?? this.isLoading,
-    errorMessage: errorMessage ?? this.errorMessage,
+    isLoading: isLoading ?? this.isLoading, // if new value given → use it
+    errorMessage: errorMessage ?? this.errorMessage, // else → keep old value
     successMessage: successMessage ?? this.successMessage,
     user: user ?? this.user,
   );
+  // To remove error/success messages from the screen after showing them to the user
+  // Whenever you want to hide/remove error or success messages from UI → call
+  /* Login failed → error message shows
+state = AuthState(errorMessage: "Wrong password");
 
+// User starts typing again → clear the error
+state = state.clearMessages();
+// errorMessage = null → error disappears from screen*/
   AuthState clearMessages() => AuthState(isLoading: isLoading, user: user);
 }
