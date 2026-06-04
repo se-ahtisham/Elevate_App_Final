@@ -30,8 +30,13 @@ class AuthState {
   /* Login failed → error message shows
 state = AuthState(errorMessage: "Wrong password");
 
-// User starts typing again → clear the error
+ User starts typing again → clear the error
 state = state.clearMessages();
-// errorMessage = null → error disappears from screen*/
+ errorMessage = null → error disappears from screen
+Login success → success message shows
+state = AuthState(successMessage: "Login Successful!");
+
+Now move to next screen → clear the message
+state = state.clearMessages(); */
   AuthState clearMessages() => AuthState(isLoading: isLoading, user: user);
 }
