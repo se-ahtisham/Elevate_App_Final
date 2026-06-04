@@ -5,11 +5,13 @@ import 'package:elevate_app/Custom_Widgets/Drop_Down_Menu/custom_drop_down.dart'
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Test_Fields/custom_Text_Field.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
+import 'package:elevate_app/Database/Online_Database/Provider/auth_provider.dart';
 import 'package:elevate_app/Pages/Login_Screens/login_screen.dart';
-import 'package:elevate_app/Pages/Login_Screens/user_select.dart';
-// import 'package:elevate_app/Pages/admin_main.dart';
+import 'package:elevate_app/Pages/admin_main.dart';
+import 'package:elevate_app/Pages/company_main.dart';
+import 'package:elevate_app/Pages/job_Seeker_main.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
-import 'package:elevate_app/Services/Auth/auth_provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,10 +27,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   late TextEditingController nameController;
   late TextEditingController emailController;
   late TextEditingController passwordController;
-  late TextEditingController answerController;
 
   List<String> roleOptions = ["Job Seeker", "Company"];
   String? selectedRole;
+  bool _waitingForVerification = false;
 
   @override
   void initState() {
@@ -36,7 +38,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     nameController = TextEditingController();
     emailController = TextEditingController();
     passwordController = TextEditingController();
-    answerController = TextEditingController();
   }
 
   @override
@@ -44,12 +45,51 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     nameController.dispose();
     emailController.dispose();
     passwordController.dispose();
-    answerController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pollVerification(String userType) async {
+    setState(() => _waitingForVerification = true);
+
+    while (mounted) {
+      await Future.delayed(const Duration(seconds: 3));
+      await FirebaseAuth.instance.currentUser?.reload();
+
+      if (FirebaseAuth.instance.currentUser?.emailVerified == true) {
+        if (!mounted) return;
+        setState(() => _waitingForVerification = false);
+        _navigateToDashboard(userType);
+        return;
+      }
+    }
+  }
+
+  void _navigateToDashboard(String userType) {
+    if (userType == 'JobSeeker') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              JobSeekerMain(niche: 'Flutter Developer', experience: '2 Year'),
+        ),
+      );
+    } else if (userType == 'Company') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => CompanyMain()),
+      );
+    } else if (userType == 'Admin') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => AdminMain()),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+
     return Scaffold(
       backgroundColor: ElevateColor.white,
       extendBodyBehindAppBar: true,
@@ -63,7 +103,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
               subTitle: "Account",
               subtitleSize: 20,
             ),
-
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 40),
@@ -71,8 +110,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SizedBox(height: 20),
-
                       CustomText(
                         text: "Name",
                         fontSize: 14,
@@ -159,9 +196,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         fontWeight: FontWeight.w600,
                         textAlign: TextAlign.left,
                       ),
-
                       SizedBox(height: 8),
-
                       CustomDropDown(
                         hintText: "Job Seeker / Company",
                         items: roleOptions,
@@ -169,10 +204,65 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         width: double.infinity,
                         borderWidth: 1,
                         backgroundColor: const Color(0xffF2F2F2),
-                        onChanged: (value) {
-                          setState(() {
-                            selectedRole = value;
-                          });
+                        onChanged: (value) =>
+                            setState(() => selectedRole = value),
+                      ),
+
+                      SizedBox(height: 20),
+
+                      if (_waitingForVerification) ...[
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            const SizedBox(width: 10),
+                            CustomText(
+                              text: "Waiting for email verification...",
+                              fontSize: 13,
+                              color: Colors.grey,
+                              fontWeight: FontWeight.w400,
+                              textAlign: TextAlign.left,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+
+                      TexxtButton(
+                        text: "Resend Email",
+                        textSize: 13,
+                        textColor: const Color.fromARGB(255, 4, 103, 253),
+                        textWeight: FontWeight.w500,
+                        textAlign: TextAlign.center,
+                        backgroundColor: Colors.white,
+                        onTap: () async {
+                          if (emailController.text.trim().isEmpty ||
+                              passwordController.text.trim().isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Enter email and password to resend.',
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+                          await ref
+                              .read(authProvider.notifier)
+                              .resendVerificationEmail(
+                                emailController.text.trim(),
+                                passwordController.text.trim(),
+                              );
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Verification email sent.'),
+                            ),
+                          );
                         },
                       ),
 
@@ -184,59 +274,58 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         textSize: 16,
                         textWeight: FontWeight.w500,
                         borderRadius: 30,
-                        onTap: () async {
-                          if (nameController.text.trim().isEmpty ||
-                              emailController.text.trim().isEmpty ||
-                              passwordController.text.trim().isEmpty ||
-                              selectedRole == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  "Please fill all required fields",
-                                ),
-                              ),
-                            );
-                            return;
-                          }
+                        onTap: (authState.isLoading || _waitingForVerification)
+                            ? null
+                            : () async {
+                                if (nameController.text.trim().isEmpty ||
+                                    emailController.text.trim().isEmpty ||
+                                    passwordController.text.trim().isEmpty ||
+                                    selectedRole == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        "Please fill all required fields",
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
 
-                          String userType;
+                                final userType = selectedRole == "Job Seeker"
+                                    ? "JobSeeker"
+                                    : "Company";
 
-                          if (selectedRole == "Job Seeker") {
-                            userType = "JobSeeker";
-                          } else {
-                            userType = "Company";
-                          }
+                                final success = await ref
+                                    .read(authProvider.notifier)
+                                    .signUp(
+                                      name: nameController.text.trim(),
+                                      email: emailController.text.trim(),
+                                      password: passwordController.text.trim(),
+                                      userType: userType,
+                                    );
 
-                          final success = await ref
-                              .read(authProvider.notifier)
-                              .signUp(
-                                name: nameController.text.trim(),
-                                email: emailController.text.trim(),
-                                password: passwordController.text.trim(),
-                                userType: userType,
-                              );
+                                if (!mounted) return;
 
-                          if (!mounted) return;
-
-                          if (success) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  "Account created successfully. Verification email sent.",
-                                ),
-                              ),
-                            );
-
-                            Navigator.pushReplacement(
-                              context,
-                              SlideLeftRoute(page: const LoginScreen()),
-                            );
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text("Try Other Email")),
-                            );
-                          }
-                        },
+                                if (success) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        "Verification email sent. Please check your inbox.",
+                                      ),
+                                    ),
+                                  );
+                                  _pollVerification(userType);
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        ref.read(authProvider).errorMessage ??
+                                            'Sign up failed.',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
                       ),
 
                       SizedBox(height: 20),
@@ -252,12 +341,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         borderRadius: 30,
                         borderWidth: 1,
                         height: 50,
-                        onTap: () {
-                          Navigator.pushReplacement(
-                            context,
-                            SlideLeftRoute(page: LoginScreen()),
-                          );
-                        },
+                        onTap: () => Navigator.pushReplacement(
+                          context,
+                          SlideLeftRoute(page: const LoginScreen()),
+                        ),
                       ),
                     ],
                   ),

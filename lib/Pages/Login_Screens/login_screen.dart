@@ -5,13 +5,12 @@ import 'package:elevate_app/Custom_Widgets/Drop_Down_Menu/custom_drop_down.dart'
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Test_Fields/custom_Text_Field.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
+import 'package:elevate_app/Database/Online_Database/Provider/auth_provider.dart';
 import 'package:elevate_app/Pages/Login_Screens/SignUp_Screen.dart';
-import 'package:elevate_app/Pages/Login_Screens/forget_password_screen.dart';
 import 'package:elevate_app/Pages/admin_main.dart';
 import 'package:elevate_app/Pages/company_main.dart';
 import 'package:elevate_app/Pages/job_Seeker_main.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
-import 'package:elevate_app/Services/Auth/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -46,6 +45,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+
     return Scaffold(
       backgroundColor: ElevateColor.white,
       extendBodyBehindAppBar: true,
@@ -111,7 +112,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         fontWeight: FontWeight.w600,
                         textAlign: TextAlign.left,
                       ),
-
                       SizedBox(height: 8),
                       Container(
                         decoration: BoxDecoration(
@@ -139,9 +139,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         fontWeight: FontWeight.w600,
                         textAlign: TextAlign.left,
                       ),
-
                       SizedBox(height: 8),
-
                       CustomDropDown(
                         hintText: "Job Seeker / Company",
                         items: roleOptions,
@@ -158,75 +156,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                       SizedBox(height: 30),
 
-                      Padding(
-                        padding: const EdgeInsets.only(left: 50.0),
-                        child: Row(
-                          children: [
-                            TexxtButton(
-                              text: "Forget Password          |        ",
-                              textSize: 13,
-                              textColor: Colors.black,
-                              textWeight: FontWeight.w500,
-                              textAlign: TextAlign.center,
-                              backgroundColor: Colors.white,
-                              onTap: () async {
-                                if (emailController.text.trim().isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text("Please enter your email"),
-                                    ),
-                                  );
-                                  return;
-                                }
-
-                                try {
-                                  await ref
-                                      .read(authProvider.notifier)
-                                      .forgotPassword(
-                                        emailController.text.trim(),
-                                      );
-
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text(
-                                        "Password reset email sent. Check your inbox.",
-                                      ),
-                                    ),
-                                  );
-
-                                  Navigator.pushReplacement(
-                                    context,
-                                    SlideLeftRoute(page: const LoginScreen()),
-                                  );
-                                } catch (e) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(e.toString())),
-                                  );
-                                }
-                              },
-                            ),
-                            SizedBox(width: 10),
-
-                            TexxtButton(
-                              text: "Resend Email",
-                              textSize: 13,
-                              textColor: const Color.fromARGB(255, 4, 103, 253),
-                              textWeight: FontWeight.w500,
-                              textAlign: TextAlign.center,
-                              backgroundColor: Colors.white,
-                              onTap: () async {
-                                await ref
-                                    .read(authProvider.notifier)
-                                    .resendVerificationEmail();
-
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text("Verification email sent."),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
+                      Center(
+                        child: TexxtButton(
+                          text: "Forget Password",
+                          textSize: 13,
+                          textColor: Colors.black,
+                          textWeight: FontWeight.w500,
+                          textAlign: TextAlign.center,
+                          backgroundColor: Colors.white,
+                          onTap: () async {
+                            if (emailController.text.trim().isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Please enter your email"),
+                                ),
+                              );
+                              return;
+                            }
+                            final success = await ref
+                                .read(authProvider.notifier)
+                                .forgotPassword(emailController.text.trim());
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  success
+                                      ? 'Password reset email sent. Check your inbox.'
+                                      : ref.read(authProvider).errorMessage ??
+                                            'Failed to send reset email.',
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ),
 
@@ -238,89 +198,86 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         textSize: 16,
                         textWeight: FontWeight.w500,
                         borderRadius: 30,
+                        onTap: authState.isLoading
+                            ? null
+                            : () async {
+                                if (emailController.text.trim().isEmpty ||
+                                    passwordController.text.trim().isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Please enter email and password',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
 
-                        onTap: () async {
-                          if (emailController.text.trim().isEmpty ||
-                              passwordController.text.trim().isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  "Please enter email and password",
-                                ),
-                              ),
-                            );
-                            return;
-                          }
+                                if (selectedRole == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Please select a role'),
+                                    ),
+                                  );
+                                  return;
+                                }
 
-                          if (selectedRole == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("Please select a role"),
-                              ),
-                            );
-                            return;
-                          }
+                                final success = await ref
+                                    .read(authProvider.notifier)
+                                    .login(
+                                      emailController.text.trim(),
+                                      passwordController.text.trim(),
+                                    );
 
-                          final error = await ref
-                              .read(authProvider.notifier)
-                              .login(
-                                email: emailController.text.trim(),
-                                password: passwordController.text.trim(),
-                              );
+                                if (!success) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        ref.read(authProvider).errorMessage ??
+                                            'Login failed.',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
 
-                          if (error != null) {
-                            if (error.contains("EMAIL_NOT_VERIFIED")) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    "Please verify your email before logging in.",
-                                  ),
-                                ),
-                              );
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Invalid email or password."),
-                                ),
-                              );
-                            }
+                                final userType = ref
+                                    .read(authProvider)
+                                    .user
+                                    ?.userType;
 
-                            return;
-                          }
-
-                          final user = ref.read(authProvider);
-
-                          if (user == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("User data not found"),
-                              ),
-                            );
-                            return;
-                          }
-
-                          if (user.userType == "JobSeeker") {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => JobSeekerMain(
-                                  niche: 'Flutter Developer',
-                                  experience: '2 Year',
-                                ),
-                              ),
-                            );
-                          } else if (user.userType == "Company") {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(builder: (_) => CompanyMain()),
-                            );
-                          } else if (user.userType == "Admin") {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(builder: (_) => AdminMain()),
-                            );
-                          }
-                        },
+                                if (userType == 'JobSeeker') {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => JobSeekerMain(
+                                        niche: 'Flutter Developer',
+                                        experience: '2 Year',
+                                      ),
+                                    ),
+                                  );
+                                } else if (userType == 'Company') {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => CompanyMain(),
+                                    ),
+                                  );
+                                } else if (userType == 'Admin') {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => AdminMain(),
+                                    ),
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('User data not found.'),
+                                    ),
+                                  );
+                                }
+                              },
                       ),
 
                       SizedBox(height: 20),
