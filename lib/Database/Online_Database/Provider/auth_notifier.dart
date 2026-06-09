@@ -1,5 +1,7 @@
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/admin_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/company_model.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/education_model.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_experience_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_seeker_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/user_model.dart';
 import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
@@ -9,12 +11,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'auth_state.dart';
 
 final fireauth = FirebaseAuth.instance;
-// ignore: non_constant_identifier_names
 final db_firebaseservice = FirebaseService();
 
 class AuthNotifier extends StateNotifier<AuthState> {
   AuthNotifier() : super(const AuthState());
 
+  //  SIGN UP
   Future<bool> signUp({
     required String name,
     required String email,
@@ -62,6 +64,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  //  LOGIN
   Future<bool> login(String email, String password) async {
     state = state.clearMessages().copyWith(isLoading: true);
     try {
@@ -94,11 +97,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  //  LOGOUT
   Future<void> logout() async {
     await fireauth.signOut();
     state = const AuthState();
   }
 
+  //  FORGOT PASSWORD
   Future<bool> forgotPassword(String email) async {
     state = state.clearMessages().copyWith(isLoading: true);
     try {
@@ -117,6 +122,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  //  CHANGE PASSWORD
   Future<bool> changePassword({
     required String currentPassword,
     required String newPassword,
@@ -145,6 +151,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  //  UPDATE EMAIL
   Future<bool> updateEmail({
     required String currentPassword,
     required String newEmail,
@@ -173,6 +180,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  //  DELETE ACCOUNT
   Future<bool> deleteAccount(String currentPassword) async {
     state = state.clearMessages().copyWith(isLoading: true);
     try {
@@ -190,6 +198,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  //  LOAD CURRENT USER
+
   Future<void> loadCurrentUser() async {
     final current = fireauth.currentUser;
     if (current == null) return;
@@ -197,18 +207,201 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (user != null) state = state.copyWith(user: user);
   }
 
-Future<void> resendVerificationEmail(String email, String password) async {
+  //  RESEND VERIFICATION EMAIL
+  Future<void> resendVerificationEmail(String email, String password) async {
+    try {
+      final result = await fireauth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      await result.user!.sendEmailVerification();
+      await fireauth.signOut();
+    } on FirebaseAuthException catch (e) {
+      state = state.copyWith(
+        errorMessage: e.message ?? 'Could not resend email.',
+      );
+    }
+  }
+
+Future<bool> updateProfile({
+  required String name,
+  required String shortDescription,
+  required String experienceLevel,
+  required List<EducationModel> educations,
+  required List<JobExperienceModel> experiences,
+}) async {
+  if (state.user == null) return false;
+  state = state.clearMessages().copyWith(isLoading: true);
   try {
-    final result = await fireauth.signInWithEmailAndPassword(
-      email: email,
-      password: password,
+    final uid = state.user!.userID;
+
+    await db_firebaseservice.updateUser(uid, {'name': name.trim()});
+
+    await db_firebaseservice.updateJobSeeker(uid, {
+      'shortDescription': shortDescription.trim(),
+      'experienceLevel': experienceLevel.trim(),
+    });
+
+    await db_firebaseservice.updateEducationList(uid, educations);
+    await db_firebaseservice.updateJobExperienceList(uid, experiences);
+
+    state = state.copyWith(
+      isLoading: false,
+      successMessage: 'Profile updated.',
     );
-    await result.user!.sendEmailVerification();
-    await fireauth.signOut();
-  } on FirebaseAuthException catch (e) {
-    state = state.copyWith(errorMessage: e.message ?? 'Could not resend email.');
+    return true;
+  } on FirebaseException catch (e) {
+    state = state.copyWith(
+      isLoading: false,
+      errorMessage: e.message ?? 'Update failed.',
+    );
+    return false;
   }
 }
+
+
+  
+
+  Future<bool> addEducation(EducationModel edu) async {
+    if (state.user == null) return false;
+    state = state.clearMessages().copyWith(isLoading: true);
+    try {
+      final uid = state.user!.userID;
+      final js = await db_firebaseservice.getJobSeeker(uid);
+      if (js == null) return false;
+      await db_firebaseservice.updateEducationList(uid, [...js.education, edu]);
+      state = state.copyWith(
+        isLoading: false,
+        successMessage: 'Education added.',
+      );
+      return true;
+    } on FirebaseException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.message ?? 'Could not add education.',
+      );
+      return false;
+    }
+  }
+
+  Future<bool> updateEducation(int index, EducationModel edu) async {
+    if (state.user == null) return false;
+    state = state.clearMessages().copyWith(isLoading: true);
+    try {
+      final uid = state.user!.userID;
+      final js = await db_firebaseservice.getJobSeeker(uid);
+      if (js == null) return false;
+      final updated = List<EducationModel>.from(js.education)..[index] = edu;
+      await db_firebaseservice.updateEducationList(uid, updated);
+      state = state.copyWith(
+        isLoading: false,
+        successMessage: 'Education updated.',
+      );
+      return true;
+    } on FirebaseException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.message ?? 'Could not update education.',
+      );
+      return false;
+    }
+  }
+
+  Future<bool> deleteEducation(int index) async {
+    if (state.user == null) return false;
+    state = state.clearMessages().copyWith(isLoading: true);
+    try {
+      final uid = state.user!.userID;
+      final js = await db_firebaseservice.getJobSeeker(uid);
+      if (js == null) return false;
+      final updated = List<EducationModel>.from(js.education)..removeAt(index);
+      await db_firebaseservice.updateEducationList(uid, updated);
+      state = state.copyWith(
+        isLoading: false,
+        successMessage: 'Education removed.',
+      );
+      return true;
+    } on FirebaseException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.message ?? 'Could not delete education.',
+      );
+      return false;
+    }
+  }
+
+  Future<bool> addJobExperience(JobExperienceModel exp) async {
+    if (state.user == null) return false;
+    state = state.clearMessages().copyWith(isLoading: true);
+    try {
+      final uid = state.user!.userID;
+      final js = await db_firebaseservice.getJobSeeker(uid);
+      if (js == null) return false;
+      await db_firebaseservice.updateJobExperienceList(uid, [
+        ...js.jobExperience,
+        exp,
+      ]);
+      state = state.copyWith(
+        isLoading: false,
+        successMessage: 'Experience added.',
+      );
+      return true;
+    } on FirebaseException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.message ?? 'Could not add experience.',
+      );
+      return false;
+    }
+  }
+
+  Future<bool> updateJobExperience(int index, JobExperienceModel exp) async {
+    if (state.user == null) return false;
+    state = state.clearMessages().copyWith(isLoading: true);
+    try {
+      final uid = state.user!.userID;
+      final js = await db_firebaseservice.getJobSeeker(uid);
+      if (js == null) return false;
+      final updated = List<JobExperienceModel>.from(js.jobExperience)
+        ..[index] = exp;
+      await db_firebaseservice.updateJobExperienceList(uid, updated);
+      state = state.copyWith(
+        isLoading: false,
+        successMessage: 'Experience updated.',
+      );
+      return true;
+    } on FirebaseException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.message ?? 'Could not update experience.',
+      );
+      return false;
+    }
+  }
+
+  Future<bool> deleteJobExperience(int index) async {
+    if (state.user == null) return false;
+    state = state.clearMessages().copyWith(isLoading: true);
+    try {
+      final uid = state.user!.userID;
+      final js = await db_firebaseservice.getJobSeeker(uid);
+      if (js == null) return false;
+      final updated = List<JobExperienceModel>.from(js.jobExperience)
+        ..removeAt(index);
+      await db_firebaseservice.updateJobExperienceList(uid, updated);
+      state = state.copyWith(
+        isLoading: false,
+        successMessage: 'Experience removed.',
+      );
+      return true;
+    } on FirebaseException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.message ?? 'Could not delete experience.',
+      );
+      return false;
+    }
+  }
 
   void clearMessages() => state = state.clearMessages();
 

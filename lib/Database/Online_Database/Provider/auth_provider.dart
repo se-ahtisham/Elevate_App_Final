@@ -7,8 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'auth_notifier.dart';
 import 'auth_state.dart';
 
-// ignore: non_constant_identifier_names
-final db_firebaseservice = FirebaseService();
+final db = FirebaseService();
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>(
   (_) => AuthNotifier(),
@@ -16,17 +15,15 @@ final authProvider = StateNotifierProvider<AuthNotifier, AuthState>(
 
 final jobSeekerProvider = FutureProvider<JobSeekerModel?>((ref) {
   final uid = ref.watch(authProvider).user?.userID;
-  return uid == null
-      ? Future.value(null)
-      : db_firebaseservice.getJobSeeker(uid);
+  return uid == null ? Future.value(null) : db.getJobSeeker(uid);
 });
 
 final companyProvider = FutureProvider<CompanyModel?>((ref) {
   final uid = ref.watch(authProvider).user?.userID;
-  return uid == null ? Future.value(null) : db_firebaseservice.getCompany(uid);
+  return uid == null ? Future.value(null) : db.getCompany(uid);
 });
 
 final adminProvider = FutureProvider<AdminModel?>((ref) {
   final uid = ref.watch(authProvider).user?.userID;
-  return uid == null ? Future.value(null) : db_firebaseservice.getAdmin(uid);
+  return uid == null ? Future.value(null) : db.getAdmin(uid);
 });
