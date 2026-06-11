@@ -223,44 +223,75 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-Future<bool> updateProfile({
-  required String name,
-  required String shortDescription,
-  required String experienceLevel,
-  required List<EducationModel> educations,
-  required List<JobExperienceModel> experiences,
-}) async {
-  if (state.user == null) return false;
-  state = state.clearMessages().copyWith(isLoading: true);
-  try {
-    final uid = state.user!.userID;
+  // JObs seeker + user
+  Future<bool> updateFullProfile({
+    required String name,
+    required String location,
+    required String about,
+    required String experienceLevel,
+    required List<EducationModel> educations,
+    required List<JobExperienceModel> experiences,
+  }) async {
+    try {
+      final uid = state.user?.userID;
+      if (uid == null) return false;
 
-    await db_firebaseservice.updateUser(uid, {'name': name.trim()});
+      // 1. UPDATE USER COLLECTION
+      await db_firebaseservice.updateUser(uid, {
+        "name": name,
+        "location": location,
+        "about": about,
+      });
 
-    await db_firebaseservice.updateJobSeeker(uid, {
-      'shortDescription': shortDescription.trim(),
-      'experienceLevel': experienceLevel.trim(),
-    });
+      // 2. UPDATE JOB SEEKER COLLECTION
+      await db_firebaseservice.updateJobSeeker(uid, {
+        "experienceLevel": experienceLevel,
+        "education": educations.map((e) => e.toMap()).toList(),
+        "jobExperience": experiences.map((e) => e.toMap()).toList(),
+      });
 
-    await db_firebaseservice.updateEducationList(uid, educations);
-    await db_firebaseservice.updateJobExperienceList(uid, experiences);
-
-    state = state.copyWith(
-      isLoading: false,
-      successMessage: 'Profile updated.',
-    );
-    return true;
-  } on FirebaseException catch (e) {
-    state = state.copyWith(
-      isLoading: false,
-      errorMessage: e.message ?? 'Update failed.',
-    );
-    return false;
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
-}
 
+  // FOr only JOb Seeker collection
+  Future<bool> updateProfile({
+    required String name,
+    required String shortDescription,
+    required String experienceLevel,
+    required List<EducationModel> educations,
+    required List<JobExperienceModel> experiences,
+  }) async {
+    if (state.user == null) return false;
+    state = state.clearMessages().copyWith(isLoading: true);
+    try {
+      final uid = state.user!.userID;
 
-  
+      await db_firebaseservice.updateUser(uid, {'name': name.trim()});
+
+      await db_firebaseservice.updateJobSeeker(uid, {
+        'shortDescription': shortDescription.trim(),
+        'experienceLevel': experienceLevel.trim(),
+      });
+
+      await db_firebaseservice.updateEducationList(uid, educations);
+      await db_firebaseservice.updateJobExperienceList(uid, experiences);
+
+      state = state.copyWith(
+        isLoading: false,
+        successMessage: 'Profile updated.',
+      );
+      return true;
+    } on FirebaseException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.message ?? 'Update failed.',
+      );
+      return false;
+    }
+  }
 
   Future<bool> addEducation(EducationModel edu) async {
     if (state.user == null) return false;

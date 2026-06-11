@@ -1,3 +1,5 @@
+import 'package:elevate_app/Custom_Widgets/Buttons/contain_icon_text_button.dart';
+import 'package:elevate_app/Custom_Widgets/Buttons/icon_text_button_gradient.dart';
 import 'package:elevate_app/Custom_Widgets/Buttons/text_button_gradient.dart';
 import 'package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
@@ -21,6 +23,7 @@ class JobSeekerUpdateProfile extends ConsumerStatefulWidget {
 }
 
 class _State extends ConsumerState<JobSeekerUpdateProfile> {
+  bool isLoadingData = true;
   final nameController = TextEditingController();
   final aboutController = TextEditingController();
   final locationController = TextEditingController();
@@ -34,56 +37,82 @@ class _State extends ConsumerState<JobSeekerUpdateProfile> {
     aboutController.dispose();
     locationController.dispose();
     expLevelController.dispose();
-    for (final e in eduList) for (var c in e) c.dispose();
-    for (final e in expList) for (var c in e) c.dispose();
+    for (final e in eduList) {
+      for (var c in e) {
+        c.dispose();
+      }
+    }
+
+    for (final e in expList) {
+      for (var c in e) {
+        c.dispose();
+      }
+    }
     super.dispose();
   }
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // Basic fields come from UserModel
-      final user = ref.read(authProvider).user;
-      if (user != null) {
-        nameController.text = user.name;
-        locationController.text = user.location;
-        aboutController.text = user.about;
-      }
+    loadUser();
+  }
 
-      // Education & Experience come from JobSeekerModel (separate Firestore collection)
-      final uid = user?.userID;
-      if (uid == null) return;
+  Future<void> loadUser() async {
+    final user = ref.read(authProvider).user;
+    if (user == null) return;
 
-      final js = await db_firebaseservice.getJobSeeker(uid);
-      if (js == null || !mounted) return;
+    final uid = user.userID;
 
-      setState(() {
-        expLevelController.text = js.experienceLevel ?? '';
+    final userData = await db_firebaseservice.getUser(uid);
+    final js = await db_firebaseservice.getJobSeeker(uid);
 
-        for (final edu in js.education) {
-          eduList.add([
-            TextEditingController(text: edu.year),
-            TextEditingController(text: edu.title),
-            TextEditingController(text: edu.school),
-          ]);
-        }
+    if (!mounted) return;
 
-        for (final exp in js.jobExperience) {
-          expList.add([
-            TextEditingController(text: exp.jobTitle),
-            TextEditingController(text: exp.company),
-            TextEditingController(text: exp.from),
-            TextEditingController(text: exp.to),
-          ]);
-        }
-      });
+    // USER COLLECTION
+    nameController.text = userData?.name ?? '';
+    locationController.text = userData?.location ?? '';
+    aboutController.text = userData?.about ?? '';
+
+    // JOB SEEKER COLLECTION
+    expLevelController.text = js?.experienceLevel ?? '';
+
+    // CLEAR OLD DATA FIRST
+    eduList.clear();
+    expList.clear();
+
+    // EDUCATION
+    for (final edu in (js?.education ?? [])) {
+      eduList.add([
+        TextEditingController(text: edu.year),
+        TextEditingController(text: edu.title),
+        TextEditingController(text: edu.school),
+      ]);
+    }
+
+    // EXPERIENCE
+    for (final exp in (js?.jobExperience ?? [])) {
+      expList.add([
+        TextEditingController(text: exp.jobTitle),
+        TextEditingController(text: exp.company),
+        TextEditingController(text: exp.from),
+        TextEditingController(text: exp.to),
+      ]);
+    }
+
+    setState(() {
+      isLoadingData = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final isLoading = ref.watch(authProvider).isLoading;
+    if (isLoadingData) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(child: CircularProgressIndicator(color: Colors.black)),
+      );
+    }
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: Colors.white,
@@ -92,7 +121,10 @@ class _State extends ConsumerState<JobSeekerUpdateProfile> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ElevateHeader(title: "My Info", subTitle: "Let's Discover My Self"),
+            ElevateHeader(
+              title: "Update Profile",
+              subTitle: "Make your profile stand out in the system",
+            ),
             Expanded(
               child: SingleChildScrollView(
                 child: Padding(
@@ -101,24 +133,43 @@ class _State extends ConsumerState<JobSeekerUpdateProfile> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
-                      UserDescription(
-                        imageURL:
-                            'https://avatars.githubusercontent.com/u/159082885?v=4',
-                        name: "Muhammad Ahtisham",
-                        shortDescription: "Backend Developer",
-                        skills: 10,
-                        followers: 238,
-                        followings: 101,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CustomText(
+                            text: "Hey there!",
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400,
+                            color: Colors.black,
+                            textAlign: TextAlign.left,
+                          ),
+                          SizedBox(height: 4),
+                          CustomText(
+                            text: nameController.text,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                            textAlign: TextAlign.left,
+                          ),
+                          SizedBox(height: 4),
+                          CustomText(
+                            text: "Keep your profile fresh and updated",
+                            fontSize: 14,
+                            fontWeight: FontWeight.w300,
+                            color: Colors.black,
+                            textAlign: TextAlign.left,
+                          ),
+                        ],
                       ),
                       SizedBox(height: 30),
                       CustomText(
                         text: "Name",
-                        fontSize: 13,
-                        color: ElevateColor.whitegray,
+                        fontSize: 15,
+                        color: const Color.fromARGB(255, 44, 44, 44),
                         fontWeight: FontWeight.w500,
                         textAlign: TextAlign.left,
                       ),
-                      SizedBox(height: 5),
+                      SizedBox(height: 10),
                       Container(
                         width: 350,
                         height: 40,
@@ -141,17 +192,17 @@ class _State extends ConsumerState<JobSeekerUpdateProfile> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 30),
 
                       // About
                       CustomText(
                         text: "About me",
-                        fontSize: 13,
-                        color: ElevateColor.whitegray,
+                        fontSize: 15,
+                        color: const Color.fromARGB(255, 44, 44, 44),
                         fontWeight: FontWeight.w500,
                         textAlign: TextAlign.left,
                       ),
-                      SizedBox(height: 5),
+                      SizedBox(height: 10),
                       Container(
                         width: 350,
                         height: 200,
@@ -174,17 +225,17 @@ class _State extends ConsumerState<JobSeekerUpdateProfile> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 30),
 
                       // Experience Level
                       CustomText(
                         text: "Experience Level",
-                        fontSize: 13,
-                        color: ElevateColor.whitegray,
+                        fontSize: 15,
+                        color: const Color.fromARGB(255, 44, 44, 44),
                         fontWeight: FontWeight.w500,
                         textAlign: TextAlign.left,
                       ),
-                      SizedBox(height: 5),
+                      SizedBox(height: 10),
                       Container(
                         width: 350,
                         height: 40,
@@ -207,17 +258,17 @@ class _State extends ConsumerState<JobSeekerUpdateProfile> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 30),
 
                       // Location
                       CustomText(
                         text: "Location",
-                        fontSize: 13,
-                        color: ElevateColor.whitegray,
+                        fontSize: 15,
+                        color: const Color.fromARGB(255, 44, 44, 44),
                         fontWeight: FontWeight.w500,
                         textAlign: TextAlign.left,
                       ),
-                      SizedBox(height: 5),
+                      SizedBox(height: 10),
                       Container(
                         width: 350,
                         height: 40,
@@ -240,38 +291,38 @@ class _State extends ConsumerState<JobSeekerUpdateProfile> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 25),
+                      const SizedBox(height: 30),
 
                       // Education
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           CustomText(
                             text: "Education",
-                            fontSize: 13,
-                            color: ElevateColor.whitegray,
+                            fontSize: 15,
+                            color: const Color.fromARGB(255, 44, 44, 44),
                             fontWeight: FontWeight.w500,
                             textAlign: TextAlign.left,
                           ),
+                          SizedBox(width: 240),
                           GestureDetector(
                             onTap: () => setState(
                               () => eduList.add([
-                                TextEditingController(),
-                                TextEditingController(),
-                                TextEditingController(),
+                                TextEditingController(), // Year
+                                TextEditingController(), // Degree
+                                TextEditingController(), // School
                               ]),
                             ),
                             child: Container(
                               width: 28,
                               height: 28,
                               decoration: BoxDecoration(
-                                color: Colors.grey.shade200,
+                                color: const Color.fromARGB(255, 59, 59, 59),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Icon(
                                 Icons.add,
                                 size: 18,
-                                color: Colors.black54,
+                                color: Color.fromARGB(255, 255, 255, 255),
                               ),
                             ),
                           ),
@@ -279,6 +330,7 @@ class _State extends ConsumerState<JobSeekerUpdateProfile> {
                       ),
                       for (int i = 0; i < eduList.length; i++)
                         Container(
+                          width: 350,
                           margin: const EdgeInsets.only(top: 10),
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
@@ -288,86 +340,118 @@ class _State extends ConsumerState<JobSeekerUpdateProfile> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              const SizedBox(height: 10),
                               CustomTextField(
                                 hintText: "Year (e.g. 2021)",
                                 hintWeight: FontWeight.w400,
                                 controller: eduList[i][0],
                                 cursorColor: ElevateColor.black,
-                                underlineColor: Colors.transparent,
+                                contentPadding: EdgeInsets.only(bottom: 15),
+                                underlineColor: const Color.fromARGB(
+                                  131,
+                                  128,
+                                  128,
+                                  128,
+                                ),
                                 fontSize: 12,
                               ),
+                              const SizedBox(height: 25),
                               CustomTextField(
                                 hintText: "Degree (e.g. BSc CS)",
                                 hintWeight: FontWeight.w400,
                                 controller: eduList[i][1],
                                 cursorColor: ElevateColor.black,
-                                underlineColor: Colors.transparent,
                                 fontSize: 12,
+                                contentPadding: EdgeInsets.only(bottom: 15),
+                                underlineColor: const Color.fromARGB(
+                                  131,
+                                  128,
+                                  128,
+                                  128,
+                                ),
                               ),
+                              const SizedBox(height: 25),
                               CustomTextField(
                                 hintText: "School (e.g. FAST)",
                                 hintWeight: FontWeight.w400,
                                 controller: eduList[i][2],
                                 cursorColor: ElevateColor.black,
-                                underlineColor: Colors.transparent,
+                                contentPadding: EdgeInsets.only(bottom: 15),
+                                underlineColor: const Color.fromARGB(
+                                  131,
+                                  128,
+                                  128,
+                                  128,
+                                ),
                                 fontSize: 12,
                               ),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: GestureDetector(
-                                  onTap: () =>
-                                      setState(() => eduList.removeAt(i)),
-                                  child: const Icon(
-                                    Icons.delete_outline,
-                                    size: 18,
-                                    color: Colors.redAccent,
-                                  ),
+                              const SizedBox(height: 25),
+                              IconTextButtonGradient(
+                                onTap: () =>
+                                    setState(() => eduList.removeAt(i)),
+                                text: "Delete",
+                                width: 350,
+                                textColor: Colors.white,
+                                iconColor: Colors.white,
+                                iconData: Icons.delete,
+                                iconSize: 13,
+                                textSize: 10,
+                                height: 40,
+                                startColor: const Color.fromARGB(
+                                  255,
+                                  136,
+                                  136,
+                                  136,
                                 ),
+                                endColor: Colors.black,
                               ),
                             ],
                           ),
                         ),
-                      const SizedBox(height: 25),
+                      const SizedBox(height: 30),
 
                       // Work Experience
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           CustomText(
                             text: "Work Experience",
-                            fontSize: 13,
-                            color: ElevateColor.whitegray,
+                            fontSize: 15,
+                            color: const Color.fromARGB(255, 44, 44, 44),
                             fontWeight: FontWeight.w500,
                             textAlign: TextAlign.left,
                           ),
+                          const SizedBox(width: 190),
                           GestureDetector(
                             onTap: () => setState(
                               () => expList.add([
-                                TextEditingController(),
-                                TextEditingController(),
-                                TextEditingController(),
-                                TextEditingController(),
+                                TextEditingController(), // Job Title
+                                TextEditingController(), // Company
+                                TextEditingController(), // From
+                                TextEditingController(), // To
                               ]),
                             ),
                             child: Container(
                               width: 28,
                               height: 28,
                               decoration: BoxDecoration(
-                                color: Colors.grey.shade200,
+                                color: const Color.fromARGB(255, 59, 59, 59),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Icon(
                                 Icons.add,
                                 size: 18,
-                                color: Colors.black54,
+                                color: Colors.white,
                               ),
                             ),
                           ),
                         ],
                       ),
+
                       for (int i = 0; i < expList.length; i++)
                         Container(
+                          width: 350,
                           margin: const EdgeInsets.only(top: 10),
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
@@ -377,55 +461,110 @@ class _State extends ConsumerState<JobSeekerUpdateProfile> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              const SizedBox(height: 10),
+
                               CustomTextField(
                                 hintText: "Job Title",
                                 hintWeight: FontWeight.w400,
                                 controller: expList[i][0],
                                 cursorColor: ElevateColor.black,
-                                underlineColor: Colors.transparent,
+                                contentPadding: const EdgeInsets.only(
+                                  bottom: 15,
+                                ),
+                                underlineColor: const Color.fromARGB(
+                                  131,
+                                  128,
+                                  128,
+                                  128,
+                                ),
                                 fontSize: 12,
                               ),
+
+                              const SizedBox(height: 25),
+
                               CustomTextField(
                                 hintText: "Company",
                                 hintWeight: FontWeight.w400,
                                 controller: expList[i][1],
                                 cursorColor: ElevateColor.black,
-                                underlineColor: Colors.transparent,
+                                contentPadding: const EdgeInsets.only(
+                                  bottom: 15,
+                                ),
+                                underlineColor: const Color.fromARGB(
+                                  131,
+                                  128,
+                                  128,
+                                  128,
+                                ),
                                 fontSize: 12,
                               ),
+
+                              const SizedBox(height: 25),
+
                               CustomTextField(
                                 hintText: "From (e.g. Jan 2022)",
                                 hintWeight: FontWeight.w400,
                                 controller: expList[i][2],
                                 cursorColor: ElevateColor.black,
-                                underlineColor: Colors.transparent,
+                                contentPadding: const EdgeInsets.only(
+                                  bottom: 15,
+                                ),
+                                underlineColor: const Color.fromARGB(
+                                  131,
+                                  128,
+                                  128,
+                                  128,
+                                ),
                                 fontSize: 12,
                               ),
+
+                              const SizedBox(height: 25),
+
                               CustomTextField(
                                 hintText: "To (e.g. Present)",
                                 hintWeight: FontWeight.w400,
                                 controller: expList[i][3],
                                 cursorColor: ElevateColor.black,
-                                underlineColor: Colors.transparent,
+                                contentPadding: const EdgeInsets.only(
+                                  bottom: 15,
+                                ),
+                                underlineColor: const Color.fromARGB(
+                                  131,
+                                  128,
+                                  128,
+                                  128,
+                                ),
                                 fontSize: 12,
                               ),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: GestureDetector(
-                                  onTap: () =>
-                                      setState(() => expList.removeAt(i)),
-                                  child: const Icon(
-                                    Icons.delete_outline,
-                                    size: 18,
-                                    color: Colors.redAccent,
-                                  ),
+
+                              const SizedBox(height: 25),
+
+                              IconTextButtonGradient(
+                                onTap: () =>
+                                    setState(() => expList.removeAt(i)),
+                                text: "Delete",
+                                width: 350,
+                                textColor: Colors.white,
+                                iconColor: Colors.white,
+                                iconData: Icons.delete,
+                                iconSize: 13,
+                                textSize: 10,
+                                height: 40,
+                                startColor: const Color.fromARGB(
+                                  255,
+                                  136,
+                                  136,
+                                  136,
                                 ),
+                                endColor: Colors.black,
                               ),
                             ],
                           ),
                         ),
-                      const SizedBox(height: 30),
+
+                      const SizedBox(height: 50),
 
                       // Buttons
                       isLoading
@@ -434,15 +573,21 @@ class _State extends ConsumerState<JobSeekerUpdateProfile> {
                               text: "Update",
                               height: 50,
                               textSize: 14,
-                              textWeight: FontWeight.w400,
                               borderRadius: 50,
+                              width: 350,
+                              textWeight: FontWeight.w400,
                               onTap: () async {
-                                final success = await ref
-                                    .read(authProvider.notifier)
-                                    .updateProfile(
-                                      name: nameController.text,
-                                      shortDescription: aboutController.text,
-                                      experienceLevel: expLevelController.text,
+                                final notifier = ref.read(
+                                  authProvider.notifier,
+                                );
+
+                                final success = await notifier
+                                    .updateFullProfile(
+                                      name: nameController.text.trim(),
+                                      location: locationController.text.trim(),
+                                      about: aboutController.text.trim(),
+                                      experienceLevel: expLevelController.text
+                                          .trim(),
                                       educations: eduList
                                           .map(
                                             (e) => EducationModel(
@@ -463,12 +608,14 @@ class _State extends ConsumerState<JobSeekerUpdateProfile> {
                                           )
                                           .toList(),
                                     );
+
                                 if (success && mounted) Navigator.pop(context);
                               },
                             ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 30),
                       TexxtButton(
                         text: "Cancel",
+                        width: 350,
                         height: 50,
                         textSize: 14,
                         textWeight: FontWeight.w400,
