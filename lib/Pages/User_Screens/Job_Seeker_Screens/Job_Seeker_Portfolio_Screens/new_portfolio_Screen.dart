@@ -1,11 +1,29 @@
-import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
-import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Custom_Widgets/Buttons/contain_icon_text_button.dart';
+import 'package:elevate_app/Custom_Widgets/Buttons/text_button_gradient.dart';
+import 'package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart';
+import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
+import 'package:elevate_app/Custom_Widgets/Test_Fields/custom_Text_Field.dart';
+import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 
-class NewPortfolioScreen extends StatelessWidget {
+class NewPortfolioScreen extends StatefulWidget {
   const NewPortfolioScreen({super.key});
+
+  @override
+  State<NewPortfolioScreen> createState() => _NewPortfolioScreenState();
+}
+
+class _NewPortfolioScreenState extends State<NewPortfolioScreen> {
+  final TextEditingController titleController = TextEditingController();
+  final TextEditingController descriptionController = TextEditingController();
+
+  @override
+  void dispose() {
+    titleController.dispose();
+    descriptionController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -13,7 +31,10 @@ class NewPortfolioScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFF5F5F5),
       body: Column(
         children: [
-          ElevateHeader(),
+          ElevateHeader(
+            title: "Portfolio Project",
+            subTitle: "Add new project",
+          ),
           Expanded(
             child: SingleChildScrollView(
               child: Padding(
@@ -32,7 +53,6 @@ class NewPortfolioScreen extends StatelessWidget {
 
                     const SizedBox(height: 16),
 
-                    // Image Upload Box
                     Container(
                       height: 120,
                       width: 140,
@@ -49,25 +69,21 @@ class NewPortfolioScreen extends StatelessWidget {
 
                     const SizedBox(height: 30),
 
-                    // Title Field
-                    const CustomText(
-                      text: "Title",
-                      fontSize: 13,
-                      color: Colors.grey,
+                    CustomTextField(
+                      controller: titleController,
+                      hintText: "Title",
+                      cursorColor: Colors.black,
+                      underlineColor: Colors.grey,
                     ),
-                    const SizedBox(height: 6),
-                    const Divider(thickness: 1),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 40),
 
-                    // Description Field
-                    const CustomText(
-                      text: "Description",
-                      fontSize: 13,
-                      color: Colors.grey,
+                    CustomTextField(
+                      controller: descriptionController,
+                      hintText: "Description",
+                      cursorColor: Colors.black,
+                      underlineColor: Colors.grey,
                     ),
-                    const SizedBox(height: 6),
-                    const Divider(thickness: 1),
 
                     const SizedBox(height: 25),
 
@@ -80,47 +96,42 @@ class NewPortfolioScreen extends StatelessWidget {
 
                     const SizedBox(height: 12),
 
-                    // Add Files Button (YOUR WIDGET)
                     ContainIconTextButton(text: "Add Files", onTap: () {}),
 
                     const SizedBox(height: 40),
 
-                    // ADD PROJECT BUTTON
-                    GestureDetector(
-                      onTap: () {},
-                      child: Container(
-                        height: 55,
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(30),
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF5A5A5A), Color(0xFF000000)],
-                          ),
-                        ),
-                        alignment: Alignment.center,
-                        child: const CustomText(
-                          text: "ADD PROJECT",
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
+                    TextButtonGradient(
+                      text: "ADD PROJECT",
+                      height: 50,
+                      textSize: 14,
+                      textColor: ElevateColor.white,
+                      textWeight: FontWeight.w400,
+                      borderRadius: 50,
+                      borderColor: ElevateColor.gray,
+                      borderWidth: 1,
+                      onTap: () {
+                        Navigator.pop(context);
+                      },
                     ),
 
-                    const SizedBox(height: 30),
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: const Center(
-                        child: CustomText(
-                          text: "Back",
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.grey,
-                        ),
-                      ),
+                    const SizedBox(height: 35),
+
+                    TexxtButton(
+                      text: "Back",
+                      height: 50,
+                      textSize: 14,
+                      backgroundColor: Colors.white,
+                      textColor: Colors.black,
+                      borderColor: Colors.black,
+                      borderWidth: 1,
+                      textWeight: FontWeight.w400,
+                      borderRadius: 50,
+                      onTap: () {
+                        Navigator.pop(context);
+                      },
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 40),
                   ],
                 ),
               ),

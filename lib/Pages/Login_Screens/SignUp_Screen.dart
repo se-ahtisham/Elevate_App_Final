@@ -342,6 +342,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                           SlideLeftRoute(page: const LoginScreen()),
                         ),
                       ),
+                      SizedBox(height: 50),
                     ],
                   ),
                 ),

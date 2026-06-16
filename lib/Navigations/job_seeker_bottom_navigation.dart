@@ -72,73 +72,74 @@ class _JobSeekerBottomNavigationState extends State<JobSeekerBottomNavigation> {
 
   @override
   Widget build(BuildContext context) {
+    final bool isKeyboardOpen = View.of(context).viewInsets.bottom > 0;
+
     return Scaffold(
       backgroundColor: Colors.white,
-
+      resizeToAvoidBottomInset: true,
       body: IndexedStack(index: currentIndex, children: screens),
 
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.only(left: 20, right: 20, bottom: 30),
-        child: Container(
-          height: 70,
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: ElevateColor.gray),
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(30),
-                blurRadius: 10,
-                spreadRadius: 2,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
+      bottomNavigationBar: isKeyboardOpen
+          ? null
+          : Padding(
+              padding: const EdgeInsets.only(left: 20, right: 20, bottom: 30),
+              child: Container(
+                height: 70,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(color: ElevateColor.gray),
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(30),
+                      blurRadius: 10,
+                      spreadRadius: 2,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: List.generate(navItems.length, (i) {
+                    final item = navItems[i];
+                    final bool selected = currentIndex == i;
 
-          child: Row(
-            children: List.generate(navItems.length, (i) {
-              final item = navItems[i];
-              final bool selected = currentIndex == i;
-
-              return Expanded(
-                child: InkWell(
-                  onTap: () {
-                    if (currentIndex == i) return;
-                    setState(() => currentIndex = i);
-                  },
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      AnimatedScale(
-                        scale: selected ? 1.2 : 1.0,
-                        duration: const Duration(milliseconds: 200),
-                        child: SvgPicture.asset(
-                          item['icon']!,
-                          height: 22,
-                          colorFilter: ColorFilter.mode(
-                            selected ? Colors.black : Colors.grey,
-                            BlendMode.srcIn,
-                          ),
+                    return Expanded(
+                      child: InkWell(
+                        onTap: () {
+                          if (currentIndex == i) return;
+                          setState(() => currentIndex = i);
+                        },
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            AnimatedScale(
+                              scale: selected ? 1.2 : 1.0,
+                              duration: const Duration(milliseconds: 200),
+                              child: SvgPicture.asset(
+                                item['icon']!,
+                                height: 22,
+                                colorFilter: ColorFilter.mode(
+                                  selected ? Colors.black : Colors.grey,
+                                  BlendMode.srcIn,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            if (selected)
+                              CustomText(
+                                text: item['label']!,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                              ),
+                          ],
                         ),
                       ),
-
-                      const SizedBox(height: 4),
-
-                      if (selected)
-                        CustomText(
-                          text: item['label']!,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                        ),
-                    ],
-                  ),
+                    );
+                  }),
                 ),
-              );
-            }),
-          ),
-        ),
-      ),
+              ),
+            ),
     );
   }
 }

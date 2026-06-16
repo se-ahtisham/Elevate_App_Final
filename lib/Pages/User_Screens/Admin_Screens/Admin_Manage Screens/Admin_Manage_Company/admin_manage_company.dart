@@ -94,7 +94,7 @@ class AdminManageCompany extends StatelessWidget {
                         );
                       },
                     ),
-                     SizedBox(height: 35),
+                    SizedBox(height: 35),
                     TexxtButton(
                       text: "Delete Company",
                       height: 50,
@@ -121,14 +121,14 @@ class AdminManageCompany extends StatelessWidget {
                       textSize: 14,
                       textWeight: FontWeight.w400,
                       borderRadius: 50,
-                       onTap: () {
+                      onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => AdminManage(),
                           ),
                         );
-                        }
+                      },
                     ),
                   ],
                 ),

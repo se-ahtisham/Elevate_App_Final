@@ -72,7 +72,7 @@ class JobSeekerProfileScreen extends StatelessWidget {
                           textAlign: TextAlign.left,
                           lineHeight: 1.0,
                         ),
-                        SizedBox(width: 105),
+                        SizedBox(width: 70),
                         IconTextButton(
                           text: "Update Profile",
                           iconData: Icons.settings,
@@ -83,6 +83,9 @@ class JobSeekerProfileScreen extends StatelessWidget {
                           borderColor: ElevateColor.gray,
                           borderRadius: 50,
                           textSize: 12,
+                          height: 50,
+                          width: 150,
+
                           onTap: () {
                             Navigator.push(
                               context,

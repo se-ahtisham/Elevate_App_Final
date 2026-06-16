@@ -2,6 +2,7 @@ import 'package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/PortfolioCard.dart';
 import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Portfolio_Screens/job_seeker_portfolio_description_screen.dart';
+import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Portfolio_Screens/new_portfolio_Screen.dart';
 import 'package:flutter/material.dart';
 
 class PorfolioScreen extends StatefulWidget {
@@ -63,7 +64,14 @@ class _PorfolioScreenState extends State<PorfolioScreen> {
                   borderWidth: 1,
                   height: 50,
                   width: 150,
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => NewPortfolioScreen(),
+                      ),
+                    );
+                  },
                 ),
               ),
             ],

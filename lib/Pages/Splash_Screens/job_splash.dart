@@ -39,10 +39,10 @@ class JobSplash extends StatelessWidget {
                   ),
                 ),
                 SizedBox(height: 30),
-          
+
                 // Main Text
                 CustomText(
-                  text: "We are the best Job Portal Platform",
+                  text: "One Platform. Endless Career Opportunities.",
                   fontSize: 23,
                   fontWeight: FontWeight.w700,
                   textAlign: TextAlign.center,
@@ -50,10 +50,11 @@ class JobSplash extends StatelessWidget {
                   lineHeight: 1.1,
                 ),
                 SizedBox(height: 20),
-          
+
                 // Sub Text
                 CustomText(
-                  text: "Elevator is the best job portal platform that helps you find your dream job",
+                  text:
+                      "Elevator is the best job portal platform that helps you find your dream job",
                   fontSize: 13,
                   fontWeight: FontWeight.w300,
                   textAlign: TextAlign.center,
@@ -61,16 +62,19 @@ class JobSplash extends StatelessWidget {
                   lineHeight: 1.3,
                 ),
                 SizedBox(height: 30),
-          
+
                 // Button
                 TextButtonGradient(
                   text: "Next",
                   width: 330,
-                  height: 50, 
-                  borderRadius: 25, 
-                  
-                  onTap: ()  {
-                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context)=> TestSplash()));
+                  height: 50,
+                  borderRadius: 25,
+
+                  onTap: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => TestSplash()),
+                    );
                   },
                 ),
               ],

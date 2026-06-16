@@ -69,17 +69,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       CustomText(
-                        text:
-                            "Sign up and unlock a world of endless opportunities and growth.",
-                        fontSize: 14,
-                        color: Colors.grey,
-                        fontWeight: FontWeight.w400,
-                        textAlign: TextAlign.left,
-                      ),
-
-                      SizedBox(height: 40),
-
-                      CustomText(
                         text: "Email",
                         fontSize: 14,
                         color: Colors.black,

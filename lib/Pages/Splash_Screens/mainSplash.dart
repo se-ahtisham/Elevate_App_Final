@@ -1,14 +1,14 @@
-  import 'package:elevate_app/Pages/Splash_Screens/job_splash.dart';
+import 'package:elevate_app/Pages/Splash_Screens/job_splash.dart';
 import 'package:flutter/material.dart';
 
-class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+class Mainsplash extends StatefulWidget {
+  const Mainsplash({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  State<Mainsplash> createState() => _MainsplashState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
+class _MainsplashState extends State<Mainsplash>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
@@ -21,6 +21,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
+
 
     final int totalMs =
         _fadeInDuration.inMilliseconds +

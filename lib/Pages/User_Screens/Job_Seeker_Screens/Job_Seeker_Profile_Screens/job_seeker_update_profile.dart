@@ -422,7 +422,7 @@ class _State extends ConsumerState<JobSeekerUpdateProfile> {
                             fontWeight: FontWeight.w500,
                             textAlign: TextAlign.left,
                           ),
-                          const SizedBox(width: 190),
+                          const SizedBox(width: 185),
                           GestureDetector(
                             onTap: () => setState(
                               () => expList.add([
@@ -625,6 +625,7 @@ class _State extends ConsumerState<JobSeekerUpdateProfile> {
                         borderColor: Colors.black,
                         onTap: () => Navigator.pop(context),
                       ),
+                      const SizedBox(height: 30),
                     ],
                   ),
                 ),
