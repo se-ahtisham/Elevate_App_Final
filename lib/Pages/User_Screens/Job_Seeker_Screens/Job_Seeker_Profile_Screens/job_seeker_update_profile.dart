@@ -8,8 +8,8 @@ import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Custom_Widgets/User_Widgets/user_description.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/education_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_experience_model.dart';
-import 'package:elevate_app/Database/Online_Database/Provider/auth_notifier.dart';
-import 'package:elevate_app/Database/Online_Database/Provider/auth_provider.dart';
+import 'package:elevate_app/Database/Online_Database/auth_provider.dart';
+import 'package:elevate_app/Database/Online_Database/auth_provider.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -58,30 +58,21 @@ class _State extends ConsumerState<JobSeekerUpdateProfile> {
   }
 
   Future<void> loadUser() async {
-    final user = ref.read(authProvider).user;
-    if (user == null) return;
+    final notifier = ref.read(authProvider.notifier);
+    await notifier.loadCurrentUser();
 
-    final uid = user.userID;
+    final jobSeeker = ref.read(authProvider).jobSeeker;
+    if (jobSeeker == null || !mounted) return;
 
-    final userData = await db_firebaseservice.getUser(uid);
-    final js = await db_firebaseservice.getJobSeeker(uid);
+    nameController.text = jobSeeker.name;
+    locationController.text = jobSeeker.location;
+    aboutController.text = jobSeeker.about;
+    expLevelController.text = jobSeeker.experienceLevel;
 
-    if (!mounted) return;
-
-    // USER COLLECTION
-    nameController.text = userData?.name ?? '';
-    locationController.text = userData?.location ?? '';
-    aboutController.text = userData?.about ?? '';
-
-    // JOB SEEKER COLLECTION
-    expLevelController.text = js?.experienceLevel ?? '';
-
-    // CLEAR OLD DATA FIRST
     eduList.clear();
     expList.clear();
 
-    // EDUCATION
-    for (final edu in (js?.education ?? [])) {
+    for (final edu in jobSeeker.education) {
       eduList.add([
         TextEditingController(text: edu.year),
         TextEditingController(text: edu.title),
@@ -89,8 +80,7 @@ class _State extends ConsumerState<JobSeekerUpdateProfile> {
       ]);
     }
 
-    // EXPERIENCE
-    for (final exp in (js?.jobExperience ?? [])) {
+    for (final exp in jobSeeker.jobExperience) {
       expList.add([
         TextEditingController(text: exp.jobTitle),
         TextEditingController(text: exp.company),

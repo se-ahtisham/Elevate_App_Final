@@ -5,7 +5,7 @@ import 'package:elevate_app/Custom_Widgets/Drop_Down_Menu/custom_drop_down.dart'
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Test_Fields/custom_Text_Field.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
-import 'package:elevate_app/Database/Online_Database/Provider/auth_provider.dart';
+import 'package:elevate_app/Database/Online_Database/auth_provider.dart';
 import 'package:elevate_app/Pages/Login_Screens/login_screen.dart';
 import 'package:elevate_app/Pages/admin_main.dart';
 import 'package:elevate_app/Pages/company_main.dart';
@@ -247,7 +247,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                             );
                             return;
                           }
-                          await ref
+                          final success = await ref
                               .read(authProvider.notifier)
                               .resendVerificationEmail(
                                 emailController.text.trim(),
@@ -255,8 +255,13 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                               );
                           if (!mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Verification email sent.'),
+                            SnackBar(
+                              content: Text(
+                                success
+                                    ? 'Verification email sent.'
+                                    : ref.read(authProvider).errorMessage ??
+                                          'Failed to resend.',
+                              ),
                             ),
                           );
                         },

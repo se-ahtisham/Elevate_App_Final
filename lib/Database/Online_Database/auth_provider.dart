@@ -1,5 +1,7 @@
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/admin_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/company_model.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/education_model.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_experience_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_seeker_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/user_index_model.dart';
 import 'package:elevate_app/Database/Online_Database/auth_service.dart';
@@ -293,6 +295,76 @@ class AuthNotifier extends ChangeNotifier {
       return false;
     } catch (e) {
       errorMessage = 'Something went wrong. Please try again.';
+      isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> updateFullProfile({
+    required String name,
+    required String location,
+    required String about,
+    required String experienceLevel,
+    required List<EducationModel> educations,
+    required List<JobExperienceModel> experiences,
+  }) async {
+    isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+
+    try {
+      final uid = authService.currentUser?.uid;
+      if (uid == null) {
+        errorMessage = 'No user is logged in.';
+        isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      final newData = {
+        'name': name,
+        'location': location,
+        'about': about,
+        'experienceLevel': experienceLevel,
+        'education': educations.map((e) => e.toMap()).toList(),
+        'jobExperience': experiences.map((e) => e.toMap()).toList(),
+      };
+
+      await firebaseService.updateJobSeeker(uid, newData);
+      jobSeeker = await firebaseService.getJobSeeker(uid);
+
+      isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      errorMessage = 'Could not update profile. Please try again.';
+      isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> resendVerificationEmail(String email, String password) async {
+    isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+
+    try {
+      if (authService.currentUser == null) {
+        await authService.login(email, password);
+      }
+      await authService.sendEmailVerification();
+      isLoading = false;
+      notifyListeners();
+      return true;
+    } on FirebaseAuthException catch (e) {
+      errorMessage = e.message ?? 'Could not resend verification email.';
+      isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      errorMessage = 'Could not resend verification email.';
       isLoading = false;
       notifyListeners();
       return false;

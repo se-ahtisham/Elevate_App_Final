@@ -1,4 +1,6 @@
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/skill_model.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/education_model.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_experience_model.dart';
 
 class JobSeekerModel {
   final String jobSeekerID;
@@ -28,6 +30,8 @@ class JobSeekerModel {
   final List<String> careerGuidanceTasks; // taskIDs
   final List<String> earnedBadges; // badgeIDs
   final int totalBadgesEarned;
+  final List<EducationModel> education;
+  final List<JobExperienceModel> jobExperience;
 
   JobSeekerModel({
     required this.jobSeekerID,
@@ -55,6 +59,8 @@ class JobSeekerModel {
     this.careerGuidanceTasks = const [],
     this.earnedBadges = const [],
     this.totalBadgesEarned = 0,
+    this.education = const [],
+    this.jobExperience = const [],
   });
 
   Map<String, dynamic> toMap() {
@@ -84,6 +90,8 @@ class JobSeekerModel {
       'careerGuidanceTasks': careerGuidanceTasks,
       'earnedBadges': earnedBadges,
       'totalBadgesEarned': totalBadgesEarned,
+      'education': education.map((e) => e.toMap()).toList(),
+      'jobExperience': jobExperience.map((e) => e.toMap()).toList(),
     };
   }
 
@@ -118,6 +126,12 @@ class JobSeekerModel {
       careerGuidanceTasks: List<String>.from(map['careerGuidanceTasks'] ?? []),
       earnedBadges: List<String>.from(map['earnedBadges'] ?? []),
       totalBadgesEarned: map['totalBadgesEarned'] ?? 0,
+      education: (map['education'] as List<dynamic>? ?? [])
+          .map((m) => EducationModel.fromMap(Map<String, dynamic>.from(m)))
+          .toList(),
+      jobExperience: (map['jobExperience'] as List<dynamic>? ?? [])
+          .map((m) => JobExperienceModel.fromMap(Map<String, dynamic>.from(m)))
+          .toList(),
     );
   }
 }
