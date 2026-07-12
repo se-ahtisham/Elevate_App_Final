@@ -1,12 +1,13 @@
+
+
 class CareerGuidanceTaskModel {
-  final String taskID;
-  final String jobSeekerID;
+  final String taskID; 
+  final String jobSeekerID; /
   final String title; // learning topic
   final String description;
   final String priority; // High/Medium/Low
   final bool isCompleted;
-  final bool
-  aiGenerated; // true → Task created by AI system. false → Task created by the user.
+  final bool aiGenerated;
   final DateTime createdAt;
   final DateTime? completedAt;
 

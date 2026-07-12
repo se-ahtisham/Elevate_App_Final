@@ -1,6 +1,7 @@
 class CompanyModel {
   final String companyID;
   final String email;
+  final String password;
   final String userType; // 'Company'
   final String securityQuestion;
   final String securityAnswer;
@@ -14,7 +15,7 @@ class CompanyModel {
   final int activeJobs;
   final int followersCount;
   final List<String> employeeList; // employeeIDs
-  final List<String> companyWeaknessList; // AI-derived
+  final List<String> companyWeaknessList; // AI-derived,
   final List<String> companyStrengthList; // AI-derived
   final List<String> achievementList;
   final List<String> receivedApplications; // applicationIDs
@@ -23,6 +24,7 @@ class CompanyModel {
   CompanyModel({
     required this.companyID,
     this.email = '',
+    this.password = '',
     this.userType = 'Company',
     this.securityQuestion = '',
     this.securityAnswer = '',
@@ -47,6 +49,7 @@ class CompanyModel {
     return {
       'companyID': companyID,
       'email': email,
+      'password': password,
       'userType': userType,
       'securityQuestion': securityQuestion,
       'securityAnswer': securityAnswer,
@@ -72,6 +75,7 @@ class CompanyModel {
     return CompanyModel(
       companyID: map['companyID'] ?? '',
       email: map['email'] ?? '',
+      password: map['password'] ?? '',
       userType: map['userType'] ?? 'Company',
       securityQuestion: map['securityQuestion'] ?? '',
       securityAnswer: map['securityAnswer'] ?? '',

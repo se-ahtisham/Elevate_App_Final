@@ -1,6 +1,6 @@
 // UserIndexModel is a small model that tells your app what type of user has logged in, so it knows which Firestore collection to use.
-/*
-Without UserIndexModel
+
+/*Without UserIndexModel ❌
 Login
    ↓
 Check JobSeekers
@@ -13,8 +13,7 @@ Not found
    ↓
 Check Admins
 
-
-With UserIndexModel
+With UserIndexModel ✅
 Login
    ↓
 Check userIndex
@@ -24,7 +23,7 @@ userType = Company
 Open Companies collection */
 
 class UserIndexModel {
-  final String userID; // == Firebase Auth uid
+  final String userID;
   final String email;
   final String userType; // JobSeeker/Company/Admin
 

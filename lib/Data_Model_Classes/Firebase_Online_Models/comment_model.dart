@@ -1,3 +1,5 @@
+// comment_model.dart — matches "Comment" class in the diagram.
+
 class CommentModel {
   final String commentID;
   final String postID;

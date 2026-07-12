@@ -1,3 +1,5 @@
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/skill_model.dart';
+
 class JobSeekerModel {
   final String jobSeekerID;
   final String name;
@@ -11,6 +13,8 @@ class JobSeekerModel {
   final String experienceLevel; // Junior/Mid/Senior
   final int skillCount;
 
+  final List<SkillModel>
+  passedSkills; // full skill objects (name, image, etc.) for tests this seeker has passed
   final List<String> following;
   final List<String> followers;
   final List<String> followRequests; // requestIDs -> FollowRequestModel
@@ -37,6 +41,7 @@ class JobSeekerModel {
     this.shortDescription = '',
     this.experienceLevel = 'Junior',
     this.skillCount = 0,
+    this.passedSkills = const [],
     this.following = const [],
     this.followers = const [],
     this.followRequests = const [],
@@ -57,6 +62,7 @@ class JobSeekerModel {
       'jobSeekerID': jobSeekerID,
       'name': name,
       'email': email,
+      'password': password, // Added
       'userType': userType,
       'profilePic': profilePic,
       'location': location,
@@ -64,6 +70,7 @@ class JobSeekerModel {
       'shortDescription': shortDescription,
       'experienceLevel': experienceLevel,
       'skillCount': skillCount,
+      'passedSkills': passedSkills.map((s) => s.toMap()).toList(),
       'following': following,
       'followers': followers,
       'followRequests': followRequests,
@@ -85,6 +92,7 @@ class JobSeekerModel {
       jobSeekerID: map['jobSeekerID'] ?? '',
       name: map['name'] ?? '',
       email: map['email'] ?? '',
+      password: map['password'] ?? '', // Added
       userType: map['userType'] ?? 'JobSeeker',
       profilePic: map['profilePic'] ?? '',
       location: map['location'] ?? '',
@@ -92,6 +100,9 @@ class JobSeekerModel {
       shortDescription: map['shortDescription'] ?? '',
       experienceLevel: map['experienceLevel'] ?? 'Junior',
       skillCount: map['skillCount'] ?? 0,
+      passedSkills: (map['passedSkills'] as List<dynamic>? ?? [])
+          .map((m) => SkillModel.fromMap(Map<String, dynamic>.from(m)))
+          .toList(),
       following: List<String>.from(map['following'] ?? []),
       followers: List<String>.from(map['followers'] ?? []),
       followRequests: List<String>.from(map['followRequests'] ?? []),
@@ -107,56 +118,6 @@ class JobSeekerModel {
       careerGuidanceTasks: List<String>.from(map['careerGuidanceTasks'] ?? []),
       earnedBadges: List<String>.from(map['earnedBadges'] ?? []),
       totalBadgesEarned: map['totalBadgesEarned'] ?? 0,
-    );
-  }
-
-  JobSeekerModel copyWith({
-    String? name,
-    String? profilePic,
-    String? location,
-    String? about,
-    String? shortDescription,
-    String? experienceLevel,
-    int? skillCount,
-    List<String>? following,
-    List<String>? followers,
-    List<String>? followRequests,
-    List<String>? followedCompanies,
-    List<String>? postList,
-    List<String>? portfolio,
-    List<String>? mySkillTestsResultList,
-    int? totalTestsTaken,
-    List<String>? appliedJobRequests,
-    List<String>? becomeEmployee,
-    List<String>? careerGuidanceTasks,
-    List<String>? earnedBadges,
-    int? totalBadgesEarned,
-  }) {
-    return JobSeekerModel(
-      jobSeekerID: jobSeekerID,
-      name: name ?? this.name,
-      email: email,
-      userType: userType,
-      profilePic: profilePic ?? this.profilePic,
-      location: location ?? this.location,
-      about: about ?? this.about,
-      shortDescription: shortDescription ?? this.shortDescription,
-      experienceLevel: experienceLevel ?? this.experienceLevel,
-      skillCount: skillCount ?? this.skillCount,
-      following: following ?? this.following,
-      followers: followers ?? this.followers,
-      followRequests: followRequests ?? this.followRequests,
-      followedCompanies: followedCompanies ?? this.followedCompanies,
-      postList: postList ?? this.postList,
-      portfolio: portfolio ?? this.portfolio,
-      mySkillTestsResultList:
-          mySkillTestsResultList ?? this.mySkillTestsResultList,
-      totalTestsTaken: totalTestsTaken ?? this.totalTestsTaken,
-      appliedJobRequests: appliedJobRequests ?? this.appliedJobRequests,
-      becomeEmployee: becomeEmployee ?? this.becomeEmployee,
-      careerGuidanceTasks: careerGuidanceTasks ?? this.careerGuidanceTasks,
-      earnedBadges: earnedBadges ?? this.earnedBadges,
-      totalBadgesEarned: totalBadgesEarned ?? this.totalBadgesEarned,
     );
   }
 }

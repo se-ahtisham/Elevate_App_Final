@@ -1,6 +1,8 @@
+
+
 class BadgeModel {
-  final String badgeID;
-  final String skillID;
+  final String badgeID; 
+  final String skillID; 
   final String badgeName;
   final String badgeLevel; // Bronze/Silver/Gold
   final double requiredScore; // 0-100

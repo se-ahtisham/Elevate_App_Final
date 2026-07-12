@@ -1,14 +1,11 @@
-// application_model.dart — matches "Applicants" class in the diagram.
-// Replaces the old job_application_model.dart.
-
 class ApplicationModel {
   final String applicationID;
   final String jobID;
   final String jobSeekerID;
-  final String companyID;
+  final String companyID; //
   final String status; // Pending/Accepted/Rejected
   final DateTime appliedAt;
-  final String coldEmail; // AI-generated cover/cold email,
+  final String coldEmail; // AI-generated (or manually written) cover/cold email
 
   ApplicationModel({
     required this.applicationID,

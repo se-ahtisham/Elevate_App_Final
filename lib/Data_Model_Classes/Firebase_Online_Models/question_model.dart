@@ -1,5 +1,3 @@
-// This will be used to save test as career guide prepare
-
 class QuestionModel {
   final String questionID;
   final String questionText;

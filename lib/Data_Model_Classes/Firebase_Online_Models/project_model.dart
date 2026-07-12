@@ -5,7 +5,7 @@ class ProjectModel {
   final String projectDescription;
   final String projectURL;
   final List<String> techStack;
-  final List<String> mediaFiles; // URLs (images, resume, certificates, etc.)
+  final List<String> mediaFiles; // URLs
   final DateTime createdAt;
 
   ProjectModel({

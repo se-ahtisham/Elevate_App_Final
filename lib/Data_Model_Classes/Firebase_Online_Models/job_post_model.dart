@@ -13,8 +13,7 @@ class JobPostModel {
   final List<String> applicants; // applicationIDs
   final bool isExternal;
   final String sourceUrl; // external apply link, '' for internal jobs
-  final bool
-  isClosed; // Indicates whether the job is still accepting applications.
+  final bool isClosed;
 
   JobPostModel({
     required this.jobID,

@@ -34,7 +34,7 @@ class SkillModel {
       skillImage: map['skillImage'] ?? '',
       category: map['category'] ?? '',
       createdAt: map['createdAt'] != null
-          ? DateTime.tryParse(map['createdAt'])
+          ? (DateTime.tryParse(map['createdAt']) ?? DateTime.now())
           : DateTime.now(),
     );
   }

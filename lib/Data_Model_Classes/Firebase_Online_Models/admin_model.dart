@@ -1,15 +1,15 @@
-// admin_model.dart — matches "Admin Panel" class in the diagram.
-
 class AdminModel {
-  final String adminID; // PK
+  final String adminID;
   final String name;
   final String email;
-  final String userType; // 'Admin'
+  final String password;
+  final String userType;
 
   AdminModel({
     required this.adminID,
     this.name = '',
     this.email = '',
+    this.password = '',
     this.userType = 'Admin',
   });
 
@@ -18,6 +18,7 @@ class AdminModel {
       'adminID': adminID,
       'name': name,
       'email': email,
+      'password': password,
       'userType': userType,
     };
   }
@@ -27,6 +28,7 @@ class AdminModel {
       adminID: map['adminID'] ?? '',
       name: map['name'] ?? '',
       email: map['email'] ?? '',
+      password: map['password'] ?? '',
       userType: map['userType'] ?? 'Admin',
     );
   }

@@ -1,13 +1,13 @@
 class PostModel {
   final String postID;
-  final String authorID; //  JobSeeker or Company ID
+  final String authorID;
   final String authorName;
   final String authorProfilePic;
   final String authorType; // JobSeeker/Company
   final String title;
   final String content;
   final int likes;
-  final List<String> likedByUserIDs; // needed so likePost() can be toggled
+  final List<String> likedByUserIDs;
   final int totalCommentCount;
   final DateTime createdAt;
 
