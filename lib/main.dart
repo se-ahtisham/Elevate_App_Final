@@ -9,8 +9,11 @@ import 'firebase_options.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await dotenv.load(fileName: ".env");
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // ✅ Load both at the same time — faster, no frame skipping
+  await Future.wait([
+    dotenv.load(fileName: ".env"),
+    Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform),
+  ]);
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -28,6 +31,9 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(debugShowCheckedModeBanner: false, home: Mainsplash());
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Mainsplash(), 
+    );
   }
 }
