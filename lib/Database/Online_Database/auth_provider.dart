@@ -34,7 +34,6 @@ class AuthNotifier extends ChangeNotifier {
   AdminModel? admin;
 
   // Sign up a new user.
-
   Future<bool> signUp({
     required String name,
     required String email,
@@ -95,22 +94,13 @@ class AuthNotifier extends ChangeNotifier {
           admin = newAdmin;
         }
       } catch (writeError) {
-        // Roll back the auth account so the person isn't left with a
-        // broken account that can never log in.
         try {
           await user.delete();
-        } catch (_) {
-          // If delete also fails (e.g. requires recent login), at least
-          // don't mask the original error.
-        }
+        } catch (_) {}
         rethrow;
       }
 
       this.userType = userType;
-
-      // Don't let a verification-email hiccup make a successful signup
-      // look like a failure — the account and profile docs already exist
-      // at this point, so we still return true either way.
       try {
         await authService.sendEmailVerification();
         successMessage = 'Account created! Please verify your email.';
@@ -124,7 +114,7 @@ class AuthNotifier extends ChangeNotifier {
       notifyListeners();
       return true;
     } on FirebaseAuthException catch (e) {
-      errorMessage = e.message ?? 'Something went wrong.';
+      errorMessage = formatAuthError(e);
       isLoading = false;
       notifyListeners();
       return false;
@@ -148,6 +138,15 @@ class AuthNotifier extends ChangeNotifier {
 
       if (user == null) {
         errorMessage = 'Login failed. Try again.';
+        isLoading = false;
+        notifyListeners();
+        return false;
+      }
+
+      await user.reload(); // refresh emailVerified in case it's stale
+      if (!user.emailVerified) {
+        await authService.logout();
+        errorMessage = 'Please verify your email before logging in.';
         isLoading = false;
         notifyListeners();
         return false;
@@ -178,7 +177,7 @@ class AuthNotifier extends ChangeNotifier {
       notifyListeners();
       return true;
     } on FirebaseAuthException catch (e) {
-      errorMessage = e.message ?? 'Something went wrong.';
+      errorMessage = formatAuthError(e);
       isLoading = false;
       notifyListeners();
       return false;
@@ -217,7 +216,7 @@ class AuthNotifier extends ChangeNotifier {
       notifyListeners();
       return true;
     } on FirebaseAuthException catch (e) {
-      errorMessage = e.message ?? 'Something went wrong.';
+      errorMessage = formatAuthError(e);
       isLoading = false;
       notifyListeners();
       return false;
@@ -249,7 +248,7 @@ class AuthNotifier extends ChangeNotifier {
       notifyListeners();
       return true;
     } on FirebaseAuthException catch (e) {
-      errorMessage = e.message ?? 'Something went wrong.';
+      errorMessage = formatAuthError(e);
       isLoading = false;
       notifyListeners();
       return false;
@@ -289,7 +288,7 @@ class AuthNotifier extends ChangeNotifier {
       notifyListeners();
       return true;
     } on FirebaseAuthException catch (e) {
-      errorMessage = e.message ?? 'Something went wrong.';
+      errorMessage = formatAuthError(e);
       isLoading = false;
       notifyListeners();
       return false;
@@ -359,7 +358,7 @@ class AuthNotifier extends ChangeNotifier {
       notifyListeners();
       return true;
     } on FirebaseAuthException catch (e) {
-      errorMessage = e.message ?? 'Could not resend verification email.';
+      errorMessage = formatAuthError(e);
       isLoading = false;
       notifyListeners();
       return false;
@@ -392,7 +391,7 @@ class AuthNotifier extends ChangeNotifier {
       notifyListeners();
       return true;
     } on FirebaseAuthException catch (e) {
-      errorMessage = e.message ?? 'Something went wrong.';
+      errorMessage = formatAuthError(e);
       isLoading = false;
       notifyListeners();
       return false;
@@ -433,5 +432,26 @@ class AuthNotifier extends ChangeNotifier {
     errorMessage = null;
     successMessage = null;
     notifyListeners();
+  }
+
+  // Maps Firebase auth errors to human-readable ones.
+  String formatAuthError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'invalid-credential':
+      case 'wrong-password':
+        return 'Incorrect email or password. Please try again.';
+      case 'user-not-found':
+        return 'No account found with this email.';
+      case 'email-already-in-use':
+        return 'This email is already in use by another account.';
+      case 'weak-password':
+        return 'The password is too weak. Please use a stronger password.';
+      case 'invalid-email':
+        return 'Please enter a valid email address.';
+      case 'too-many-requests':
+        return 'Too many login attempts. Please try again later.';
+      default:
+        return e.message ?? 'Something went wrong. Please try again.';
+    }
   }
 }

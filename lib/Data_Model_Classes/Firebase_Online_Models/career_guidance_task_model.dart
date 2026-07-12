@@ -1,8 +1,6 @@
-
-
 class CareerGuidanceTaskModel {
-  final String taskID; 
-  final String jobSeekerID; /
+  final String taskID;
+  final String jobSeekerID;
   final String title; // learning topic
   final String description;
   final String priority; // High/Medium/Low
