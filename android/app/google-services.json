@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "522315674299",
-    "project_id": "elevate-app-e488e",
-    "storage_bucket": "elevate-app-e488e.firebasestorage.app"
+    "project_number": "527002016051",
+    "project_id": "elevate-988ab",
+    "storage_bucket": "elevate-988ab.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:522315674299:android:687dbe760b9d197b522f9e",
+        "mobilesdk_app_id": "1:527002016051:android:fdb70e17995382f523c646",
         "android_client_info": {
           "package_name": "com.example.elevate_app"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBbA1KtzlT1Zz6sXoqNCCYcmVFfV4qISnw"
+          "current_key": "AIzaSyB70-cK8XdfP-XLNVmCpABfm2W0CnBzWjg"
         }
       ],
       "services": {

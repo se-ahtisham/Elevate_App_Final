@@ -41,47 +41,44 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDi9H8NpKrVSxMU3zjQz6rQ0eGStK_yN1g',
-    appId: '1:522315674299:web:c6fe0853ae6fd725522f9e',
-    messagingSenderId: '522315674299',
-    projectId: 'elevate-app-e488e',
-    authDomain: 'elevate-app-e488e.firebaseapp.com',
-    storageBucket: 'elevate-app-e488e.firebasestorage.app',
+    apiKey: 'AIzaSyCdKxOVOLhqByLTbTQQxW8Ae3m8hELBu-Q',
+    appId: '1:527002016051:web:5494599dbdb4f4dc23c646',
+    messagingSenderId: '527002016051',
+    projectId: 'elevate-988ab',
+    authDomain: 'elevate-988ab.firebaseapp.com',
+    storageBucket: 'elevate-988ab.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBbA1KtzlT1Zz6sXoqNCCYcmVFfV4qISnw',
-    appId: '1:522315674299:android:687dbe760b9d197b522f9e',
-    messagingSenderId: '522315674299',
-    projectId: 'elevate-app-e488e',
-    storageBucket: 'elevate-app-e488e.firebasestorage.app',
+    apiKey: 'AIzaSyB70-cK8XdfP-XLNVmCpABfm2W0CnBzWjg',
+    appId: '1:527002016051:android:fdb70e17995382f523c646',
+    messagingSenderId: '527002016051',
+    projectId: 'elevate-988ab',
+    storageBucket: 'elevate-988ab.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyA1aiteZhPeoKCEDRWsCZR9ZUKK5JtWvCc',
-    appId: '1:522315674299:ios:af0f0befe91858f4522f9e',
-    messagingSenderId: '522315674299',
-    projectId: 'elevate-app-e488e',
-    storageBucket: 'elevate-app-e488e.firebasestorage.app',
+    apiKey: 'AIzaSyA5KoAdaag1WZcFPsulPMHpNtu0CFAI58U',
+    appId: '1:527002016051:ios:ba33857a0b05150023c646',
+    messagingSenderId: '527002016051',
+    projectId: 'elevate-988ab',
+    storageBucket: 'elevate-988ab.firebasestorage.app',
     iosBundleId: 'com.example.elevateApp',
   );
-
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyA1aiteZhPeoKCEDRWsCZR9ZUKK5JtWvCc',
-    appId: '1:522315674299:ios:af0f0befe91858f4522f9e',
-    messagingSenderId: '522315674299',
-    projectId: 'elevate-app-e488e',
-    storageBucket: 'elevate-app-e488e.firebasestorage.app',
+    apiKey: 'AIzaSyA5KoAdaag1WZcFPsulPMHpNtu0CFAI58U',
+    appId: '1:527002016051:ios:ba33857a0b05150023c646',
+    messagingSenderId: '527002016051',
+    projectId: 'elevate-988ab',
+    storageBucket: 'elevate-988ab.firebasestorage.app',
     iosBundleId: 'com.example.elevateApp',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyDi9H8NpKrVSxMU3zjQz6rQ0eGStK_yN1g',
-    appId: '1:522315674299:web:955cd74e56f1b16f522f9e',
-    messagingSenderId: '522315674299',
-    projectId: 'elevate-app-e488e',
-    authDomain: 'elevate-app-e488e.firebaseapp.com',
-    storageBucket: 'elevate-app-e488e.firebasestorage.app',
+    apiKey: 'AIzaSyCdKxOVOLhqByLTbTQQxW8Ae3m8hELBu-Q',
+    appId: '1:527002016051:web:c7c42129d61f2c9923c646',
+    messagingSenderId: '527002016051',
+    projectId: 'elevate-988ab',
+    authDomain: 'elevate-988ab.firebaseapp.com',
+    storageBucket: 'elevate-988ab.firebasestorage.app',
   );
-
 }
