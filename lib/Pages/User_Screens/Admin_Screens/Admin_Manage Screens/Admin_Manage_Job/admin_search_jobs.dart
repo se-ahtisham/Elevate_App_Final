@@ -11,36 +11,6 @@ import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/*Scaffold
-├─ AnnotatedRegion<SystemUiOverlayStyle>
-│  └─ Column
-│     ├─ ElevateHeader
-│     │    ├─ title: "Manage"
-│     │    └─ subTitle: "Jobs"
-│     └─ Expanded
-│        └─ SingleChildScrollView
-│           └─ Column (padding: left 30, right 30, bottom 50)
-│              ├─ IconText ("Explore Jobs" + icon)
-│              ├─ SizedBox(height: 15)
-│              ├─ CustomSearchBar
-│              ├─ SizedBox(height: 10)
-│              ├─ SizedBox(height: 260)
-│              │    └─ SingleChildScrollView
-│              │         └─ Column
-│              │             ├─ jobWhiteBlackFullTile (Senior Flutter Developer)
-│              │             ├─ SizedBox(height: 10)
-│              │             ├─ jobWhiteBlackFullTile (...)
-│              │             └─ jobWhiteBlackFullTile (...)
-│              ├─ SizedBox(height: 10)
-│              ├─ CustomText ("More For You")
-│              ├─ SizedBox(height: 10)
-│              └─ SizedBox(height: 260)
-│                   └─ SingleChildScrollView
-│                        └─ Column
-│                            ├─ jobWhiteBlackFullTile (...)
-│                            ├─ SizedBox(height: 10)
-│                            ├─ jobWhiteBlackFullTile (...)
-│                            └─ jobWhiteBlackFullTile (...) */
 
 class AdminSearchJobs extends StatelessWidget {
   const AdminSearchJobs({super.key});

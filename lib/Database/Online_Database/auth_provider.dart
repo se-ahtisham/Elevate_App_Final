@@ -205,7 +205,7 @@ class AuthNotifier extends ChangeNotifier {
   // Send a password reset email.
   Future<bool> forgotPassword(String email) async {
     isLoading = true;
-    errorMessage = null;
+      errorMessage = null;
     successMessage = null;
     notifyListeners();
 
