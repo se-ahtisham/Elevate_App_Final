@@ -16,11 +16,10 @@ class AdminManageJobSeeker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      backgroundColor: const Color.fromARGB(255, 243, 243, 243),
-      body: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle.light,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Container(
+        color: const Color.fromARGB(255, 243, 243, 243),
         child: Column(
           children: [
             ElevateHeader(
@@ -94,7 +93,7 @@ class AdminManageJobSeeker extends StatelessWidget {
                         );
                       },
                     ),
-                     SizedBox(height: 35),
+                    SizedBox(height: 35),
                     TexxtButton(
                       text: "Delete Job Seeker",
                       height: 50,
@@ -121,14 +120,14 @@ class AdminManageJobSeeker extends StatelessWidget {
                       textSize: 14,
                       textWeight: FontWeight.w400,
                       borderRadius: 50,
-                       onTap: () {
+                      onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => AdminManage(),
                           ),
                         );
-                        }
+                      },
                     ),
                   ],
                 ),

@@ -17,11 +17,10 @@ class AdminManage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      backgroundColor: const Color.fromARGB(255, 243, 243, 243),
-      body: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle.light,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Container(
+        color: const Color.fromARGB(255, 243, 243, 243),
         child: Column(
           children: [
             ElevateHeader(
@@ -64,7 +63,6 @@ class AdminManage extends StatelessWidget {
                         tileHeight: 100,
                         lineHeight: 1,
                         firstContainerColor: ElevateColor.white,
-
                         onTap: () {
                           Navigator.push(
                             context,
@@ -150,7 +148,6 @@ class AdminManage extends StatelessWidget {
                           );
                         },
                       ),
-
                       SizedBox(height: 20),
                       ManageWhiteBlackFull(
                         titleText: 'Manage',

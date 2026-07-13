@@ -6,10 +6,11 @@ import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Test_Fields/custom_Text_Field.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Database/Online_Database/auth_provider.dart';
+import 'package:elevate_app/Navigations/admin_bottom_navigation.dart';
+import 'package:elevate_app/Navigations/company_bottom_navigation.dart';
+import 'package:elevate_app/Navigations/job_seeker_bottom_navigation.dart';
 import 'package:elevate_app/Pages/Login_Screens/login_screen.dart';
-import 'package:elevate_app/Pages/admin_main.dart';
 import 'package:elevate_app/Pages/company_main.dart';
-import 'package:elevate_app/Pages/job_Seeker_main.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -63,7 +64,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => JobSeekerMain(
+              builder: (_) => JobSeekerBottomNavigation(
                 niche: 'Flutter Developer',
                 experience: '2 Year',
               ),
@@ -72,12 +73,12 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         } else if (userType == 'Company') {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => CompanyMain()),
+            MaterialPageRoute(builder: (_) => CompanyBottomNavigation()),
           );
         } else if (userType == 'Admin') {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => AdminMain()),
+            MaterialPageRoute(builder: (_) => const AdminBottomNavigation()),
           );
         }
         return;
