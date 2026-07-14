@@ -146,36 +146,88 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       SizedBox(height: 30),
 
                       Center(
-                        child: TexxtButton(
-                          text: "Forget Password",
-                          textSize: 13,
-                          textColor: Colors.black,
-                          textWeight: FontWeight.w500,
-                          textAlign: TextAlign.center,
-                          backgroundColor: Colors.white,
-                          onTap: () async {
-                            if (emailController.text.trim().isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Please enter your email"),
-                                ),
-                              );
-                              return;
-                            }
-                            final success = await ref
-                                .read(authProvider.notifier)
-                                .forgotPassword(emailController.text.trim());
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  success
-                                      ? 'Password reset email sent. Check your inbox.'
-                                      : ref.read(authProvider).errorMessage ??
-                                            'Failed to send reset email.',
-                                ),
-                              ),
-                            );
-                          },
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            TexxtButton(
+                              text: "Forget Password",
+                              textSize: 13,
+                              textColor: Colors.black,
+                              textWeight: FontWeight.w500,
+                              textAlign: TextAlign.center,
+                              backgroundColor: Colors.white,
+                              onTap: () async {
+                                if (emailController.text.trim().isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text("Please enter your email"),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                final success = await ref
+                                    .read(authProvider.notifier)
+                                    .forgotPassword(
+                                      emailController.text.trim(),
+                                    );
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      success
+                                          ? 'Password reset email sent. Check your inbox.'
+                                          : ref
+                                                    .read(authProvider)
+                                                    .errorMessage ??
+                                                'Failed to send reset email.',
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            SizedBox(width: 10),
+                            Text("|"),
+                            SizedBox(width: 10),
+                            TexxtButton(
+                              text: "Resend Email",
+                              textSize: 13,
+                              textColor: const Color.fromARGB(255, 4, 103, 253),
+                              textWeight: FontWeight.w500,
+                              textAlign: TextAlign.center,
+                              backgroundColor: Colors.white,
+                              onTap: () async {
+                                if (emailController.text.trim().isEmpty ||
+                                    passwordController.text.trim().isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Enter email and password to resend.',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                final success = await ref
+                                    .read(authProvider.notifier)
+                                    .resendVerificationEmail(
+                                      emailController.text.trim(),
+                                      passwordController.text.trim(),
+                                    );
+                                if (!mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      success
+                                          ? 'Verification email sent.'
+                                          : ref
+                                                    .read(authProvider)
+                                                    .errorMessage ??
+                                                'Failed to resend.',
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
                         ),
                       ),
 

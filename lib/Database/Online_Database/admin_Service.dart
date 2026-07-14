@@ -25,13 +25,6 @@ class AdminService {
       );
       String uid = user.user!.uid;
 
-      // Save user index
-      await db.collection('userIndex').doc(uid).set({
-        'userID': uid,
-        'email': email,
-        'userType': 'JobSeeker',
-      });
-
       // Save JobSeeker data
       await db.collection('jobSeekers').doc(uid).set({
         'jobSeekerID': uid,

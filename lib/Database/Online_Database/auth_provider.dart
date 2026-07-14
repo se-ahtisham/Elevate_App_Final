@@ -3,7 +3,6 @@ import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/company_mo
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/education_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_experience_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_seeker_model.dart';
-import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/user_index_model.dart';
 import 'package:elevate_app/Database/Online_Database/admin_service.dart';
 import 'package:elevate_app/Database/Online_Database/auth_service.dart';
 import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
@@ -55,10 +54,6 @@ class AuthNotifier extends ChangeNotifier {
       }
 
       try {
-        await firebaseService.saveUserIndex(
-          UserIndexModel(userID: user.uid, email: email, userType: userType),
-        );
-
         if (userType == 'JobSeeker') {
           jobSeeker = JobSeekerModel(
             jobSeekerID: user.uid,
@@ -155,22 +150,26 @@ class AuthNotifier extends ChangeNotifier {
         return false;
       }
 
-      final index = await firebaseService.getUserIndex(user.uid);
-      if (index == null) {
-        await authService.logout();
-        errorMessage = 'Account record not found.';
-        isLoading = false;
-        notifyListeners();
-        return false;
-      }
-
-      userType = index.userType;
-      if (userType == 'JobSeeker') {
-        jobSeeker = await firebaseService.getJobSeeker(user.uid);
-      } else if (userType == 'Company') {
+      // Check which collection this uid belongs to instead of userIndex.
+      jobSeeker = await firebaseService.getJobSeeker(user.uid);
+      if (jobSeeker != null) {
+        userType = 'JobSeeker';
+      } else {
         company = await firebaseService.getCompany(user.uid);
-      } else if (userType == 'Admin') {
-        admin = await firebaseService.getAdmin(user.uid);
+        if (company != null) {
+          userType = 'Company';
+        } else {
+          admin = await firebaseService.getAdmin(user.uid);
+          if (admin != null) {
+            userType = 'Admin';
+          } else {
+            await authService.logout();
+            errorMessage = 'Account record not found.';
+            isLoading = false;
+            notifyListeners();
+            return false;
+          }
+        }
       }
 
       successMessage = 'Welcome back!';
@@ -453,19 +452,22 @@ class AuthNotifier extends ChangeNotifier {
     final currentUser = authService.currentUser;
     if (currentUser == null) return;
 
-    final index = await firebaseService.getUserIndex(currentUser.uid);
-    if (index == null) {
-      await authService.logout();
-      return;
-    }
-
-    userType = index.userType;
-    if (userType == 'JobSeeker') {
-      jobSeeker = await firebaseService.getJobSeeker(currentUser.uid);
-    } else if (userType == 'Company') {
+    jobSeeker = await firebaseService.getJobSeeker(currentUser.uid);
+    if (jobSeeker != null) {
+      userType = 'JobSeeker';
+    } else {
       company = await firebaseService.getCompany(currentUser.uid);
-    } else if (userType == 'Admin') {
-      admin = await firebaseService.getAdmin(currentUser.uid);
+      if (company != null) {
+        userType = 'Company';
+      } else {
+        admin = await firebaseService.getAdmin(currentUser.uid);
+        if (admin != null) {
+          userType = 'Admin';
+        } else {
+          await authService.logout();
+          return;
+        }
+      }
     }
     notifyListeners();
   }
