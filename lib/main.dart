@@ -1,5 +1,6 @@
-import 'package:elevate_app/Custom_Widgets/Messsage/message.dart';
+import 'package:elevate_app/Custom_Widgets/Message_Box/messageBox.dart';
 import 'package:elevate_app/Navigations/admin_bottom_navigation.dart';
+import 'package:elevate_app/Pages/Login_Screens/login_screen.dart';
 import 'package:elevate_app/Pages/Splash_Screens/mainSplash.dart';
 import 'package:elevate_app/Pages/User_Screens/Admin_Screens/Admin_Manage%20Screens/admin_manage.dart';
 import 'package:flutter/material.dart';
@@ -34,9 +35,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: Message(message: "Saved successfully"),
-    );
+    return MaterialApp(debugShowCheckedModeBanner: false, home: LoginScreen());
   }
 }

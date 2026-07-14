@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 
-class Message extends StatelessWidget {
+class Messagebox extends StatelessWidget {
   final String message;
   final VoidCallback? onOkTap;
 
-  const Message({super.key, required this.message, this.onOkTap});
+  const Messagebox({super.key, required this.message, this.onOkTap});
 
   @override
   Widget build(BuildContext context) {

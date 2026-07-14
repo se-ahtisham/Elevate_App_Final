@@ -4,18 +4,17 @@ import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/education_
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_experience_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_seeker_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/user_index_model.dart';
+import 'package:elevate_app/Database/Online_Database/admin_service.dart';
 import 'package:elevate_app/Database/Online_Database/auth_service.dart';
 import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// Lets other parts of the app listen for login/logout from Firebase directly.
 final authStateProvider = StreamProvider<User?>((ref) {
   return AuthService().authStateChanges;
 });
 
-// The main provider our screens will use.
 final authProvider = ChangeNotifierProvider<AuthNotifier>((ref) {
   return AuthNotifier();
 });
@@ -23,8 +22,8 @@ final authProvider = ChangeNotifierProvider<AuthNotifier>((ref) {
 class AuthNotifier extends ChangeNotifier {
   final AuthService authService = AuthService();
   final FirebaseService firebaseService = FirebaseService();
+  final AdminService adminService = AdminService();
 
-  // These are the values the UI will read and react to.
   bool isLoading = false;
   String? errorMessage;
   String? successMessage;
@@ -33,7 +32,6 @@ class AuthNotifier extends ChangeNotifier {
   CompanyModel? company;
   AdminModel? admin;
 
-  // Sign up a new user.
   Future<bool> signUp({
     required String name,
     required String email,
@@ -56,42 +54,35 @@ class AuthNotifier extends ChangeNotifier {
         return false;
       }
 
-      // Everything below can fail independently of auth creation.
       try {
-        final index = UserIndexModel(
-          userID: user.uid,
-          email: email,
-          userType: userType,
+        await firebaseService.saveUserIndex(
+          UserIndexModel(userID: user.uid, email: email, userType: userType),
         );
-        await firebaseService.saveUserIndex(index);
 
         if (userType == 'JobSeeker') {
-          final newJobSeeker = JobSeekerModel(
+          jobSeeker = JobSeekerModel(
             jobSeekerID: user.uid,
             name: name,
             email: email,
             password: password,
           );
-          await firebaseService.saveJobSeeker(newJobSeeker);
-          jobSeeker = newJobSeeker;
+          await firebaseService.saveJobSeeker(jobSeeker!);
         } else if (userType == 'Company') {
-          final newCompany = CompanyModel(
+          company = CompanyModel(
             companyID: user.uid,
             email: email,
             companyName: name,
             password: password,
           );
-          await firebaseService.saveCompany(newCompany);
-          company = newCompany;
+          await firebaseService.saveCompany(company!);
         } else if (userType == 'Admin') {
-          final newAdmin = AdminModel(
+          admin = AdminModel(
             adminID: user.uid,
             name: name,
             email: email,
             password: password,
           );
-          await firebaseService.saveAdmin(newAdmin);
-          admin = newAdmin;
+          await firebaseService.saveAdmin(admin!);
         }
       } catch (writeError) {
         try {
@@ -106,7 +97,7 @@ class AuthNotifier extends ChangeNotifier {
         successMessage = 'Account created! Please verify your email.';
       } catch (_) {
         successMessage =
-            'Account created! We couldn\'t send the verification email — '
+            "Account created! We couldn't send the verification email — "
             'you can resend it from your profile.';
       }
 
@@ -114,7 +105,20 @@ class AuthNotifier extends ChangeNotifier {
       notifyListeners();
       return true;
     } on FirebaseAuthException catch (e) {
-      errorMessage = formatAuthError(e);
+      switch (e.code) {
+        case 'email-already-in-use':
+          errorMessage = 'This email is already in use by another account.';
+          break;
+        case 'weak-password':
+          errorMessage =
+              'The password is too weak. Please use a stronger password.';
+          break;
+        case 'invalid-email':
+          errorMessage = 'Please enter a valid email address.';
+          break;
+        default:
+          errorMessage = e.message ?? 'Something went wrong. Please try again.';
+      }
       isLoading = false;
       notifyListeners();
       return false;
@@ -126,7 +130,6 @@ class AuthNotifier extends ChangeNotifier {
     }
   }
 
-  // Log an existing user in.
   Future<bool> login(String email, String password) async {
     isLoading = true;
     errorMessage = null;
@@ -143,7 +146,7 @@ class AuthNotifier extends ChangeNotifier {
         return false;
       }
 
-      await user.reload(); // refresh emailVerified in case it's stale
+      await user.reload();
       if (!user.emailVerified) {
         await authService.logout();
         errorMessage = 'Please verify your email before logging in.';
@@ -153,7 +156,6 @@ class AuthNotifier extends ChangeNotifier {
       }
 
       final index = await firebaseService.getUserIndex(user.uid);
-
       if (index == null) {
         await authService.logout();
         errorMessage = 'Account record not found.';
@@ -163,7 +165,6 @@ class AuthNotifier extends ChangeNotifier {
       }
 
       userType = index.userType;
-
       if (userType == 'JobSeeker') {
         jobSeeker = await firebaseService.getJobSeeker(user.uid);
       } else if (userType == 'Company') {
@@ -177,7 +178,20 @@ class AuthNotifier extends ChangeNotifier {
       notifyListeners();
       return true;
     } on FirebaseAuthException catch (e) {
-      errorMessage = formatAuthError(e);
+      switch (e.code) {
+        case 'invalid-credential':
+        case 'wrong-password':
+          errorMessage = 'Incorrect email or password. Please try again.';
+          break;
+        case 'user-not-found':
+          errorMessage = 'No account found with this email.';
+          break;
+        case 'too-many-requests':
+          errorMessage = 'Too many login attempts. Please try again later.';
+          break;
+        default:
+          errorMessage = e.message ?? 'Something went wrong. Please try again.';
+      }
       isLoading = false;
       notifyListeners();
       return false;
@@ -189,7 +203,6 @@ class AuthNotifier extends ChangeNotifier {
     }
   }
 
-  // Log the current user out and clear everything.
   Future<void> logout() async {
     await authService.logout();
     isLoading = false;
@@ -202,10 +215,9 @@ class AuthNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Send a password reset email.
   Future<bool> forgotPassword(String email) async {
     isLoading = true;
-      errorMessage = null;
+    errorMessage = null;
     successMessage = null;
     notifyListeners();
 
@@ -216,7 +228,16 @@ class AuthNotifier extends ChangeNotifier {
       notifyListeners();
       return true;
     } on FirebaseAuthException catch (e) {
-      errorMessage = formatAuthError(e);
+      switch (e.code) {
+        case 'user-not-found':
+          errorMessage = 'No account found with this email.';
+          break;
+        case 'invalid-email':
+          errorMessage = 'Please enter a valid email address.';
+          break;
+        default:
+          errorMessage = e.message ?? 'Something went wrong. Please try again.';
+      }
       isLoading = false;
       notifyListeners();
       return false;
@@ -228,7 +249,6 @@ class AuthNotifier extends ChangeNotifier {
     }
   }
 
-  // Change the logged-in user's password.
   Future<bool> changePassword({
     required String currentPassword,
     required String newPassword,
@@ -248,7 +268,18 @@ class AuthNotifier extends ChangeNotifier {
       notifyListeners();
       return true;
     } on FirebaseAuthException catch (e) {
-      errorMessage = formatAuthError(e);
+      switch (e.code) {
+        case 'wrong-password':
+        case 'invalid-credential':
+          errorMessage = 'Incorrect current password.';
+          break;
+        case 'weak-password':
+          errorMessage =
+              'The password is too weak. Please use a stronger password.';
+          break;
+        default:
+          errorMessage = e.message ?? 'Something went wrong. Please try again.';
+      }
       isLoading = false;
       notifyListeners();
       return false;
@@ -275,9 +306,7 @@ class AuthNotifier extends ChangeNotifier {
         return false;
       }
 
-      // Verify password + delete the login FIRST.
       await authService.deleteAccount(currentPassword);
-      // Only clean up Firestore data once we know the password was correct.
       await firebaseService.deleteUserCompletely(uid, type);
 
       userType = null;
@@ -288,7 +317,14 @@ class AuthNotifier extends ChangeNotifier {
       notifyListeners();
       return true;
     } on FirebaseAuthException catch (e) {
-      errorMessage = formatAuthError(e);
+      switch (e.code) {
+        case 'wrong-password':
+        case 'invalid-credential':
+          errorMessage = 'Incorrect password.';
+          break;
+        default:
+          errorMessage = e.message ?? 'Something went wrong. Please try again.';
+      }
       isLoading = false;
       notifyListeners();
       return false;
@@ -321,16 +357,14 @@ class AuthNotifier extends ChangeNotifier {
         return false;
       }
 
-      final newData = {
+      await firebaseService.updateJobSeeker(uid, {
         'name': name,
         'location': location,
         'about': about,
         'experienceLevel': experienceLevel,
         'education': educations.map((e) => e.toMap()).toList(),
         'jobExperience': experiences.map((e) => e.toMap()).toList(),
-      };
-
-      await firebaseService.updateJobSeeker(uid, newData);
+      });
       jobSeeker = await firebaseService.getJobSeeker(uid);
 
       isLoading = false;
@@ -358,7 +392,7 @@ class AuthNotifier extends ChangeNotifier {
       notifyListeners();
       return true;
     } on FirebaseAuthException catch (e) {
-      errorMessage = formatAuthError(e);
+      errorMessage = e.message ?? 'Something went wrong. Please try again.';
       isLoading = false;
       notifyListeners();
       return false;
@@ -370,7 +404,6 @@ class AuthNotifier extends ChangeNotifier {
     }
   }
 
-  // Change the logged-in user's email.
   Future<bool> updateEmail({
     required String currentPassword,
     required String newEmail,
@@ -391,7 +424,20 @@ class AuthNotifier extends ChangeNotifier {
       notifyListeners();
       return true;
     } on FirebaseAuthException catch (e) {
-      errorMessage = formatAuthError(e);
+      switch (e.code) {
+        case 'wrong-password':
+        case 'invalid-credential':
+          errorMessage = 'Incorrect password.';
+          break;
+        case 'email-already-in-use':
+          errorMessage = 'This email is already in use by another account.';
+          break;
+        case 'invalid-email':
+          errorMessage = 'Please enter a valid email address.';
+          break;
+        default:
+          errorMessage = e.message ?? 'Something went wrong. Please try again.';
+      }
       isLoading = false;
       notifyListeners();
       return false;
@@ -403,7 +449,6 @@ class AuthNotifier extends ChangeNotifier {
     }
   }
 
-  // Called on app startup to check if someone is already logged in.
   Future<void> loadCurrentUser() async {
     final currentUser = authService.currentUser;
     if (currentUser == null) return;
@@ -415,7 +460,6 @@ class AuthNotifier extends ChangeNotifier {
     }
 
     userType = index.userType;
-
     if (userType == 'JobSeeker') {
       jobSeeker = await firebaseService.getJobSeeker(currentUser.uid);
     } else if (userType == 'Company') {
@@ -423,35 +467,54 @@ class AuthNotifier extends ChangeNotifier {
     } else if (userType == 'Admin') {
       admin = await firebaseService.getAdmin(currentUser.uid);
     }
-
     notifyListeners();
   }
 
-  // Clear any error/success message (e.g. after showing a SnackBar).
-  void clearMessages() {
+  // Used by an admin to add a new JobSeeker account without logging
+  // themselves out. Wraps AdminService.createJobSeeker.
+  Future<bool> addJobSeekerByAdmin({
+    required String name,
+    required String email,
+    required String password,
+  }) async {
+    isLoading = true;
     errorMessage = null;
     successMessage = null;
     notifyListeners();
-  }
 
-  // Maps Firebase auth errors to human-readable ones.
-  String formatAuthError(FirebaseAuthException e) {
-    switch (e.code) {
-      case 'invalid-credential':
-      case 'wrong-password':
-        return 'Incorrect email or password. Please try again.';
-      case 'user-not-found':
-        return 'No account found with this email.';
-      case 'email-already-in-use':
-        return 'This email is already in use by another account.';
-      case 'weak-password':
-        return 'The password is too weak. Please use a stronger password.';
-      case 'invalid-email':
-        return 'Please enter a valid email address.';
-      case 'too-many-requests':
-        return 'Too many login attempts. Please try again later.';
-      default:
-        return e.message ?? 'Something went wrong. Please try again.';
+    try {
+      await adminService.createJobSeeker(
+        name: name,
+        email: email,
+        password: password,
+      );
+      successMessage = 'Account created successfully.';
+      isLoading = false;
+      notifyListeners();
+      return true;
+    } on FirebaseAuthException catch (e) {
+      switch (e.code) {
+        case 'email-already-in-use':
+          errorMessage = 'This email is already in use by another account.';
+          break;
+        case 'weak-password':
+          errorMessage =
+              'The password is too weak. Please use a stronger password.';
+          break;
+        case 'invalid-email':
+          errorMessage = 'Please enter a valid email address.';
+          break;
+        default:
+          errorMessage = e.message ?? 'Something went wrong. Please try again.';
+      }
+      isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      errorMessage = e.toString();
+      isLoading = false;
+      notifyListeners();
+      return false;
     }
   }
 }

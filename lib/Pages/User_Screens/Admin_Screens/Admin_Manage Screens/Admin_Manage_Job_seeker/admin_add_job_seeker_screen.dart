@@ -1,9 +1,12 @@
 import 'package:elevate_app/Custom_Widgets/Buttons/text_button_gradient.dart';
 import 'package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
+import 'package:elevate_app/Custom_Widgets/Message_Box/messageBox.dart';
 import 'package:elevate_app/Custom_Widgets/Test_Fields/custom_Text_Field.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
+import 'package:elevate_app/Database/Online_Database/admin_service.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -20,12 +23,88 @@ class _AdminAddJobSeekerScreenState extends State<AdminAddJobSeekerScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
+  final AdminService adminService = AdminService();
+  bool isLoading = false;
+
   @override
   void dispose() {
     nameController.dispose();
     emailController.dispose();
     passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> registerJobSeeker() async {
+    String name = nameController.text.trim();
+    String email = emailController.text.trim();
+    String password = passwordController.text.trim();
+
+    if (name.isEmpty || email.isEmpty || password.isEmpty) {
+      showDialog(
+        context: context,
+        builder: (_) => Messagebox(message: "Please fill in all fields."),
+      );
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      await adminService.createJobSeeker(
+        name: name,
+        email: email,
+        password: password,
+      );
+
+      setState(() {
+        isLoading = false;
+      });
+
+      showDialog(
+        context: context,
+        builder: (_) => Messagebox(
+          message: "Account created successfully.",
+          onOkTap: () {
+            Navigator.pop(context); // go back after Okay is tapped
+          },
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+
+      String error;
+      switch (e.code) {
+        case "email-already-in-use":
+          error = "Email already exists.";
+          break;
+        case "weak-password":
+          error = "Password is too weak.";
+          break;
+        case "invalid-email":
+          error = "Invalid email address.";
+          break;
+        default:
+          error = e.message ?? "Something went wrong.";
+      }
+
+      showDialog(
+        context: context,
+        builder: (_) => Messagebox(message: error),
+      );
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+      });
+
+      showDialog(
+        context: context,
+        builder: (_) => Messagebox(message: e.toString()),
+      );
+    }
   }
 
   @override
@@ -111,31 +190,36 @@ class _AdminAddJobSeekerScreenState extends State<AdminAddJobSeekerScreen> {
                   ),
                   const SizedBox(height: 50),
 
-                  TextButtonGradient(
-                    text: "Register",
-                    height: 46,
-                    borderRadius: 10,
-                    textSize: 14,
-                    textWeight: FontWeight.w500,
-                    onTap: () {
-                      Navigator.pop(context);
-                    },
-                  ),
+                  isLoading
+                      ? const Center(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: CircularProgressIndicator(
+                              color: Colors.black,
+                            ),
+                          ),
+                        )
+                      : TextButtonGradient(
+                          text: "Register",
+                          height: 60,
+                          borderRadius: 50,
+                          textSize: 14,
+                          textWeight: FontWeight.w500,
+                          onTap: registerJobSeeker,
+                        ),
                   const SizedBox(height: 16),
 
                   TexxtButton(
                     text: "Cancel",
-                    height: 42,
-                    borderRadius: 8,
+                    height: 60,
+                    borderRadius: 38,
                     textSize: 13,
                     textWeight: FontWeight.w400,
                     textColor: ElevateColor.gray,
                     backgroundColor: const Color(0xFFF3F3F3),
                     borderColor: const Color(0xFF8B8B8B),
                     borderWidth: 1,
-                    onTap: () {
-                      Navigator.maybePop(context);
-                    },
+                    onTap: isLoading ? null : () => Navigator.maybePop(context),
                   ),
                   const SizedBox(height: 20),
                 ],
