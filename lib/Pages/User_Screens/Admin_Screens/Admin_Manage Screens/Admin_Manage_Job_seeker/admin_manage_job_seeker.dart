@@ -1,8 +1,7 @@
 import 'package:elevate_app/Custom_Widgets/Buttons/text_button_gradient.dart';
 import 'package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
-import 'package:elevate_app/Custom_Widgets/Tiles/manage_white_black_full.dart';
-import 'package:elevate_app/Pages/User_Screens/Admin_Screens/Admin_Manage%20Screens/Admin_Manage_Job_seeker/admin_add_job_seeker_screen.dart';
+import 'package:elevate_app/Pages/User_Screens/Admin_Screens/Admin_Manage%20Screens/Admin_Manage_Job_seeker/admin_add_job_seeker.dart';
 import 'package:elevate_app/Pages/User_Screens/Admin_Screens/Admin_Manage%20Screens/Admin_Manage_Job_seeker/admin_delete_job_seeker.dart';
 import 'package:elevate_app/Pages/User_Screens/Admin_Screens/Admin_Manage%20Screens/Admin_Manage_Job_seeker/admin_search_job_seekers.dart';
 import 'package:elevate_app/Pages/User_Screens/Admin_Screens/Admin_Manage%20Screens/Admin_Manage_Job_seeker/admin_update_job_seeker.dart';
@@ -47,7 +46,7 @@ class AdminManageJobSeeker extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => AdminAddJobSeekerScreen(),
+                            builder: (context) => AdminAddJobSeeker(),
                           ),
                         );
                       },
@@ -108,7 +107,7 @@ class AdminManageJobSeeker extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => AdminDeleteJobSeeker(),
+                            builder: (context) => AdminDeleteJobSeekers(),
                           ),
                         );
                       },

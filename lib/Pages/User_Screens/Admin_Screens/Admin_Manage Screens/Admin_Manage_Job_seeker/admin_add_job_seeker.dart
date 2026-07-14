@@ -10,15 +10,14 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-class AdminAddJobSeekerScreen extends StatefulWidget {
-  const AdminAddJobSeekerScreen({super.key});
+class AdminAddJobSeeker extends StatefulWidget {
+  const AdminAddJobSeeker({super.key});
 
   @override
-  State<AdminAddJobSeekerScreen> createState() =>
-      _AdminAddJobSeekerScreenState();
+  State<AdminAddJobSeeker> createState() => _AdminAddJobSeekerState();
 }
 
-class _AdminAddJobSeekerScreenState extends State<AdminAddJobSeekerScreen> {
+class _AdminAddJobSeekerState extends State<AdminAddJobSeeker> {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
@@ -67,7 +66,7 @@ class _AdminAddJobSeekerScreenState extends State<AdminAddJobSeekerScreen> {
         builder: (_) => Messagebox(
           message: "Account created successfully.",
           onOkTap: () {
-            Navigator.pop(context); // go back after Okay is tapped
+            Navigator.pop(context);
           },
         ),
       );

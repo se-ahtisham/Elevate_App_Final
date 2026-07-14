@@ -3,55 +3,93 @@ import 'package:elevate_app/Custom_Widgets/Search_Bar/custom_search_bar.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Custom_Widgets/Text/icon_text.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/experience_white_black_full.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_seeker_model.dart';
+import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
+import 'package:elevate_app/Pages/User_Screens/Admin_Screens/Admin_Manage%20Screens/Admin_Manage_Job_seeker/admin_view_job_seeker.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/*Scaffold
-└── AnnotatedRegion<SystemUiOverlayStyle>
-    └── Column
-        ├── ElevateHeader
-        │    ├── title: "Manage"
-        │    └── subTitle: "Job Seekers"
-        └── Expanded
-            └── SingleChildScrollView
-                    └── Column (crossAxisAlignment: start)
-                        ├── CustomSearchBar
-                        ├── SizedBox (height:260)
-                        │   └── SingleChildScrollView
-                        │       └── Column
-                        │           ├── ExperienceWhiteBlackFull
-                        ├── CustomText ("More For You")
-                        └── SizedBox (height:260)
-                            └── SingleChildScrollView
-                                └── Column
-                                    ├── ExperienceWhiteBlackFull */
-
-class AdminSearchJobSeekers extends StatelessWidget {
+class AdminSearchJobSeekers extends StatefulWidget {
   const AdminSearchJobSeekers({super.key});
+
+  @override
+  State<AdminSearchJobSeekers> createState() => _AdminSearchJobSeekersState();
+}
+
+class _AdminSearchJobSeekersState extends State<AdminSearchJobSeekers> {
+  final FirebaseService firebaseService = FirebaseService();
+  final TextEditingController searchController = TextEditingController();
+
+  List<JobSeekerModel> allJobSeekers = [];
+  List<JobSeekerModel> visibleJobSeekers = [];
+
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    loadAllJobSeekers();
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> loadAllJobSeekers() async {
+    setState(() => isLoading = true);
+
+    allJobSeekers = await firebaseService.listAllJobSeekers();
+
+    setState(() {
+      visibleJobSeekers = allJobSeekers;
+      isLoading = false;
+    });
+  }
+
+  void onSearchChanged(String query) {
+    query = query.toLowerCase();
+
+    setState(() {
+      visibleJobSeekers = allJobSeekers.where((jobSeeker) {
+        return jobSeeker.name.toLowerCase().contains(query);
+      }).toList();
+    });
+  }
+
+  // Opens the full profile view for the tapped job seeker.
+  void openProfile(JobSeekerModel seeker) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => AdminViewJobSeeker(jobSeeker: seeker)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       extendBodyBehindAppBar: true,
-      backgroundColor: const Color.fromARGB(255, 243, 243, 243),
+      backgroundColor: const Color(0xFFF3F3F3),
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.light,
         child: Column(
           children: [
-            ElevateHeader(
+            const ElevateHeader(
               title: "Manage",
               subTitle: "Job Seekers",
               titleSize: 40,
               subtitleSize: 25,
             ),
+
             Expanded(
               child: SingleChildScrollView(
-                padding: EdgeInsets.only(left: 30, right: 30, bottom: 50),
+                padding: const EdgeInsets.fromLTRB(30, 0, 30, 50),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    IconText(
+                    const IconText(
                       text: "Explore Profiles",
                       iconData: Icons.people_alt_outlined,
                       textSize: 20,
@@ -59,135 +97,64 @@ class AdminSearchJobSeekers extends StatelessWidget {
                       iconSize: 25,
                       iconTextSpacing: 10,
                     ),
-                    SizedBox(height: 15),
+
+                    const SizedBox(height: 15),
+
                     CustomSearchBar(
-                      hintText: "Muhammad Ahtisham",
+                      hintText: "Search by email",
                       backgroundColor: ElevateColor.white,
                       width: 380,
                       height: 60,
                       textSize: 15,
                       iconSize: 30,
+                      controller: searchController,
+                      onChanged: onSearchChanged,
                     ),
-                    SizedBox(height: 10),
-                    // Single child view for search out profiles with 150 height
-                    SizedBox(
-                      height: 260,
-                      child: SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            SizedBox(height: 20),
-                            ExperienceWhiteBlackFull(
-                              imageURL:
-                                  "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg",
-                              name: "Muhaamad Ahtisham",
-                              shortDescription: "Flutter Developer",
-                              experience: "2-5 Experience",
-                              firstContainerWidth: 270,
-                              experienceBoxWidth: 240,
-                              onTap: null,
-                            ),
-                            SizedBox(height: 10),
-                            ExperienceWhiteBlackFull(
-                              imageURL:
-                                  "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg",
-                              name: "Muhaamad Ahtisham",
-                              shortDescription: "Flutter Developer",
-                              experience: "2-5 Experience",
-                              firstContainerWidth: 270,
-                              experienceBoxWidth: 240,
-                              onTap: null,
-                            ),
-                            SizedBox(height: 10),
-                            ExperienceWhiteBlackFull(
-                              imageURL:
-                                  "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg",
-                              name: "Muhaamad Ahtisham",
-                              shortDescription: "Flutter Developer",
-                              experience: "2-5 Experience",
-                              firstContainerWidth: 270,
-                              experienceBoxWidth: 240,
-                              onTap: null,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 10),
-                    CustomText(
-                      text: "More For You",
-                      fontSize: 20,
-                      color: ElevateColor.gray,
-                      fontWeight: FontWeight.w700,
-                      textAlign: TextAlign.left,
-                    ),
-                    SizedBox(height: 10),
 
-                    // Single child view for rest all Profile
-                    SizedBox(
-                      height: 260,
-                      child: SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            SizedBox(height: 20),
-                            ExperienceWhiteBlackFull(
-                              imageURL:
-                                  "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg",
-                              name: "Muhaamad Ahtisham",
-                              shortDescription: "Flutter Developer",
-                              experience: "2-5 Experience",
-                              firstContainerWidth: 270,
-                              experienceBoxWidth: 240,
-                              onTap: null,
-                            ),
-                            SizedBox(height: 10),
-                            ExperienceWhiteBlackFull(
-                              imageURL:
-                                  "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg",
-                              name: "Muhaamad Ahtisham",
-                              shortDescription: "Flutter Developer",
-                              experience: "2-5 Experience",
-                              firstContainerWidth: 270,
-                              experienceBoxWidth: 240,
-                              onTap: null,
-                            ),
-                            SizedBox(height: 10),
-                            ExperienceWhiteBlackFull(
-                              imageURL:
-                                  "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg",
-                              name: "Muhaamad Ahtisham",
-                              shortDescription: "Flutter Developer",
-                              experience: "2-5 Experience",
-                              firstContainerWidth: 270,
-                              experienceBoxWidth: 240,
-                              onTap: null,
-                            ),
+                    const SizedBox(height: 20),
 
-                            SizedBox(height: 10),
-                            ExperienceWhiteBlackFull(
-                              imageURL:
-                                  "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg",
-                              name: "Muhaamad Ahtisham",
-                              shortDescription: "Flutter Developer",
-                              experience: "2-5 Experience",
-                              firstContainerWidth: 270,
-                              experienceBoxWidth: 240,
-                              onTap: null,
-                            ),
-                            SizedBox(height: 10),
-                            ExperienceWhiteBlackFull(
-                              imageURL:
-                                  "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg",
-                              name: "Muhaamad Ahtisham",
-                              shortDescription: "Flutter Developer",
-                              experience: "2-5 Experience",
-                              firstContainerWidth: 270,
-                              experienceBoxWidth: 240,
-                              onTap: null,
-                            ),
-                          ],
+                    if (isLoading)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 40),
+                          child: CircularProgressIndicator(),
                         ),
+                      )
+                    else if (visibleJobSeekers.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 40),
+                        child: Center(
+                          child: CustomText(
+                            text: "No job seekers found.",
+                            fontSize: 15,
+                            color: ElevateColor.gray,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      )
+                    else
+                      Column(
+                        children: visibleJobSeekers.map((seeker) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: ExperienceWhiteBlackFull(
+                              imageURL: seeker.profilePic.isNotEmpty
+                                  ? seeker.profilePic
+                                  : "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg",
+                              name: seeker.name,
+                              shortDescription: seeker.about.isNotEmpty
+                                  ? seeker.about
+                                  : "Job Seeker",
+                              experience: seeker.experienceLevel.isNotEmpty
+                                  ? seeker.experienceLevel
+                                  : "Not specified",
+                              firstContainerWidth: 270,
+                              experienceBoxWidth: 240,
+                              onTap: () => openProfile(seeker),
+                            ),
+                          );
+                        }).toList(),
                       ),
-                    ),
                   ],
                 ),
               ),

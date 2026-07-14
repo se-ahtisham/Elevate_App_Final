@@ -1018,4 +1018,16 @@ class FirebaseService {
         .get();
     return snap.docs.map((d) => ApplicationModel.fromMap(d.data())).toList();
   }
+
+
+  Future<JobSeekerModel?> getJobSeekerByEmail(String email) async {
+  final snap = await db
+      .collection('jobSeekers')
+      .where('email', isEqualTo: email)
+      .limit(1)
+      .get();
+ 
+  if (snap.docs.isEmpty) return null;
+  return JobSeekerModel.fromMap(snap.docs.first.data());
+}
 }

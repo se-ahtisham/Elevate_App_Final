@@ -18,6 +18,7 @@ class ExperienceWhiteBlackFull extends StatelessWidget {
   final String name;
   final String shortDescription;
   final String experience;
+  final IconData iconData; // now configurable — arrow, delete, etc.
   final double iconSize;
   final Color iconColor;
   final double circleSize;
@@ -38,6 +39,7 @@ class ExperienceWhiteBlackFull extends StatelessWidget {
     required this.shortDescription,
     this.experience = "No Experience",
 
+    this.iconData = Icons.arrow_outward,
     this.iconSize = 24,
     this.iconColor = Colors.black,
     this.circleSize = 40,
@@ -72,16 +74,16 @@ class ExperienceWhiteBlackFull extends StatelessWidget {
                 ),
                 SizedBox(height: 10),
                 CustomTextBox(
-                        text: experience,
-                        backgroundColor: const Color.fromARGB(92, 196, 196, 196),
-                        borderRadius: 50,
-                        textColor: const Color.fromARGB(255, 61, 61, 61),
-                        borderWidth: 0.8,
-                        borderColor: const Color.fromARGB(255, 190, 190, 190),
-                       width: experienceBoxWidth,
-                        textSize: 10,
-                        height: 30,
-                      ),
+                  text: experience,
+                  backgroundColor: const Color.fromARGB(92, 196, 196, 196),
+                  borderRadius: 50,
+                  textColor: const Color.fromARGB(255, 61, 61, 61),
+                  borderWidth: 0.8,
+                  borderColor: const Color.fromARGB(255, 190, 190, 190),
+                  width: experienceBoxWidth,
+                  textSize: 10,
+                  height: 30,
+                ),
               ],
             ),
           ),
@@ -100,7 +102,7 @@ class ExperienceWhiteBlackFull extends StatelessWidget {
           ),
           child: Center(
             child: CircleIconButton(
-              iconData: Icons.arrow_outward,
+              iconData: iconData,
               iconSize: iconSize,
               iconColor: iconColor,
               circleSize: circleSize,
