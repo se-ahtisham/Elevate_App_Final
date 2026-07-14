@@ -1,4 +1,3 @@
-import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/skill_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/education_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_experience_model.dart';
 
@@ -15,15 +14,16 @@ class JobSeekerModel {
   final String experienceLevel; // Junior/Mid/Senior
   final int skillCount;
 
-  final List<SkillModel>
-  passedSkills; // full skill objects (name, image, etc.) for tests this seeker has passed
+  final List<String>
+  passedResultIDs; // resultIDs of passed tests (see Result.testID -> Test.skillID for the skill link)
   final List<String> following;
   final List<String> followers;
   final List<String> followRequests; // requestIDs -> FollowRequestModel
   final List<String> followedCompanies;
   final List<String> postList; // postIDs
   final List<String> portfolio; // projectIDs
-  final List<String> mySkillTestsResultList; // resultIDs
+  final List<String>
+  mySkillTestsResultList; // resultIDs (all attempts, pass or fail)
   final int totalTestsTaken;
   final List<String> appliedJobRequests; // applicationIDs
   final List<String> becomeEmployee; // becomeEmployeeRequestIDs
@@ -45,7 +45,7 @@ class JobSeekerModel {
     this.shortDescription = '',
     this.experienceLevel = 'Junior',
     this.skillCount = 0,
-    this.passedSkills = const [],
+    this.passedResultIDs = const [],
     this.following = const [],
     this.followers = const [],
     this.followRequests = const [],
@@ -68,7 +68,7 @@ class JobSeekerModel {
       'jobSeekerID': jobSeekerID,
       'name': name,
       'email': email,
-      'password': password, // Added
+      'password': password,
       'userType': userType,
       'profilePic': profilePic,
       'location': location,
@@ -76,7 +76,7 @@ class JobSeekerModel {
       'shortDescription': shortDescription,
       'experienceLevel': experienceLevel,
       'skillCount': skillCount,
-      'passedSkills': passedSkills.map((s) => s.toMap()).toList(),
+      'passedResultIDs': passedResultIDs,
       'following': following,
       'followers': followers,
       'followRequests': followRequests,
@@ -100,7 +100,7 @@ class JobSeekerModel {
       jobSeekerID: map['jobSeekerID'] ?? '',
       name: map['name'] ?? '',
       email: map['email'] ?? '',
-      password: map['password'] ?? '', // Added
+      password: map['password'] ?? '',
       userType: map['userType'] ?? 'JobSeeker',
       profilePic: map['profilePic'] ?? '',
       location: map['location'] ?? '',
@@ -108,9 +108,7 @@ class JobSeekerModel {
       shortDescription: map['shortDescription'] ?? '',
       experienceLevel: map['experienceLevel'] ?? 'Junior',
       skillCount: map['skillCount'] ?? 0,
-      passedSkills: (map['passedSkills'] as List<dynamic>? ?? [])
-          .map((m) => SkillModel.fromMap(Map<String, dynamic>.from(m)))
-          .toList(),
+      passedResultIDs: List<String>.from(map['passedResultIDs'] ?? []),
       following: List<String>.from(map['following'] ?? []),
       followers: List<String>.from(map['followers'] ?? []),
       followRequests: List<String>.from(map['followRequests'] ?? []),

@@ -91,15 +91,9 @@ flutter:
     - lib/Resources/Images/Job_Image.png
     - lib/Resources/Images/Elevate_Large_Logo.png
     - lib/Resources/Images/Elevate_Logo.png
-    - lib/Resources/Images/Coding_Badges/Experienced/experience_easy.png
-    - lib/Resources/Images/Coding_Badges/Experienced/experience_hard.png
-    - lib/Resources/Images/Coding_Badges/Experienced/experience_medium.png
-    - lib/Resources/Images/Coding_Badges/Pure/pure_easy.png
-    - lib/Resources/Images/Coding_Badges/Pure/pure_hard.png
-    - lib/Resources/Images/Coding_Badges/Pure/pure_medium.png
-    - lib/Resources/Images/Coding_Badges/Vibe/vibe_easy.png
-    - lib/Resources/Images/Coding_Badges/Vibe/vibe_hard.png
-    - lib/Resources/Images/Coding_Badges/Vibe/vibe_medium.png
+    - lib/Resources/Images/Badges/gold.png
+    - lib/Resources/Images/Badges/silver.png
+    - lib/Resources/Images/Badges/bronze.png
     - lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg
     - lib/Resources/Images/Profile_Images/Company_Logo.jpg
     - lib/Resources/Images/mock.png

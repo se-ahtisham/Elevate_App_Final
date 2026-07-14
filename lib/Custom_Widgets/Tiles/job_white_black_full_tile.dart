@@ -5,27 +5,6 @@ import 'package:elevate_app/Resources/Colors/Gradient_Colors/gradient_colors.dar
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 
-
-/*jobWhiteBlackFullTile
-└── Row
-    ├── Container (Job Info Section)
-    │   └── Column
-    │       ├── CustomText (titleText)
-    │       ├── SizedBox
-    │       ├── CustomText (subtitleText)
-    │       ├── SizedBox
-    │       └── Row
-    │           ├── CustomTextBox (jobModeText)
-    │           ├── CustomTextBox (jobTypeText)
-    │           └── CustomTextBox (salaryText)
-    │
-    └── Container (Action Section)
-        └── Center
-            └── CircleIconButton */
-
-
-
-
 class JobWhiteBlackFullTile extends StatelessWidget {
   final String titleText;
   final double titleFontSize;
@@ -136,7 +115,7 @@ class JobWhiteBlackFullTile extends StatelessWidget {
                   SizedBox(width: sizedBetween),
                   CustomTextBox(
                     text: jobTypeText,
-                   backgroundColor: const Color.fromARGB(255, 231, 231, 231),
+                    backgroundColor: const Color.fromARGB(255, 231, 231, 231),
                     borderRadius: 50,
                     textSize: blockFontSize,
                     width: smallBoxWdith,

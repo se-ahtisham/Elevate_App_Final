@@ -1,32 +1,37 @@
-
-
 class BadgeModel {
-  final String badgeID; 
-  final String skillID; 
+  final String badgeID;
   final String badgeName;
   final String badgeLevel; // Bronze/Silver/Gold
-  final double requiredScore; // 0-100
+  final double minScore; // inclusive lower bound, e.g. 50, 60, 90
+  final double maxScore; // exclusive upper bound, except top tier is inclusive
   final String badgeImage; // URL
 
   BadgeModel({
     required this.badgeID,
-    required this.skillID,
     this.badgeName = '',
     this.badgeLevel = 'Bronze',
-    this.requiredScore = 0,
+    this.minScore = 0,
+    this.maxScore = 100,
     this.badgeImage = '',
   });
 
-  // "checkEligibility(score)" from the diagram — pure function, no DB call.
-  bool checkEligibility(double score) => score >= requiredScore;
+  // Half-open ranges (50-60, 60-90) so a boundary score like 60 only
+  // matches one badge; the top tier (90-100) is inclusive on both ends
+  // so a perfect 100 still qualifies.
+  bool checkEligibility(double score) {
+    if (maxScore >= 100) {
+      return score >= minScore && score <= maxScore;
+    }
+    return score >= minScore && score < maxScore;
+  }
 
   Map<String, dynamic> toMap() {
     return {
       'badgeID': badgeID,
-      'skillID': skillID,
       'badgeName': badgeName,
       'badgeLevel': badgeLevel,
-      'requiredScore': requiredScore,
+      'minScore': minScore,
+      'maxScore': maxScore,
       'badgeImage': badgeImage,
     };
   }
@@ -34,10 +39,10 @@ class BadgeModel {
   factory BadgeModel.fromMap(Map<String, dynamic> map) {
     return BadgeModel(
       badgeID: map['badgeID'] ?? '',
-      skillID: map['skillID'] ?? '',
       badgeName: map['badgeName'] ?? '',
       badgeLevel: map['badgeLevel'] ?? 'Bronze',
-      requiredScore: (map['requiredScore'] ?? 0).toDouble(),
+      minScore: (map['minScore'] ?? 0).toDouble(),
+      maxScore: (map['maxScore'] ?? 100).toDouble(),
       badgeImage: map['badgeImage'] ?? '',
     );
   }

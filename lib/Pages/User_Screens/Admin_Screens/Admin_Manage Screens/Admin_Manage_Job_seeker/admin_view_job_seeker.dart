@@ -41,7 +41,7 @@ class AdminViewJobSeeker extends StatelessWidget {
                     shortDescription: jobSeeker.about.isNotEmpty
                         ? jobSeeker.about
                         : "Job Seeker",
-                    skills: jobSeeker.passedSkills.length,
+                    skills: jobSeeker.passedResultIDs.length,
                     followers: jobSeeker.followers.length,
                     followings: jobSeeker.following.length,
                   ),

@@ -622,14 +622,14 @@ class FirebaseService {
     return snap.docs.map((d) => TestModel.fromMap(d.data())).toList();
   }
 
-  Future<BadgeModel?> getRelatedBadge(String skillID) async {
-    final snap = await db
-        .collection('badges')
-        .where('skillID', isEqualTo: skillID)
-        .limit(1)
-        .get();
-    if (snap.docs.isEmpty) return null;
-    return BadgeModel.fromMap(snap.docs.first.data());
+  Future<BadgeModel?> getEligibleBadgeForScore(double score) async {
+    final snap = await db.collection('badges').get();
+    final badges = snap.docs.map((d) => BadgeModel.fromMap(d.data())).toList();
+
+    for (final badge in badges) {
+      if (badge.checkEligibility(score)) return badge;
+    }
+    return null;
   }
 
   // Badge
@@ -721,8 +721,8 @@ class FirebaseService {
 
     String? badgeEarned;
     if (isPassed) {
-      final badge = await getRelatedBadge(test.skillID);
-      if (badge != null && badge.checkEligibility(score)) {
+      final badge = await getEligibleBadgeForScore(score);
+      if (badge != null) {
         badgeEarned = badge.badgeID;
         await awardBadgeToJobSeeker(badge.badgeID, jobSeekerID);
       }
@@ -745,6 +745,7 @@ class FirebaseService {
     await db.collection('jobSeekers').doc(jobSeekerID).update({
       'mySkillTestsResultList': FieldValue.arrayUnion([result.resultID]),
       'totalTestsTaken': FieldValue.increment(1),
+      if (isPassed) 'passedResultIDs': FieldValue.arrayUnion([result.resultID]),
     });
     return result;
   }
@@ -902,16 +903,41 @@ class FirebaseService {
     String? experienceLevel,
   }) async {
     final all = await listAllJobSeekers();
-    return all.where((s) {
+    final matches = <JobSeekerModel>[];
+
+    // Cache test lookups so repeated testIDs across seekers/results don't
+    // trigger duplicate Firestore reads.
+    final testCache = <String, TestModel?>{};
+    Future<TestModel?> cachedGetTest(String testID) async {
+      if (testCache.containsKey(testID)) return testCache[testID];
+      final test = await getTest(testID);
+      testCache[testID] = test;
+      return test;
+    }
+
+    for (final seeker in all) {
       final levelOk =
-          experienceLevel == null || s.experienceLevel == experienceLevel;
-      final skillsOk =
-          requiredSkillIDs.isEmpty ||
-          requiredSkillIDs.every(
-            (id) => s.passedSkills.any((skill) => skill.skillID == id),
-          );
-      return levelOk && skillsOk;
-    }).toList();
+          experienceLevel == null || seeker.experienceLevel == experienceLevel;
+      if (!levelOk) continue;
+
+      if (requiredSkillIDs.isEmpty) {
+        matches.add(seeker);
+        continue;
+      }
+
+      final passedSkillIDs = <String>{};
+      for (final resultID in seeker.passedResultIDs) {
+        final result = await getDetailedResult(resultID);
+        if (result == null) continue;
+        final test = await cachedGetTest(result.testID);
+        if (test != null) passedSkillIDs.add(test.skillID);
+      }
+
+      final skillsOk = requiredSkillIDs.every(passedSkillIDs.contains);
+      if (skillsOk) matches.add(seeker);
+    }
+
+    return matches;
   }
 
   Future<List<JobPostModel>> getJobsByFollowedCompanies(
@@ -1019,15 +1045,19 @@ class FirebaseService {
     return snap.docs.map((d) => ApplicationModel.fromMap(d.data())).toList();
   }
 
+  Future<List<BadgeModel>> listAllBadges() async {
+    final snap = await db.collection('badges').get();
+    return snap.docs.map((d) => BadgeModel.fromMap(d.data())).toList();
+  }
 
   Future<JobSeekerModel?> getJobSeekerByEmail(String email) async {
-  final snap = await db
-      .collection('jobSeekers')
-      .where('email', isEqualTo: email)
-      .limit(1)
-      .get();
- 
-  if (snap.docs.isEmpty) return null;
-  return JobSeekerModel.fromMap(snap.docs.first.data());
-}
+    final snap = await db
+        .collection('jobSeekers')
+        .where('email', isEqualTo: email)
+        .limit(1)
+        .get();
+
+    if (snap.docs.isEmpty) return null;
+    return JobSeekerModel.fromMap(snap.docs.first.data());
+  }
 }
