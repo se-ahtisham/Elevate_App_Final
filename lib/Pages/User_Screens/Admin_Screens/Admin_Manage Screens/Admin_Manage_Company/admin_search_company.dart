@@ -139,7 +139,7 @@ class _AdminSearchCompanyState extends State<AdminSearchCompany> {
                       const Center(
                         child: Padding(
                           padding: EdgeInsets.symmetric(vertical: 40),
-                          child: CircularProgressIndicator(),
+                          child: CircularProgressIndicator(color: Colors.black,),
                         ),
                       )
                     else if (visibleCompanies.isEmpty)

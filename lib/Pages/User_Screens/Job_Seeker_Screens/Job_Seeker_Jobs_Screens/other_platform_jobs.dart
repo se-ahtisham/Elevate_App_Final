@@ -444,7 +444,7 @@ class _OtherPlatformJobsState extends State<OtherPlatformJobs> {
                       child: hasError
                           ? _errorUI()
                           : loading
-                          ? const Center(child: CircularProgressIndicator())
+                          ? const Center(child: CircularProgressIndicator(color: Colors.black,))
                           : filtered.isEmpty
                           ? const Center(child: Text("No jobs found"))
                           : ListView.builder(

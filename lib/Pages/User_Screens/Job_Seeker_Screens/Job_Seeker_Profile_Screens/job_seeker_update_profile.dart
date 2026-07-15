@@ -558,7 +558,11 @@ class _State extends ConsumerState<JobSeekerUpdateProfile> {
 
                       // Buttons
                       isLoading
-                          ? const Center(child: CircularProgressIndicator())
+                          ? const Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.black,
+                              ),
+                            )
                           : TextButtonGradient(
                               text: "Update",
                               height: 50,
