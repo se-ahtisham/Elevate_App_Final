@@ -3,7 +3,7 @@ import 'package:elevate_app/Pages/User_Screens/Company_Screens/Company_Dashboard
 import 'package:elevate_app/Pages/User_Screens/Company_Screens/Company_Posts_Screens/company_posted_jobs_screen.dart';
 import 'package:elevate_app/Pages/User_Screens/Company_Screens/Company_Search_Company/Company_Search_Company.dart';
 import 'package:elevate_app/Pages/User_Screens/Company_Screens/Company_Search_users_Screens/Company_Search_User.dart';
-import 'package:elevate_app/Pages/User_Screens/Company_Screens/Compnay_Profile_Screens/company_profile.dart';
+import 'package:elevate_app/Pages/User_Screens/Company_Screens/Company_Profile_Screens/company_profile.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';

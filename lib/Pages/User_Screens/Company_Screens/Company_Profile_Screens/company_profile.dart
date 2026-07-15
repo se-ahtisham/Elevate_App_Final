@@ -4,41 +4,10 @@ import "package:elevate_app/Custom_Widgets/Text/custom_text.dart";
 import "package:elevate_app/Custom_Widgets/Text/icon_text.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_description.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_socialMedia.dart";
-import "package:elevate_app/Pages/User_Screens/Company_Screens/Compnay_Profile_Screens/update_company_profile.dart";
+import "package:elevate_app/Pages/User_Screens/Company_Screens/Company_Profile_Screens/update_company_profile.dart";
 import "package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart";
 import "package:flutter/material.dart";
 import 'package:flutter/services.dart';
-
-/*UserRequestRatingCompany
-└── Scaffold (extendBodyBehindAppBar: true)
-    └── AnnotatedRegion (SystemUiOverlayStyle.light)
-        └── Container (height: infinity, color: white)
-            └── SingleChildScrollView
-                └── Column
-                    ├── ElevateHeader
-                    ├── Padding
-                    │   └── UserDescription
-                    └── Padding (vertical: 30, horizontal: 40)
-                        └── Column (crossAxisAlignment: start)
-                            ├── Row
-                            │   ├── CustomText ("ABOUT US")
-                            │   └── IconTextButton ("FEEDBACK")
-                            │       └── Navigator.push → UserRatingCompany
-                            ├── SizedBox
-                            ├── CustomText (About description)
-                            ├── SizedBox
-                            ├── UserSocialmedia
-                            ├── SizedBox
-                            └── Column
-                                ├── CustomText ("Company Achievements")
-                                ├── SizedBox
-                                ├── IconText (Achievements details)
-                                ├── SizedBox
-                                ├── CustomText ("Company Strengths")
-                                ├── CustomText (Strengths text)
-                                ├── SizedBox
-                                ├── CustomText ("Company Weaknesses")
-                                └── CustomText (Weaknesses text) */
 
 class CompanyProfile extends StatelessWidget {
   const CompanyProfile({super.key});

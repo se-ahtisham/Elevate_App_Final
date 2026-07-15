@@ -1,165 +1,212 @@
-import "package:elevate_app/Custom_Widgets/Buttons/text_button_gradient.dart";
-import "package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart";
-import "package:elevate_app/Custom_Widgets/Header/elevate_header.dart";
-import "package:elevate_app/Custom_Widgets/Text/custom_text.dart";
-import "package:elevate_app/Custom_Widgets/Text/icon_text.dart";
-import "package:elevate_app/Custom_Widgets/User_Widgets/user_description.dart";
-import "package:elevate_app/Custom_Widgets/User_Widgets/user_socialMedia.dart";
-import "package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart";
-import "package:flutter/material.dart";
+import 'package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart';
+import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
+import 'package:elevate_app/Custom_Widgets/Message_Box/deleteBox.dart';
+import 'package:elevate_app/Custom_Widgets/Message_Box/messageBox.dart';
+import 'package:elevate_app/Custom_Widgets/Search_Bar/custom_search_bar.dart';
+import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
+import 'package:elevate_app/Custom_Widgets/Tiles/experience_white_black_full.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/company_model.dart';
+import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
+import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-class AdminDeleteCompany extends StatelessWidget {
+class AdminDeleteCompany extends StatefulWidget {
   const AdminDeleteCompany({super.key});
+
+  @override
+  State<AdminDeleteCompany> createState() => _AdminDeleteCompanyState();
+}
+
+class _AdminDeleteCompanyState extends State<AdminDeleteCompany> {
+  final FirebaseService firebaseService = FirebaseService();
+  final TextEditingController searchController = TextEditingController();
+
+  List<CompanyModel> allCompanies = [];
+  List<CompanyModel> visibleCompanies = [];
+
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    loadAllCompanies();
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> loadAllCompanies() async {
+    setState(() => isLoading = true);
+
+    allCompanies = await firebaseService.listAllCompanies();
+
+    setState(() {
+      visibleCompanies = allCompanies;
+      isLoading = false;
+    });
+  }
+
+  void onSearchChanged(String query) {
+    query = query.toLowerCase();
+
+    setState(() {
+      visibleCompanies = allCompanies.where((company) {
+        return company.companyName.toLowerCase().contains(query);
+      }).toList();
+    });
+  }
+
+  void confirmDelete(CompanyModel company) {
+    showDialog(
+      context: context,
+      builder: (_) => Deletebox(
+        name: company.companyName,
+        onDelete: () => deleteCompany(company),
+      ),
+    );
+  }
+
+  Future<void> deleteCompany(CompanyModel company) async {
+    try {
+      await firebaseService.deleteCompany(company.companyID);
+
+      setState(() {
+        allCompanies.removeWhere((item) => item.companyID == company.companyID);
+
+        visibleCompanies.removeWhere(
+          (item) => item.companyID == company.companyID,
+        );
+      });
+
+      showDialog(
+        context: context,
+        builder: (_) =>
+            Messagebox(message: "${company.companyName} deleted successfully."),
+      );
+    } catch (e) {
+      showDialog(
+        context: context,
+        builder: (_) => Messagebox(message: "Failed to delete company."),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       extendBodyBehindAppBar: true,
+      backgroundColor: const Color(0xFFF3F3F3),
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.light,
-        child: Container(
-          height: double.infinity,
-          color: Colors.white,
-          child: SingleChildScrollView(
-            child: Column(
+        child: Column(
+          children: [
+            Stack(
               children: [
-                ElevateHeader(
-                  title: "Your Digital Identity",
-                  subTitle: "Account Control Center",
+                const ElevateHeader(
+                  title: "Manage",
+                  subTitle: "Companies",
+                  titleSize: 40,
+                  subtitleSize: 25,
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(left: 10.0, right: 20),
-                  child: UserDescription(
-                    imageURL:
-                        'https://mir-s3-cdn-cf.behance.net/projects/404/e87f90243740647.Y3JvcCwxNTM0LDEyMDAsMzQsMA.jpg',
-                    name: "TechNova Inc.",
-                    shortDescription: "FinTech",
-                    skills: 10,
-                    followers: 238,
-                    followings: 101,
-                  ),
-                ),
-
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 30,
-                    horizontal: 40,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                    
-                      TextButtonGradient(
-                        text: "Delete Company",
-                        height: 50,
-                        textSize: 14,
-                        textWeight: FontWeight.w400,
-                        borderRadius: 50,
-                         onTap: () {
-    Navigator.pop(context);
-  },
-                      ),
-                      const SizedBox(height: 35),
-
-                      CustomText(
-                        text: "ABOUT US",
-                        fontSize: 20,
-                        color: ElevateColor.lightgray,
-                        fontWeight: FontWeight.bold,
-                        textAlign: TextAlign.left,
-                        lineHeight: 1.0,
-                      ),
-                      SizedBox(height: 12),
-                      CustomText(
-                        text:
-                            "TechNova Inc. is dedicated to building secure and user-friendly financial platforms. We foster a culture of collaboration, innovation, and continuous learning.",
-                        fontSize: 13,
-                        color: ElevateColor.whitegray,
-                        fontWeight: FontWeight.w400,
-                        textAlign: TextAlign.justify,
-                        lineHeight: 1.3,
-                      ),
-                      SizedBox(height: 22),
-                      UserSocialmedia(
-                        city: "Lahore",
-                        country: "Pakistan",
-                        email: "technova@gmail.com",
-                        web: "www.technova.com",
-                      ),
-
-                      SizedBox(height: 30),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CustomText(
-                            text: "Company Achievements",
-                            fontSize: 20,
-                            color: ElevateColor.lightgray,
-                            fontWeight: FontWeight.bold,
-                            textAlign: TextAlign.left,
-                            lineHeight: 1.0,
-                          ),
-                          SizedBox(height: 15),
-                          IconText(
-                            text:
-                                "Best FinTech Startup 2024, ISO 27001 Certified",
-                            iconData: Icons.emoji_events_outlined,
-                            iconColor: ElevateColor.lightgray,
-                            iconSize: 30,
-                            iconTextSpacing: 8,
-                            textSize: 12,
-                            textColor: ElevateColor.lightgray,
-                            textWeight: FontWeight.w400,
-                            lineHeight: 1.2,
-                          ),
-                          SizedBox(height: 30),
-                          CustomText(
-                            text: "Company Strengths",
-                            fontSize: 20,
-                            color: ElevateColor.lightgray,
-                            fontWeight: FontWeight.bold,
-                            textAlign: TextAlign.left,
-                            lineHeight: 1.0,
-                          ),
-                          SizedBox(height: 8),
-                          CustomText(
-                            text:
-                                "Innovation • Collaboration • Supportive Management • Career Growth • Learning Opportunities",
-                            fontSize: 12,
-                            color: ElevateColor.lightgray,
-                            fontWeight: FontWeight.w400,
-                            textAlign: TextAlign.left,
-                            lineHeight: 1.2,
-                          ),
-
-                          SizedBox(height: 30),
-                          CustomText(
-                            text: "Company Weaknesses",
-                            fontSize: 20,
-                            color: ElevateColor.lightgray,
-                            fontWeight: FontWeight.bold,
-                            textAlign: TextAlign.left,
-                            lineHeight: 1.0,
-                          ),
-                          SizedBox(height: 8),
-                          CustomText(
-                            text:
-                                "High Workload • Tight Deadlines • Bureaucracy • Limited Benefits • Poor Documentation",
-                            fontSize: 12,
-                            color: ElevateColor.lightgray,
-                            fontWeight: FontWeight.w400,
-                            textAlign: TextAlign.left,
-                            lineHeight: 1.2,
-                          ),
-                        ],
-                      ),
-                    ],
+                Positioned(
+                  top: 170,
+                  right: 120,
+                  child: TexxtButton(
+                    text: "Back",
+                    width: 120,
+                    height: 50,
+                    textSize: 12,
+                    textWeight: FontWeight.w500,
+                    textColor: const Color.fromARGB(255, 255, 255, 255),
+                    backgroundColor: const Color.fromARGB(224, 114, 114, 114),
+                    borderColor: const Color(0xFF8B8B8B),
+                    borderRadius: 80,
+                    borderWidth: 1,
+                    onTap: () => Navigator.pop(context),
                   ),
                 ),
               ],
             ),
-          ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(30, 0, 30, 50),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const CustomText(
+                      text: "Delete Companies",
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: ElevateColor.black,
+                    ),
+
+                    const SizedBox(height: 15),
+
+                    CustomSearchBar(
+                      hintText: "Search by name",
+                      backgroundColor: ElevateColor.white,
+                      width: 380,
+                      height: 60,
+                      textSize: 15,
+                      iconSize: 30,
+                      controller: searchController,
+                      onChanged: onSearchChanged,
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    if (isLoading)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 40),
+                          child: CircularProgressIndicator(),
+                        ),
+                      )
+                    else if (visibleCompanies.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 40),
+                        child: Center(
+                          child: CustomText(
+                            text: "No companies found.",
+                            fontSize: 15,
+                            color: ElevateColor.gray,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      )
+                    else
+                      Column(
+                        children: visibleCompanies.map((company) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: ExperienceWhiteBlackFull(
+                              imageURL: company.logo.isNotEmpty
+                                  ? company.logo
+                                  : "lib/Resources/Images/Profile_Images/Company_Logo.jpg",
+                              name: company.companyName,
+                              shortDescription: company.industry.isNotEmpty
+                                  ? company.industry
+                                  : "Company",
+                              experience: company.location.isNotEmpty
+                                  ? company.location
+                                  : "Not specified",
+                              firstContainerWidth: 270,
+                              experienceBoxWidth: 240,
+                              iconData: Icons.delete,
+                              onTap: () => confirmDelete(company),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

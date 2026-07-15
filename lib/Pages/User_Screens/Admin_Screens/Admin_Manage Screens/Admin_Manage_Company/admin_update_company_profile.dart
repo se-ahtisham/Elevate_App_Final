@@ -1,11 +1,15 @@
+import 'package:elevate_app/Custom_Widgets/Buttons/icon_text_button_gradient.dart';
 import 'package:elevate_app/Custom_Widgets/Buttons/text_button_gradient.dart';
 import 'package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart';
+import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
+import 'package:elevate_app/Custom_Widgets/Message_Box/messageBox.dart';
 import 'package:elevate_app/Custom_Widgets/Test_Fields/custom_Text_Field.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
-import 'package:elevate_app/Resources/Colors/Gradient_Colors/gradient_colors.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/company_model.dart';
+import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter/services.dart';
 
 class AdminUpdateCompanyProfile extends StatefulWidget {
   const AdminUpdateCompanyProfile({super.key});
@@ -16,299 +20,455 @@ class AdminUpdateCompanyProfile extends StatefulWidget {
 }
 
 class _AdminUpdateCompanyProfileState extends State<AdminUpdateCompanyProfile> {
-  final TextEditingController _aboutController = TextEditingController();
-  final TextEditingController _locationController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _websiteController = TextEditingController();
+  final FirebaseService firebaseService = FirebaseService();
 
-  final int currentIndex = 1; // "Manage" tab is selected
+  final emailController = TextEditingController();
+  final nameController = TextEditingController();
+  final industryController = TextEditingController();
+  final websiteController = TextEditingController();
+  final logoController = TextEditingController();
+  final descriptionController = TextEditingController();
+  final locationController = TextEditingController();
+  final companySizeController = TextEditingController();
 
-  final navItems = [
-    {'icon': Icons.home_outlined, 'label': ''},
-    {'icon': Icons.list_alt_rounded, 'label': 'Manage'},
-    {'icon': Icons.person_outline_rounded, 'label': ''},
-  ];
+  final List<TextEditingController> strengthList = [];
+  final List<TextEditingController> weaknessList = [];
+  final List<TextEditingController> achievementList = [];
+
+  CompanyModel? foundCompany;
+  bool isSearching = false;
+  bool isUpdating = false;
 
   @override
   void dispose() {
-    _aboutController.dispose();
-    _locationController.dispose();
-    _emailController.dispose();
-    _websiteController.dispose();
+    emailController.dispose();
+    nameController.dispose();
+    industryController.dispose();
+    websiteController.dispose();
+    logoController.dispose();
+    descriptionController.dispose();
+    locationController.dispose();
+    companySizeController.dispose();
+    for (final c in strengthList) c.dispose();
+    for (final c in weaknessList) c.dispose();
+    for (final c in achievementList) c.dispose();
     super.dispose();
+  }
+
+  Future<void> searchCompany() async {
+    final email = emailController.text.trim();
+    if (email.isEmpty) {
+      showDialog(
+        context: context,
+        builder: (_) => const Messagebox(message: "Please enter an email."),
+      );
+      return;
+    }
+
+    setState(() => isSearching = true);
+
+    try {
+      final company = await firebaseService.getCompanyByEmail(email);
+
+      setState(() => isSearching = false);
+
+      if (company == null) {
+        showDialog(
+          context: context,
+          builder: (_) => const Messagebox(message: "Company not found."),
+        );
+        return;
+      }
+
+      foundCompany = company;
+      nameController.text = company.companyName;
+      industryController.text = company.industry;
+      websiteController.text = company.website;
+      logoController.text = company.logo;
+      descriptionController.text = company.description;
+      locationController.text = company.location;
+      companySizeController.text = company.companySize.toString();
+
+      strengthList.clear();
+      for (final s in company.companyStrengthList) {
+        strengthList.add(TextEditingController(text: s));
+      }
+
+      weaknessList.clear();
+      for (final w in company.companyWeaknessList) {
+        weaknessList.add(TextEditingController(text: w));
+      }
+
+      achievementList.clear();
+      for (final a in company.achievementList) {
+        achievementList.add(TextEditingController(text: a));
+      }
+
+      setState(() {});
+    } catch (e) {
+      setState(() => isSearching = false);
+      showDialog(
+        context: context,
+        builder: (_) => Messagebox(message: e.toString()),
+      );
+    }
+  }
+
+  Future<void> updateCompany() async {
+    if (foundCompany == null) return;
+
+    setState(() => isUpdating = true);
+
+    try {
+      await firebaseService.updateCompany(foundCompany!.companyID, {
+        'companyName': nameController.text.trim(),
+        'industry': industryController.text.trim(),
+        'website': websiteController.text.trim(),
+        'logo': logoController.text.trim(),
+        'description': descriptionController.text.trim(),
+        'location': locationController.text.trim(),
+        'companySize': int.tryParse(companySizeController.text.trim()) ?? 0,
+        'companyStrengthList': strengthList
+            .map((c) => c.text.trim())
+            .where((t) => t.isNotEmpty)
+            .toList(),
+        'companyWeaknessList': weaknessList
+            .map((c) => c.text.trim())
+            .where((t) => t.isNotEmpty)
+            .toList(),
+        'achievementList': achievementList
+            .map((c) => c.text.trim())
+            .where((t) => t.isNotEmpty)
+            .toList(),
+      });
+
+      setState(() => isUpdating = false);
+
+      showDialog(
+        context: context,
+        builder: (_) => Messagebox(
+          message: "Company updated successfully.",
+          onOkTap: () => Navigator.pop(context),
+        ),
+      );
+    } catch (e) {
+      setState(() => isUpdating = false);
+      showDialog(
+        context: context,
+        builder: (_) => Messagebox(message: e.toString()),
+      );
+    }
+  }
+
+  // Small reusable section for a list of plain text items (strengths,
+  // weaknesses, achievements) with add/remove — same idea as education.
+  Widget _listSection({
+    required String label,
+    required List<TextEditingController> controllers,
+    required String hint,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            CustomText(
+              text: label,
+              fontSize: 15,
+              color: const Color.fromARGB(255, 44, 44, 44),
+              fontWeight: FontWeight.w500,
+            ),
+            const Spacer(),
+            GestureDetector(
+              onTap: () =>
+                  setState(() => controllers.add(TextEditingController())),
+              child: Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: const Color.fromARGB(255, 59, 59, 59),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.add, size: 18, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+        for (int i = 0; i < controllers.length; i++)
+          Container(
+            margin: const EdgeInsets.only(top: 10),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              border: Border.all(color: const Color.fromARGB(255, 75, 75, 75)),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: CustomTextField(
+                    hintText: hint,
+                    controller: controllers[i],
+                    cursorColor: ElevateColor.black,
+                    underlineColor: Colors.transparent,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                GestureDetector(
+                  onTap: () => setState(() => controllers.removeAt(i)),
+                  child: const Icon(Icons.delete, size: 20, color: Colors.red),
+                ),
+              ],
+            ),
+          ),
+        const SizedBox(height: 30),
+      ],
+    );
+  }
+
+  Widget _boxedField({
+    required TextEditingController controller,
+    required String hintText,
+    double height = 40,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color.fromARGB(255, 75, 75, 75)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(10.0),
+        child: CustomTextField(
+          hintText: hintText,
+          controller: controller,
+          cursorColor: ElevateColor.black,
+          underlineColor: Colors.transparent,
+          fontSize: 12,
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       backgroundColor: Colors.white,
-      body: SingleChildScrollView(
+      body: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle.light,
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top Header & Avatar Overlap
-            SizedBox(
-              height: 250,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  // Dark Gradient Background
-                  Container(
-                    height: 180,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      gradient: ElevateGradientColors.grayToBlack,
-                    ),
-                    padding: const EdgeInsets.only(left: 24, top: 60),
-                    child: const CustomText(
-                      text: "Elevate",
-                      fontSize: 26,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.white,
-                      textAlign: TextAlign.left,
-                    ),
+            Stack(
+              children: [
+                const ElevateHeader(
+                  title: "Company Info",
+                  subTitle: "Let's Discover Company",
+                ),
+                Positioned(
+                  top: 170,
+                  right: 120,
+                  child: TexxtButton(
+                    text: "Back",
+                    width: 120,
+                    height: 50,
+                    textSize: 12,
+                    textWeight: FontWeight.w500,
+                    textColor: const Color.fromARGB(255, 255, 255, 255),
+                    backgroundColor: const Color.fromARGB(224, 114, 114, 114),
+                    borderColor: const Color(0xFF8B8B8B),
+                    borderRadius: 80,
+                    borderWidth: 1,
+                    onTap: () => Navigator.pop(context),
                   ),
-                  // Overlapping Avatar & Name
-                  Positioned(
-                    top:
-                        120, // Center of avatar aligns with the edge (180 - 120/2 = 120)
-                    left: 24,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        // Avatar
-                        Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: const Color(0xFF333333),
-                            border: Border.all(color: Colors.white, width: 4),
-                          ),
-                          alignment: Alignment.center,
-                          child: const CustomText(
-                            text: "MS",
-                            color: Colors.white,
-                            fontSize: 40,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        // Title Text
-                        const Padding(
-                          padding: EdgeInsets.only(
-                            bottom: 24,
-                          ), // Push it slightly down to align with the lower curve of avatar
-                          child: CustomText(
-                            text: "Tectzeee",
-                            fontSize: 26,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF1C1C3A),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-
-            // Form Section
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 30),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 10),
-                  CustomTextField(
-                    controller: _aboutController,
-                    hintText: "About us",
-                    hintColor: const Color(0xFF6E6E6E),
-                    hintWeight: FontWeight.w600,
-                    fontSize: 12,
-                    underlineColor: const Color(0xFFDCDCDC),
-                    cursorColor: Colors.black,
-                  ),
-                  const SizedBox(height: 35),
-                  CustomTextField(
-                    controller: _locationController,
-                    hintText: "Location",
-                    hintColor: const Color(0xFF6E6E6E),
-                    hintWeight: FontWeight.w600,
-                    fontSize: 12,
-                    underlineColor: const Color(0xFFDCDCDC),
-                    cursorColor: Colors.black,
-                  ),
-                  const SizedBox(height: 35),
-                  CustomTextField(
-                    controller: _emailController,
-                    hintText: "Email",
-                    hintColor: const Color(0xFF6E6E6E),
-                    hintWeight: FontWeight.w600,
-                    fontSize: 12,
-                    underlineColor: const Color(0xFFDCDCDC),
-                    cursorColor: Colors.black,
-                  ),
-                  const SizedBox(height: 35),
-                  CustomTextField(
-                    controller: _websiteController,
-                    hintText: "Website",
-                    hintColor: const Color(0xFF6E6E6E),
-                    hintWeight: FontWeight.w600,
-                    fontSize: 12,
-                    underlineColor: const Color(0xFFDCDCDC),
-                    cursorColor: Colors.black,
-                  ),
-
-                  const SizedBox(height: 35),
-                  // Company Achievements
-                  const CustomText(
-                    text: "Company Achievements",
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF6E6E6E),
-                  ),
-                  const SizedBox(height: 15),
-
-                  // Static Achievement Pill
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 14,
-                      horizontal: 20,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFEBEBEB),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const CustomText(
-                      text: "Best FinTech Startup 2024, ISO 27001 Certified",
-                      color: Color(0xFF5A5A5A),
-                      fontSize: 11,
-                      textAlign: TextAlign.left,
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 30,
+                  vertical: 20,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CustomText(
+                      text: "Search by Email",
+                      fontSize: 15,
+                      color: const Color.fromARGB(255, 44, 44, 44),
                       fontWeight: FontWeight.w500,
                     ),
-                  ),
-                  const SizedBox(height: 35),
-
-                  // Add More Pill
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 14,
-                      horizontal: 20,
+                    const SizedBox(height: 10),
+                    _boxedField(
+                      controller: emailController,
+                      hintText: "Enter company's email",
                     ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF1F1F1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        const Icon(
-                          Icons.add_circle_outline,
-                          color: Color(0xFF7A7A7A),
-                          size: 16,
-                        ),
-                        const SizedBox(width: 8),
-                        const CustomText(
-                          text: "Add More Achievements",
-                          color: Color(0xFF7A7A7A),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ],
-                    ),
-                  ),
+                    const SizedBox(height: 16),
+                    isSearching
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.black,
+                            ),
+                          )
+                        : TextButtonGradient(
+                            text: "Search",
+                            height: 50,
+                            borderRadius: 50,
+                            textSize: 14,
+                            textWeight: FontWeight.w500,
+                            onTap: searchCompany,
+                          ),
 
-                  const SizedBox(height: 40),
-                  // Action Buttons
-                  TextButtonGradient(
-                    text: "Update",
-                    buttonBackgroundColor: ElevateGradientColors.grayToBlack,
-                    width: double.infinity,
-                    height: 50,
-                    borderRadius: 12,
-                    textSize: 14,
-                    textWeight: FontWeight.w600,
-                    onTap: () {
-                      Navigator.pop(context);
-                    },
-                  ),
-                  const SizedBox(height: 15),
-                  TexxtButton(
-                    text: "Cancel",
-                    backgroundColor: Colors.white,
-                    borderColor: ElevateColor.black,
-                    borderWidth: 1.2,
-                    textColor: ElevateColor.black,
-                    width: double.infinity,
-                    height: 50,
-                    borderRadius: 12,
-                    textSize: 14,
-                    textWeight: FontWeight.w600,
-                    onTap: () {
-                      Navigator.pop(context);
-                    },
-                  ),
-                  const SizedBox(height: 40),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+                    if (foundCompany != null) ...[
+                      const SizedBox(height: 30),
 
-      // Floating Bottom Navigation
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.only(left: 20, right: 20, bottom: 30),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: ElevateColor.gray, width: 0.5),
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                spreadRadius: 2,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: List.generate(navItems.length, (i) {
-              final item = navItems[i];
-              bool selected = currentIndex == i;
-              return Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AnimatedScale(
-                      scale: selected ? 1.2 : 1.0,
-                      duration: const Duration(milliseconds: 200),
-                      child: Icon(
-                        item['icon'] as IconData,
-                        size: 20,
-                        color: selected ? Colors.black : Colors.grey.shade400,
+                      CustomText(
+                        text: "Company Name",
+                        fontSize: 15,
+                        color: const Color.fromARGB(255, 44, 44, 44),
+                        fontWeight: FontWeight.w500,
                       ),
-                    ),
-                    if (selected && item['label'] != "") ...[
-                      const SizedBox(height: 4),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: CustomText(
-                          text: item['label'] as String,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      const SizedBox(height: 10),
+                      _boxedField(
+                        controller: nameController,
+                        hintText: "Company name",
                       ),
+                      const SizedBox(height: 30),
+
+                      CustomText(
+                        text: "Industry",
+                        fontSize: 15,
+                        color: const Color.fromARGB(255, 44, 44, 44),
+                        fontWeight: FontWeight.w500,
+                      ),
+                      const SizedBox(height: 10),
+                      _boxedField(
+                        controller: industryController,
+                        hintText: "e.g. FinTech",
+                      ),
+                      const SizedBox(height: 30),
+
+                      CustomText(
+                        text: "Website",
+                        fontSize: 15,
+                        color: const Color.fromARGB(255, 44, 44, 44),
+                        fontWeight: FontWeight.w500,
+                      ),
+                      const SizedBox(height: 10),
+                      _boxedField(
+                        controller: websiteController,
+                        hintText: "www.example.com",
+                      ),
+                      const SizedBox(height: 30),
+
+                      CustomText(
+                        text: "Logo URL",
+                        fontSize: 15,
+                        color: const Color.fromARGB(255, 44, 44, 44),
+                        fontWeight: FontWeight.w500,
+                      ),
+                      const SizedBox(height: 10),
+                      _boxedField(
+                        controller: logoController,
+                        hintText: "https://...",
+                      ),
+                      const SizedBox(height: 30),
+
+                      CustomText(
+                        text: "Description",
+                        fontSize: 15,
+                        color: const Color.fromARGB(255, 44, 44, 44),
+                        fontWeight: FontWeight.w500,
+                      ),
+                      const SizedBox(height: 10),
+                      _boxedField(
+                        controller: descriptionController,
+                        hintText: "About the company",
+                        height: 150,
+                      ),
+                      const SizedBox(height: 30),
+
+                      CustomText(
+                        text: "Location",
+                        fontSize: 15,
+                        color: const Color.fromARGB(255, 44, 44, 44),
+                        fontWeight: FontWeight.w500,
+                      ),
+                      const SizedBox(height: 10),
+                      _boxedField(
+                        controller: locationController,
+                        hintText: "e.g. Lahore, Pakistan",
+                      ),
+                      const SizedBox(height: 30),
+
+                      CustomText(
+                        text: "Company Size",
+                        fontSize: 15,
+                        color: const Color.fromARGB(255, 44, 44, 44),
+                        fontWeight: FontWeight.w500,
+                      ),
+                      const SizedBox(height: 10),
+                      _boxedField(
+                        controller: companySizeController,
+                        hintText: "Number of employees",
+                        keyboardType: TextInputType.number,
+                      ),
+                      const SizedBox(height: 30),
+
+                      _listSection(
+                        label: "Company Strengths",
+                        controllers: strengthList,
+                        hint: "e.g. Innovation",
+                      ),
+                      _listSection(
+                        label: "Company Weaknesses",
+                        controllers: weaknessList,
+                        hint: "e.g. High Workload",
+                      ),
+                      _listSection(
+                        label: "Achievements",
+                        controllers: achievementList,
+                        hint: "e.g. Best FinTech Startup 2024",
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      isUpdating
+                          ? const Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.black,
+                              ),
+                            )
+                          : TextButtonGradient(
+                              text: "Update",
+                              height: 50,
+                              borderRadius: 50,
+                              textSize: 14,
+                              textWeight: FontWeight.w400,
+                              onTap: updateCompany,
+                            ),
+                      const SizedBox(height: 20),
+                      TexxtButton(
+                        text: "Cancel",
+                        height: 50,
+                        textSize: 14,
+                        textWeight: FontWeight.w400,
+                        textColor: Colors.black,
+                        backgroundColor: Colors.transparent,
+                        borderRadius: 50,
+                        borderColor: Colors.black,
+                        onTap: () => Navigator.pop(context),
+                      ),
+                      const SizedBox(height: 30),
                     ],
                   ],
                 ),
-              );
-            }),
-          ),
+              ),
+            ),
+          ],
         ),
       ),
     );

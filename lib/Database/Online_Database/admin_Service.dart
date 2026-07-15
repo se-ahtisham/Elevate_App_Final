@@ -41,4 +41,39 @@ class AdminService {
       rethrow;
     }
   }
+
+  Future<String> createCompany({
+    required String companyName,
+    required String email,
+    required String password,
+  }) async {
+    FirebaseApp app = await Firebase.initializeApp(
+      name: "SecondaryApp",
+      options: Firebase.app().options,
+    );
+    FirebaseAuth auth = FirebaseAuth.instanceFor(app: app);
+    try {
+      // Create Authentication account
+      UserCredential user = await auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      String uid = user.user!.uid;
+
+      // Save Company data
+      await db.collection('companies').doc(uid).set({
+        'companyID': uid,
+        'companyName': companyName,
+        'email': email,
+        'password': password,
+      });
+
+      await auth.signOut();
+      await app.delete();
+      return uid;
+    } catch (e) {
+      await app.delete();
+      rethrow;
+    }
+  }
 }

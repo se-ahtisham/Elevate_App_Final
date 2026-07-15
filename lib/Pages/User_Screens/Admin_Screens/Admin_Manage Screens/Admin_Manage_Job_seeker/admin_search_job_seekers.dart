@@ -1,3 +1,4 @@
+import 'package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Search_Bar/custom_search_bar.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
@@ -76,11 +77,32 @@ class _AdminSearchJobSeekersState extends State<AdminSearchJobSeekers> {
         value: SystemUiOverlayStyle.light,
         child: Column(
           children: [
-            const ElevateHeader(
-              title: "Manage",
-              subTitle: "Job Seekers",
-              titleSize: 40,
-              subtitleSize: 25,
+            Stack(
+              children: [
+                ElevateHeader(
+                  title: "Manage",
+                  subTitle: "Job Seekers",
+                  titleSize: 40,
+                  subtitleSize: 25,
+                ),
+                Positioned(
+                  top: 170,
+                  right: 120,
+                  child: TexxtButton(
+                    text: "Back",
+                    width: 120,
+                    height: 50,
+                    textSize: 12,
+                    textWeight: FontWeight.w500,
+                    textColor: const Color.fromARGB(255, 255, 255, 255),
+                    backgroundColor: const Color.fromARGB(224, 114, 114, 114),
+                    borderColor: const Color(0xFF8B8B8B),
+                    borderRadius: 80,
+                    borderWidth: 1,
+                    onTap: () => Navigator.pop(context),
+                  ),
+                ),
+              ],
             ),
 
             Expanded(

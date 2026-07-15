@@ -622,6 +622,17 @@ class FirebaseService {
     return snap.docs.map((d) => TestModel.fromMap(d.data())).toList();
   }
 
+  Future<CompanyModel?> getCompanyByEmail(String email) async {
+    final snap = await db
+        .collection('companies')
+        .where('email', isEqualTo: email)
+        .limit(1)
+        .get();
+
+    if (snap.docs.isEmpty) return null;
+    return CompanyModel.fromMap(snap.docs.first.data());
+  }
+
   Future<BadgeModel?> getEligibleBadgeForScore(double score) async {
     final snap = await db.collection('badges').get();
     final badges = snap.docs.map((d) => BadgeModel.fromMap(d.data())).toList();

@@ -48,7 +48,7 @@ class AdminManageCompany extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => AdminAddCompanyScreen(),
+                            builder: (context) => AdminAddCompany(),
                           ),
                         );
                       },
