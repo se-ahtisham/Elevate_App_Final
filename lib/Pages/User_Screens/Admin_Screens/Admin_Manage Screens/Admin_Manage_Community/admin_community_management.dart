@@ -1,183 +1,183 @@
-import 'package:elevate_app/Custom_Widgets/Buttons/icon_text_button.dart';
-import 'package:elevate_app/Custom_Widgets/Buttons/text_button_gradient.dart';
+import 'package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart';
+import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Search_Bar/custom_search_bar.dart';
-import 'package:elevate_app/Custom_Widgets/Tiles/admin_post_tile.dart';
-import 'package:elevate_app/Pages/User_Screens/Admin_Screens/Admin_Manage%20Screens/Admin_Manage_Community/admin_comment_management.dart';
-import 'package:elevate_app/Pages/User_Screens/Admin_Screens/Admin_Manage%20Screens/admin_manage.dart';
+import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
+import 'package:elevate_app/Custom_Widgets/Text/icon_text.dart';
+import 'package:elevate_app/Custom_Widgets/Tiles/experience_white_black_full.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_seeker_model.dart';
+import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
+import 'package:elevate_app/Pages/User_Screens/Admin_Screens/Admin_Manage%20Screens/Admin_Manage_Community/admin_user_posts.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-class AdminCommunityManagement extends StatelessWidget {
+class AdminCommunityManagement extends StatefulWidget {
   const AdminCommunityManagement({super.key});
+
+  @override
+  State<AdminCommunityManagement> createState() =>
+      _AdminCommunityManagementState();
+}
+
+class _AdminCommunityManagementState extends State<AdminCommunityManagement> {
+  final FirebaseService firebaseService = FirebaseService();
+  final TextEditingController searchController = TextEditingController();
+
+  List<JobSeekerModel> allJobSeekers = [];
+  List<JobSeekerModel> visibleJobSeekers = [];
+
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    loadAllJobSeekers();
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> loadAllJobSeekers() async {
+    setState(() => isLoading = true);
+
+    allJobSeekers = await firebaseService.listAllJobSeekers();
+
+    setState(() {
+      visibleJobSeekers = allJobSeekers;
+      isLoading = false;
+    });
+  }
+
+  void onSearchChanged(String query) {
+    query = query.toLowerCase();
+
+    setState(() {
+      visibleJobSeekers = allJobSeekers.where((jobSeeker) {
+        return jobSeeker.name.toLowerCase().contains(query);
+      }).toList();
+    });
+  }
+
+  // Card tap now opens this user's posts instead of their profile.
+  void openUserPosts(JobSeekerModel seeker) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => AdminUserPosts(jobSeeker: seeker)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 243, 243, 243),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 30.0, horizontal: 20),
+      extendBodyBehindAppBar: true,
+      backgroundColor: const Color(0xFFF3F3F3),
+      body: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle.light,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            Stack(
               children: [
-                IconTextButton(
-                  text: "Communities",
-                  iconData: Icons.people,
-                  backgroundColor: Colors.transparent,
-                  iconColor: ElevateColor.gray,
-                  textColor: ElevateColor.gray,
-                  textSize: 15,
-                  iconSize: 30,
-                  textWeight: FontWeight.w600,
+                ElevateHeader(
+                  title: "Manage",
+                  subTitle: "Community",
+                  titleSize: 40,
+                  subtitleSize: 25,
                 ),
-                SizedBox(width: 60),
-                Expanded(
-                  child: TextButtonGradient(
-                    text: "Dashboard",
-                    height: 45,
-                    borderRadius: 25,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => AdminManage(),
-                        ),
-                      );
-                    },
+                Positioned(
+                  top: 170,
+                  right: 120,
+                  child: TexxtButton(
+                    text: "Back",
+                    width: 120,
+                    height: 50,
+                    textSize: 12,
+                    textWeight: FontWeight.w500,
+                    textColor: const Color.fromARGB(255, 255, 255, 255),
+                    backgroundColor: const Color.fromARGB(224, 114, 114, 114),
+                    borderColor: const Color(0xFF8B8B8B),
+                    borderRadius: 80,
+                    borderWidth: 1,
+                    onTap: () => Navigator.pop(context),
                   ),
                 ),
               ],
             ),
-            SizedBox(height: 30),
-            CustomSearchBar(
-              hintText: "Ahtisham",
-              backgroundColor: ElevateColor.white,
-              width: 380,
-              height: 60,
-              textSize: 15,
-              iconSize: 30,
-            ),
-            SizedBox(height: 15),
+
             Expanded(
               child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(30, 0, 30, 50),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    AdminPostTile(
-                      title: "This is what i learned in my recent course",
-                      text:
-                          "The whole secret of existence lies in the pursuit of meaning, purpose, and connection. It is a delicate dance between self-discovery, compassion for others, and embracing the ever-unfolding mysteries of life. Finding harmony in the ebb and flow of experiences, we unlock the profound beauty that resides within our shared journey.",
-                      commentCount: 3,
-                      comments: ["Good", "Nice", "Awesome"],
-                      imageURL:
-                          "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg",
-                      name: "Muhaamad Ahtisham",
-                      shortDescription: "Flutter Developer",
-                      deleteonTap: () {
-                        Navigator.pop(context);
-                      },
-                      viewCommentonTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => AdminCommentManagement(),
-                          ),
-                        );
-                      },
+                    const IconText(
+                      text: "Explore Profiles",
+                      iconData: Icons.people_alt_outlined,
+                      textSize: 20,
+                      textWeight: FontWeight.bold,
+                      iconSize: 25,
+                      iconTextSpacing: 10,
                     ),
-                    SizedBox(height: 25),
-                    AdminPostTile(
-                      title: "This is what i learned in my recent course",
-                      text:
-                          "The whole secret of existence lies in the pursuit of meaning, purpose, and connection. It is a delicate dance between self-discovery, compassion for others, and embracing the ever-unfolding mysteries of life. Finding harmony in the ebb and flow of experiences, we unlock the profound beauty that resides within our shared journey.",
-                      commentCount: 3,
-                      comments: ["Good", "Nice", "Awesome"],
-                      imageURL:
-                          "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg",
-                      name: "Muhaamad Ahtisham",
-                      shortDescription: "Flutter Developer",
-                      deleteonTap: () {
-                        Navigator.pop(context);
-                      },
-                      viewCommentonTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => AdminCommentManagement(),
-                          ),
-                        );
-                      },
+
+                    const SizedBox(height: 15),
+
+                    CustomSearchBar(
+                      hintText: "Search by email",
+                      backgroundColor: ElevateColor.white,
+                      width: 380,
+                      height: 60,
+                      textSize: 15,
+                      iconSize: 30,
+                      controller: searchController,
+                      onChanged: onSearchChanged,
                     ),
-                    SizedBox(height: 25),
-                    AdminPostTile(
-                      title: "This is what i learned in my recent course",
-                      text:
-                          "The whole secret of existence lies in the pursuit of meaning, purpose, and connection. It is a delicate dance between self-discovery, compassion for others, and embracing the ever-unfolding mysteries of life. Finding harmony in the ebb and flow of experiences, we unlock the profound beauty that resides within our shared journey.",
-                      commentCount: 3,
-                      comments: ["Good", "Nice", "Awesome"],
-                      imageURL:
-                          "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg",
-                      name: "Muhaamad Ahtisham",
-                      shortDescription: "Flutter Developer",
-                      deleteonTap: () {
-                        Navigator.pop(context);
-                      },
-                      viewCommentonTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => AdminCommentManagement(),
+
+                    const SizedBox(height: 20),
+
+                    if (isLoading)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 40),
+                          child: CircularProgressIndicator(color: Colors.black),
+                        ),
+                      )
+                    else if (visibleJobSeekers.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 40),
+                        child: Center(
+                          child: CustomText(
+                            text: "No job seekers found.",
+                            fontSize: 15,
+                            color: ElevateColor.gray,
+                            fontWeight: FontWeight.w500,
                           ),
-                        );
-                      },
-                    ),
-                    SizedBox(height: 25),
-                    AdminPostTile(
-                      title: "This is what i learned in my recent course",
-                      text:
-                          "The whole secret of existence lies in the pursuit of meaning, purpose, and connection. It is a delicate dance between self-discovery, compassion for others, and embracing the ever-unfolding mysteries of life. Finding harmony in the ebb and flow of experiences, we unlock the profound beauty that resides within our shared journey.",
-                      commentCount: 3,
-                      comments: ["Good", "Nice", "Awesome"],
-                      imageURL:
-                          "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg",
-                      name: "Muhaamad Ahtisham",
-                      shortDescription: "Flutter Developer",
-                      deleteonTap: () {
-                        Navigator.pop(context);
-                      },
-                      viewCommentonTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => AdminCommentManagement(),
-                          ),
-                        );
-                      },
-                    ),
-                    SizedBox(height: 25),
-                    AdminPostTile(
-                      title: "This is what i learned in my recent course",
-                      text:
-                          "The whole secret of existence lies in the pursuit of meaning, purpose, and connection. It is a delicate dance between self-discovery, compassion for others, and embracing the ever-unfolding mysteries of life. Finding harmony in the ebb and flow of experiences, we unlock the profound beauty that resides within our shared journey.",
-                      commentCount: 3,
-                      comments: ["Good", "Nice", "Awesome"],
-                      imageURL:
-                          "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg",
-                      name: "Muhaamad Ahtisham",
-                      shortDescription: "Flutter Developer",
-                      deleteonTap: () {
-                        Navigator.pop(context);
-                      },
-                      viewCommentonTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => AdminCommentManagement(),
-                          ),
-                        );
-                      },
-                    ),
-                    SizedBox(height: 25),
+                        ),
+                      )
+                    else
+                      Column(
+                        children: visibleJobSeekers.map((seeker) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: ExperienceWhiteBlackFull(
+                              imageURL: seeker.profilePic.isNotEmpty
+                                  ? seeker.profilePic
+                                  : "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg",
+                              name: seeker.name,
+                              shortDescription: seeker.about.isNotEmpty
+                                  ? seeker.about
+                                  : "Job Seeker",
+                              experience: seeker.experienceLevel.isNotEmpty
+                                  ? seeker.experienceLevel
+                                  : "Not specified",
+                              firstContainerWidth: 270,
+                              experienceBoxWidth: 240,
+                              onTap: () => openUserPosts(seeker),
+                            ),
+                          );
+                        }).toList(),
+                      ),
                   ],
                 ),
               ),

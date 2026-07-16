@@ -163,7 +163,7 @@ class _AdminDeleteCompanyState extends State<AdminDeleteCompany> {
                       const Center(
                         child: Padding(
                           padding: EdgeInsets.symmetric(vertical: 40),
-                          child: CircularProgressIndicator(color: Colors.black,),
+                          child: CircularProgressIndicator(color: Colors.black),
                         ),
                       )
                     else if (visibleCompanies.isEmpty)

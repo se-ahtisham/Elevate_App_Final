@@ -1,11 +1,52 @@
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/admin_card.dart';
+import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-class AdminDashboardScreen extends StatelessWidget {
+class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
+
+  @override
+  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+}
+
+class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+  final FirebaseService firebaseService = FirebaseService();
+
+  int jobSeekerCount = 0;
+  int companyCount = 0;
+  int skillCount = 0;
+  int jobCount = 0;
+
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    loadCounts();
+  }
+
+  Future<void> loadCounts() async {
+    setState(() => isLoading = true);
+
+    // Run all four independently so a slow one doesn't block the rest.
+    final results = await Future.wait([
+      firebaseService.listAllJobSeekers(),
+      firebaseService.listAllCompanies(),
+      firebaseService.listAllSkills(),
+      firebaseService.viewAllJobs(),
+    ]);
+
+    setState(() {
+      jobSeekerCount = results[0].length;
+      companyCount = results[1].length;
+      skillCount = results[2].length;
+      jobCount = results[3].length;
+      isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +57,7 @@ class AdminDashboardScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ElevateHeader(
+            const ElevateHeader(
               title: "Ahtisham Dashboard",
               subTitle: "Check the Statictics",
             ),
@@ -26,11 +67,13 @@ class AdminDashboardScreen extends StatelessWidget {
               child: Container(
                 height: 50,
                 width: 370,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   borderRadius: BorderRadius.all(Radius.circular(20)),
-                  border: Border.all(color: Colors.black),
+                  border: Border.fromBorderSide(
+                    BorderSide(color: Colors.black),
+                  ),
                 ),
-                child: Center(
+                child: const Center(
                   child: CustomText(
                     text: "App Performance Metrics",
                     fontSize: 20,
@@ -42,42 +85,46 @@ class AdminDashboardScreen extends StatelessWidget {
               ),
             ),
 
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
 
             Expanded(
-              child: Padding(
-                padding: EdgeInsetsGeometry.symmetric(horizontal: 40),
-                child: SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      AdminCard(
-                        topText: "Total",
-                        bottomText: "Job Seekers",
-                        count: 121,
+              child: isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(color: Colors.black),
+                    )
+                  : Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 40),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            AdminCard(
+                              topText: "Total",
+                              bottomText: "Job Seekers",
+                              count: jobSeekerCount,
+                            ),
+                            const SizedBox(height: 20),
+                            AdminCard(
+                              topText: "Total",
+                              bottomText: "Companies",
+                              count: companyCount,
+                            ),
+                            const SizedBox(height: 20),
+                            AdminCard(
+                              topText: "Total",
+                              bottomText: "Skills",
+                              count: skillCount,
+                            ),
+                            const SizedBox(height: 30),
+                            AdminCard(
+                              topText: "Total",
+                              bottomText: "Jobs",
+                              count: jobCount,
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+                        ),
                       ),
-                      SizedBox(height: 20),
-                      AdminCard(
-                        topText: "Total",
-                        bottomText: "Companies",
-                        count: 12,
-                      ),
-                      SizedBox(height: 20),
-                      AdminCard(
-                        topText: "Total",
-                        bottomText: "Skills",
-                        count: 12,
-                      ),
-                      SizedBox(height: 30),
-                      AdminCard(
-                        topText: "Total",
-                        bottomText: "Jobs",
-                        count: 120,
-                      ),
-                      SizedBox(height: 20),
-                    ],
-                  ),
-                ),
-              ),
+                    ),
             ),
           ],
         ),

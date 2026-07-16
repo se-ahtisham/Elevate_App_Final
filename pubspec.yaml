@@ -99,9 +99,9 @@ flutter:
     - lib/Resources/Images/mock.png
     - lib/Resources/Images/mock2.png
     - lib/Resources/Icons/
-    - lib/Resources/Images/chash.png 
-    - lib/Resources/Images/java.png
-    - lib/Resources/Images/python.png
+    - lib/Resources/Images/Skills/sharp.png 
+    - lib/Resources/Images/Skills/java.png
+    - lib/Resources/Images/Skills/python.png
     - lib/Resources/Images/app_logo.png
     - lib/Resources/Images/splash_background.jpeg
     - .env

@@ -1,8 +1,11 @@
+import 'package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Search_Bar/custom_search_bar.dart';
 import 'package:elevate_app/Custom_Widgets/Text/icon_text.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/manage_white_black_full.dart';
-import 'package:elevate_app/Custom_Widgets/User_Widgets/new_skill_card.dart';
+import 'package:elevate_app/Custom_Widgets/Tiles/newsSkill_card.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/skill_model.dart';
+import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
 import 'package:elevate_app/Pages/User_Screens/Admin_Screens/Admin_Manage%20Screens/Admin_Manage_Skills/admin_edit_skill.dart.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
@@ -16,28 +19,144 @@ class AdminSkillManagement extends StatefulWidget {
 }
 
 class AdminSkillManagementState extends State<AdminSkillManagement> {
+  final FirebaseService firebaseService = FirebaseService();
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
+  final TextEditingController searchController = TextEditingController();
 
-  // Replace with your real data source.
-  final List<String> skills = ["Java Mobile Application"];
+  List<SkillModel> allSkills = [];
+  List<SkillModel> visibleSkills = [];
+
+  String? newSkillImagePath;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    loadAllSkills();
+  }
 
   @override
   void dispose() {
     titleController.dispose();
     descriptionController.dispose();
+    searchController.dispose();
     super.dispose();
   }
 
-  void onCreateNow() {
-    final title = titleController.text.trim();
-    if (title.isEmpty) return;
+  Future<void> loadAllSkills() async {
+    setState(() => isLoading = true);
+
+    allSkills = await firebaseService.listAllSkills();
 
     setState(() {
-      skills.add(title);
+      visibleSkills = allSkills;
+      isLoading = false;
+    });
+  }
+
+  void onSearchChanged(String query) {
+    query = query.toLowerCase();
+
+    setState(() {
+      visibleSkills = allSkills.where((skill) {
+        return skill.skillName.toLowerCase().contains(query);
+      }).toList();
+    });
+  }
+
+  // TODO: replace this placeholder filename list with the real ones once
+  // confirmed from lib/Resources/Images/Skills/.
+  Future<void> pickNewSkillImage() async {
+    final images = ["sharp.png", "java.png", "python.png"];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      builder: (_) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: GridView.builder(
+            shrinkWrap: true,
+            itemCount: images.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              crossAxisSpacing: 20,
+              mainAxisSpacing: 20,
+            ),
+            itemBuilder: (_, index) {
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    newSkillImagePath = images[index];
+                  });
+                  Navigator.pop(context);
+                },
+                child: Image.asset(
+                  "lib/Resources/Images/Skills/${images[index]}",
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> onCreateNow() async {
+    final title = titleController.text.trim();
+    final description = descriptionController.text.trim();
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please enter a skill name.")),
+      );
+      return;
+    }
+
+    final skill = SkillModel(
+      skillID: firebaseService.db.collection('skills').doc().id,
+      skillName: title,
+      skillDescription: description,
+      skillImage: newSkillImagePath ?? '',
+    );
+
+    try {
+      await firebaseService.createNewSkill(skill);
       titleController.clear();
       descriptionController.clear();
-    });
+      setState(() => newSkillImagePath = null);
+      loadAllSkills();
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Failed to create skill.")));
+    }
+  }
+
+  void openEditScreen(SkillModel skill) async {
+    final wasUpdated = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AdminEditSkill(
+          skillID: skill.skillID,
+          initialTitle: skill.skillName,
+          initialDescription: skill.skillDescription,
+          initialImage: skill.skillImage,
+          onSubmit: (title, description, image) async {
+            await firebaseService.updateSkill(skill.skillID, {
+              'skillName': title,
+              'skillDescription': description,
+              'skillImage': image,
+            });
+            if (context.mounted) Navigator.pop(context, true);
+          },
+        ),
+      ),
+    );
+
+    if (wasUpdated == true) {
+      loadAllSkills();
+    }
   }
 
   @override
@@ -49,11 +168,32 @@ class AdminSkillManagementState extends State<AdminSkillManagement> {
         value: SystemUiOverlayStyle.light,
         child: Column(
           children: [
-            ElevateHeader(
-              title: "Elevate",
-              subTitle: "Skills",
-              titleSize: 40,
-              subtitleSize: 18,
+            Stack(
+              children: [
+                const ElevateHeader(
+                  title: "Elevate",
+                  subTitle: "Skills",
+                  titleSize: 40,
+                  subtitleSize: 18,
+                ),
+                Positioned(
+                  top: 170,
+                  right: 120,
+                  child: TexxtButton(
+                    text: "Back",
+                    width: 120,
+                    height: 50,
+                    textSize: 12,
+                    textWeight: FontWeight.w500,
+                    textColor: const Color.fromARGB(255, 255, 255, 255),
+                    backgroundColor: const Color.fromARGB(224, 114, 114, 114),
+                    borderColor: const Color(0xFF8B8B8B),
+                    borderRadius: 80,
+                    borderWidth: 1,
+                    onTap: () => Navigator.pop(context),
+                  ),
+                ),
+              ],
             ),
             Expanded(
               child: SingleChildScrollView(
@@ -62,12 +202,14 @@ class AdminSkillManagementState extends State<AdminSkillManagement> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     NewSkillCard(
+                      imagePath: newSkillImagePath,
+                      onPickImage: pickNewSkillImage,
                       titleController: titleController,
                       descriptionController: descriptionController,
                       onCreateTap: onCreateNow,
                     ),
                     const SizedBox(height: 34),
-                    IconText(
+                    const IconText(
                       text: "Explore Skill",
                       iconData: Icons.people_alt_outlined,
                       textSize: 20,
@@ -83,37 +225,50 @@ class AdminSkillManagementState extends State<AdminSkillManagement> {
                       height: 60,
                       textSize: 15,
                       iconSize: 30,
+                      controller: searchController,
+                      onChanged: onSearchChanged,
                     ),
                     const SizedBox(height: 16),
-                    ...skills.map(
-                      (skill) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: ManageWhiteBlackFull(
-                          titleText: 'Manage',
-                          subtitleText: skill,
-                          firstContainerWidth: 310,
-                          secondContainerWidth: 140,
-                          titleFontSize: 14,
-                          subtitleFontSize: 26,
-                          tileHeight: 100,
-                          lineHeight: 1,
-                          firstContainerColor: ElevateColor.white,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => AdminEditSkill(
-                                  initialTitle: skill,
-                                  onSubmit: (title, description) {
-                                    Navigator.pop(context);
-                                  },
-                                ),
-                              ),
-                            );
-                          },
+
+                    if (isLoading)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 40),
+                          child: CircularProgressIndicator(color: Colors.black),
+                        ),
+                      )
+                    else if (visibleSkills.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 40),
+                        child: Center(
+                          child: Text(
+                            "No skills found.",
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: ElevateColor.gray,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      ...visibleSkills.map(
+                        (skill) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: ManageWhiteBlackFull(
+                            titleText: 'Manage',
+                            subtitleText: skill.skillName,
+                            firstContainerWidth: 310,
+                            secondContainerWidth: 140,
+                            titleFontSize: 14,
+                            subtitleFontSize: 26,
+                            tileHeight: 100,
+                            lineHeight: 1,
+                            firstContainerColor: ElevateColor.white,
+                            onTap: () => openEditScreen(skill),
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),

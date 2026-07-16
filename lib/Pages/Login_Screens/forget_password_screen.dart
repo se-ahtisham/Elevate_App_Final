@@ -1,51 +1,71 @@
 import 'package:elevate_app/Animation/slide_left_route.dart';
 import 'package:elevate_app/Custom_Widgets/Buttons/text_button_gradient.dart';
 import 'package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart';
-import 'package:elevate_app/Custom_Widgets/Drop_Down_Menu/custom_drop_down.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
+import 'package:elevate_app/Custom_Widgets/Message_Box/messageBox.dart';
 import 'package:elevate_app/Custom_Widgets/Test_Fields/custom_Text_Field.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
+import 'package:elevate_app/Database/Online_Database/auth_provider.dart';
 import 'package:elevate_app/Pages/Login_Screens/login_screen.dart';
-// import 'package:elevate_app/Pages/Login_Screens/user_select.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class ForgetPasswordScreen extends StatefulWidget {
+class ForgetPasswordScreen extends ConsumerStatefulWidget {
   const ForgetPasswordScreen({super.key});
 
   @override
-  State<ForgetPasswordScreen> createState() => _ForgetPasswordScreenState();
+  ConsumerState<ForgetPasswordScreen> createState() =>
+      _ForgetPasswordScreenState();
 }
 
-class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
-  late TextEditingController answerController;
-  late TextEditingController newPasswordController;
-
-  String? selectedQuestion;
-
-  List<String> questions = [
-    "What's your hobby?",
-    "Your first school?",
-    "Favorite food?",
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    answerController = TextEditingController();
-    newPasswordController = TextEditingController();
-  }
+class _ForgetPasswordScreenState extends ConsumerState<ForgetPasswordScreen> {
+  final emailController = TextEditingController();
 
   @override
   void dispose() {
-    answerController.dispose();
-    newPasswordController.dispose();
+    emailController.dispose();
     super.dispose();
+  }
+
+  Future<void> sendResetLink() async {
+    final email = emailController.text.trim();
+
+    if (email.isEmpty) {
+      showDialog(
+        context: context,
+        builder: (_) => const Messagebox(message: "Please enter your email."),
+      );
+      return;
+    }
+
+    final notifier = ref.read(authProvider.notifier);
+    final success = await notifier.forgotPassword(email);
+
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (_) => Messagebox(
+        message: success
+            ? "Password reset link sent. Check your inbox."
+            : ref.read(authProvider).errorMessage ??
+                  "Failed to send reset link.",
+        onOkTap: success
+            ? () => Navigator.pushReplacement(
+                context,
+                SlideLeftRoute(page: LoginScreen()),
+              )
+            : null,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final isLoading = ref.watch(authProvider).isLoading;
+
     return Scaffold(
       backgroundColor: ElevateColor.white,
       extendBodyBehindAppBar: true,
@@ -58,7 +78,7 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                 ElevateHeader(
                   title: "Lost Access?",
                   titleSize: 30,
-                  subTitle: "Let’s reconnect you with your account in seconds.",
+                  subTitle: "Let's reconnect you with your account in seconds.",
                   subtitleSize: 14,
                 ),
                 Padding(
@@ -71,7 +91,12 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                     borderRadius: 20,
                     height: 40,
                     width: 150,
-                    onTap: () { Navigator.pushReplacement(context, SlideLeftRoute(page: LoginScreen())); },
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        SlideLeftRoute(page: LoginScreen()),
+                      );
+                    },
                   ),
                 ),
               ],
@@ -84,42 +109,16 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SizedBox(height: 30),
+                      const SizedBox(height: 30),
 
                       CustomText(
-                        text: "Security Question",
+                        text: "Email",
                         fontSize: 14,
                         color: Colors.black,
                         fontWeight: FontWeight.w600,
                         textAlign: TextAlign.left,
                       ),
-
-                      SizedBox(height: 8),
-
-                      CustomDropDown(
-                        hintText: "What's your hobby?",
-                        items: questions,
-                        value: selectedQuestion,
-                        width: double.infinity,
-                        borderWidth: 1,
-                        backgroundColor: const Color(0xffF2F2F2),
-                        onChanged: (value) {
-                          setState(() {
-                            selectedQuestion = value;
-                          });
-                        },
-                      ),
-
-                      SizedBox(height: 20),
-
-                      CustomText(
-                        text: "Answer",
-                        fontSize: 14,
-                        color: Colors.black,
-                        fontWeight: FontWeight.w600,
-                        textAlign: TextAlign.left,
-                      ),
-
+                      const SizedBox(height: 8),
                       Container(
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.black, width: 1),
@@ -128,64 +127,28 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                         child: Padding(
                           padding: const EdgeInsets.all(12),
                           child: CustomTextField(
-                            hintText: "Coding",
-                            controller: answerController,
+                            hintText: "Enter your email",
+                            controller: emailController,
                             cursorColor: ElevateColor.black,
                             underlineColor: Colors.transparent,
                           ),
                         ),
                       ),
 
-                      SizedBox(height: 25),
+                      const SizedBox(height: 25),
 
-                      TextButtonGradient(
-                        text: "Check",
-                        height: 50,
-                        textSize: 16,
-                        textWeight: FontWeight.w500,
-                        borderRadius: 30,
-            
-                      ),
+                      isLoading
+                          ? const Center(child: CircularProgressIndicator())
+                          : TextButtonGradient(
+                              text: "Send Reset Link",
+                              height: 50,
+                              textSize: 16,
+                              textWeight: FontWeight.w500,
+                              borderRadius: 30,
+                              onTap: sendResetLink,
+                            ),
 
-                      SizedBox(height: 40),
-
-                      CustomText(
-                        text: "Set New Password",
-                        fontSize: 14,
-                        color: Colors.black,
-                        fontWeight: FontWeight.w600,
-                        textAlign: TextAlign.left,
-                      ),
-
-                      Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.black, width: 1),
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: CustomTextField(
-                            hintText: "**************",
-                            controller: newPasswordController,
-                            cursorColor: ElevateColor.black,
-                            underlineColor: Colors.transparent,
-                            obscureText: true,
-                          ),
-                        ),
-                      ),
-
-                      SizedBox(height: 25),
-
-                      TextButtonGradient(
-                        text: "Done",
-                        height: 50,
-                        textSize: 16,
-                        textWeight: FontWeight.w500,
-                        borderRadius: 30,
-                        onTap: () { Navigator.pushReplacement(context, SlideLeftRoute(page: LoginScreen())); },
-                      ),
-
-                      SizedBox(height: 20),
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),
