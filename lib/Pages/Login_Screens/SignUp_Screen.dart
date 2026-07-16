@@ -10,7 +10,6 @@ import 'package:elevate_app/Navigations/admin_bottom_navigation.dart';
 import 'package:elevate_app/Navigations/company_bottom_navigation.dart';
 import 'package:elevate_app/Navigations/job_seeker_bottom_navigation.dart';
 import 'package:elevate_app/Pages/Login_Screens/login_screen.dart';
-import 'package:elevate_app/Pages/company_main.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
