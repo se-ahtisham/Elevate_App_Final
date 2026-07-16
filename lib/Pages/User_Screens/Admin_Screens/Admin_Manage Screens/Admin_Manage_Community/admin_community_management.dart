@@ -61,7 +61,6 @@ class _AdminCommunityManagementState extends State<AdminCommunityManagement> {
     });
   }
 
-  // Card tap now opens this user's posts instead of their profile.
   void openUserPosts(JobSeekerModel seeker) {
     Navigator.push(
       context,

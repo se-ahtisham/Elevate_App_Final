@@ -32,7 +32,7 @@ class UserSocialmedia extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         IconText(
-          text: "$city, $country",
+          text: "$city $country",
           iconData: Icons.location_on,
           iconColor: ElevateColor.lightgray,
           iconSize: 18,

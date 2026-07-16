@@ -3,32 +3,59 @@ import "package:elevate_app/Custom_Widgets/Buttons/icon_text_button.dart";
 import "package:elevate_app/Custom_Widgets/Header/elevate_header.dart";
 import "package:elevate_app/Custom_Widgets/Text/custom_text.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_description.dart";
-import "package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Profile_Screens/job_seeker_update_profile.dart";
-import "package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart";
-import "package:flutter/material.dart";
-import 'package:flutter/services.dart';
-
-import "package:elevate_app/Animation/slide_left_route.dart";
-import "package:elevate_app/Custom_Widgets/Buttons/icon_text_button.dart";
-import "package:elevate_app/Custom_Widgets/Header/elevate_header.dart";
-import "package:elevate_app/Custom_Widgets/Text/custom_text.dart";
-import "package:elevate_app/Custom_Widgets/User_Widgets/user_description.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_education.dart";
-import "package:elevate_app/Custom_Widgets/User_Widgets/user_skill.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_socialMedia.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_work.dart";
+import "package:elevate_app/Database/Online_Database/auth_provider.dart";
 import "package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Profile_Screens/job_seeker_update_profile.dart";
 import "package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart";
 import "package:flutter/material.dart";
 import 'package:flutter/services.dart';
+import "package:flutter_riverpod/flutter_riverpod.dart";
 
-class JobSeekerProfileScreen extends StatelessWidget {
+class JobSeekerProfileScreen extends ConsumerStatefulWidget {
   const JobSeekerProfileScreen({super.key});
 
   @override
+  ConsumerState<JobSeekerProfileScreen> createState() =>
+      _JobSeekerProfileScreenState();
+}
+
+class _JobSeekerProfileScreenState
+    extends ConsumerState<JobSeekerProfileScreen> {
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    loadUser();
+  }
+
+  Future<void> loadUser() async {
+    await ref.read(authProvider.notifier).loadCurrentUser();
+    if (!mounted) return;
+    setState(() => isLoading = false);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(child: CircularProgressIndicator(color: Colors.black)),
+      );
+    }
+
+    final jobSeeker = ref.watch(authProvider).jobSeeker;
+
+    if (jobSeeker == null) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(child: Text("No profile data found.")),
+      );
+    }
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      // extendBodyBehindAppBar: true,
       value: SystemUiOverlayStyle.light,
       child: Container(
         height: double.infinity,
@@ -36,20 +63,23 @@ class JobSeekerProfileScreen extends StatelessWidget {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              ElevateHeader(
+              const ElevateHeader(
                 title: "Your Digital Identity",
                 subTitle: "Account Control Center",
               ),
               Padding(
                 padding: const EdgeInsets.only(left: 10.0, right: 20),
                 child: UserDescription(
-                  imageURL:
-                      'https://avatars.githubusercontent.com/u/159082885?v=4',
-                  name: "Muhammad Ahtisham",
-                  shortDescription: "Backend Developer",
-                  skills: 10,
-                  followers: 238,
-                  followings: 101,
+                  imageURL: jobSeeker.profilePic.isNotEmpty
+                      ? jobSeeker.profilePic
+                      : 'https://avatars.githubusercontent.com/u/159082885?v=4',
+                  name: jobSeeker.name,
+                  shortDescription: jobSeeker.about.isNotEmpty
+                      ? jobSeeker.about
+                      : "No bio added yet.",
+                  skills: jobSeeker.skillCount,
+                  followers: jobSeeker.followers.length,
+                  followings: jobSeeker.following.length,
                 ),
               ),
 
@@ -60,7 +90,6 @@ class JobSeekerProfileScreen extends StatelessWidget {
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-
                   children: [
                     Row(
                       children: [
@@ -72,7 +101,7 @@ class JobSeekerProfileScreen extends StatelessWidget {
                           textAlign: TextAlign.left,
                           lineHeight: 1.0,
                         ),
-                        SizedBox(width: 70),
+                        const SizedBox(width: 70),
                         IconTextButton(
                           text: "Update Profile",
                           iconData: Icons.settings,
@@ -85,57 +114,70 @@ class JobSeekerProfileScreen extends StatelessWidget {
                           textSize: 12,
                           height: 50,
                           width: 150,
-
-                          onTap: () {
-                            Navigator.push(
+                          onTap: () async {
+                            await Navigator.push(
                               context,
-                              SlideLeftRoute(page: JobSeekerUpdateProfile()),
+                              SlideLeftRoute(
+                                page: const JobSeekerUpdateProfile(),
+                              ),
                             );
+                            loadUser();
                           },
                         ),
                       ],
                     ),
-                    SizedBox(height: 12),
+                    const SizedBox(height: 12),
                     CustomText(
-                      text:
-                          "I’m web designer, I work in programs like figma, adobe photoshop, adobe illustratoI’m web designer, I work in programs like figma, adobe photoshop, adobe illustrator",
+                      text: jobSeeker.about.isNotEmpty
+                          ? jobSeeker.about
+                          : "No description added yet.",
                       fontSize: 13,
                       color: ElevateColor.whitegray,
                       fontWeight: FontWeight.w400,
                       textAlign: TextAlign.justify,
                       lineHeight: 1.3,
                     ),
-                    SizedBox(height: 22),
+                    const SizedBox(height: 22),
                     UserSocialmedia(
-                      city: "Lahore",
-                      country: "Pakistan",
-                      email: "se.ahtisham@gmail.com",
-                      phone: "03000000000",
+                      city: jobSeeker.location.isNotEmpty
+                          ? jobSeeker.location
+                          : "No location added",
+                      country: "",
+                      email: jobSeeker.email.isNotEmpty
+                          ? jobSeeker.email
+                          : "No email added",
+                      phone: "Not provided",
                     ),
 
-                    SizedBox(height: 22),
+                    const SizedBox(height: 22),
                     Container(
                       height: 80,
                       decoration: BoxDecoration(
-                        color: const Color.fromARGB(255, 233, 233, 233),
+                        color: const Color.fromARGB(255, 240, 240, 240),
                         borderRadius: BorderRadius.circular(15),
+                        border: Border.all(
+                          color: const Color.fromARGB(255, 173, 173, 173),
+                          width: 1,
+                        ),
                       ),
                       child: Center(
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             CustomText(
-                              text: "EXPERIENCE LEVEL",
+                              text: "EXPERIENCE",
                               fontSize: 20,
                               color: ElevateColor.lightgray,
                               fontWeight: FontWeight.bold,
                               textAlign: TextAlign.left,
                               lineHeight: 1.0,
                             ),
-                            SizedBox(height: 8),
+                            const SizedBox(height: 8),
                             CustomText(
-                              text: "3-5 Year Experience",
+                              text: jobSeeker.experienceLevel.isNotEmpty
+                                  ? jobSeeker.experienceLevel
+                                  : "No experience level added yet.",
                               fontSize: 12,
                               color: ElevateColor.lightgray,
                               fontWeight: FontWeight.w300,
@@ -147,7 +189,7 @@ class JobSeekerProfileScreen extends StatelessWidget {
                       ),
                     ),
 
-                    SizedBox(height: 22),
+                    const SizedBox(height: 22),
                     CustomText(
                       text: "EDUCATION",
                       fontSize: 20,
@@ -156,64 +198,31 @@ class JobSeekerProfileScreen extends StatelessWidget {
                       textAlign: TextAlign.left,
                       lineHeight: 1.0,
                     ),
+                    const SizedBox(height: 15),
+                    if (jobSeeker.education.isEmpty)
+                      CustomText(
+                        text: "No education added yet.",
+                        fontSize: 13,
+                        color: ElevateColor.whitegray,
+                        fontWeight: FontWeight.w400,
+                        textAlign: TextAlign.left,
+                      )
+                    else
+                      Column(
+                        children: [
+                          for (final edu in jobSeeker.education) ...[
+                            UserEducation(
+                              text: edu.title,
+                              subText: "${edu.school} — ${edu.year}",
+                              iconData: Icons.school_outlined,
+                              iconSize: 25,
+                            ),
+                            const SizedBox(height: 15),
+                          ],
+                        ],
+                      ),
 
-                    SizedBox(height: 15),
-                    Column(
-                      children: [
-                        UserEducation(
-                          text: 'Matriculation in Computer Science',
-                          subText: 'Milli Foundation High School, lahore',
-                          iconData: Icons.backpack_outlined,
-                          iconSize: 25,
-                        ),
-                        SizedBox(height: 15),
-                        UserEducation(
-                          text: 'Intermediate of Computer Science',
-                          subText: 'Govt. Shalimar college, lahore',
-                          iconData: Icons.book_outlined,
-                          iconSize: 25,
-                        ),
-                        SizedBox(height: 15),
-                        UserEducation(
-                          text: 'Bachelor of Software Engineering',
-                          subText: 'University of Management and Technology ',
-                          iconData: Icons.school_outlined,
-                          iconSize: 25,
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 22),
-                    CustomText(
-                      text: "SKILL",
-                      fontSize: 20,
-                      color: ElevateColor.lightgray,
-                      fontWeight: FontWeight.bold,
-                      textAlign: TextAlign.left,
-                      lineHeight: 1.0,
-                    ),
-
-                    SizedBox(height: 15),
-                    Column(
-                      children: [
-                        UserSkill(
-                          title: 'Java Development',
-                          subtitle: 'Experienced Coding',
-                          imagePath:
-                              'lib/Resources/Images/Coding_Badges/Pure/pure_hard.png',
-                          year: '2025',
-                        ),
-
-                        SizedBox(height: 15),
-                        UserSkill(
-                          title: 'Python',
-                          subtitle: 'Experienced Coding',
-                          imagePath:
-                              'lib/Resources/Images/Coding_Badges/Vibe/vibe_hard.png',
-                          year: '2025',
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 22),
+                    const SizedBox(height: 22),
                     CustomText(
                       text: "WORK",
                       fontSize: 20,
@@ -222,29 +231,30 @@ class JobSeekerProfileScreen extends StatelessWidget {
                       textAlign: TextAlign.left,
                       lineHeight: 1.0,
                     ),
-
-                    SizedBox(height: 15),
-                    Column(
-                      children: [
-                        UserWork(
-                          title: 'Junior Software Engineer',
-                          subtitle: 'Devsinc, Lahore Pakistan',
-                          iconData: Icons.person_outline,
-                          startDate: "2022",
-                          endDate: null, // Current Job
-                        ),
-
-                        SizedBox(height: 15),
-
-                        UserWork(
-                          title: 'Junior Software Engineer',
-                          subtitle: 'Devsinc, Lahore Pakistan',
-                          iconData: Icons.person_outline,
-                          startDate: "2022",
-                          endDate: "2026",
-                        ),
-                      ],
-                    ),
+                    const SizedBox(height: 15),
+                    if (jobSeeker.jobExperience.isEmpty)
+                      CustomText(
+                        text: "No work experience added yet.",
+                        fontSize: 13,
+                        color: ElevateColor.whitegray,
+                        fontWeight: FontWeight.w400,
+                        textAlign: TextAlign.left,
+                      )
+                    else
+                      Column(
+                        children: [
+                          for (final exp in jobSeeker.jobExperience) ...[
+                            UserWork(
+                              title: exp.jobTitle,
+                              subtitle: exp.company,
+                              iconData: Icons.person_outline,
+                              startDate: exp.from,
+                              endDate: exp.to.isEmpty ? null : exp.to,
+                            ),
+                            const SizedBox(height: 15),
+                          ],
+                        ],
+                      ),
                   ],
                 ),
               ),
