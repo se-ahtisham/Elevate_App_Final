@@ -107,6 +107,7 @@ flutter:
     - lib/Resources/Images/app_logo.png
     - lib/Resources/Images/splash_background.jpeg
     - lib/Animation/QR_Scan.gif
+    - lib/Animation/Welcome.gif
     - .env
      
 
