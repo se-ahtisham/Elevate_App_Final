@@ -14,6 +14,8 @@ class CompanyModel {
   final int companySize;
   final int activeJobs;
   final int followersCount;
+  final List<String> followers; // jobSeekerIDs who follow this company
+  final List<String> followRequests; // requestIDs -> FollowRequestModel
   final List<String> employeeList; // employeeIDs
   final List<String> companyWeaknessList; // AI-derived,
   final List<String> companyStrengthList; // AI-derived
@@ -37,6 +39,8 @@ class CompanyModel {
     this.companySize = 0,
     this.activeJobs = 0,
     this.followersCount = 0,
+    this.followers = const [],
+    this.followRequests = const [],
     this.employeeList = const [],
     this.companyWeaknessList = const [],
     this.companyStrengthList = const [],
@@ -62,6 +66,8 @@ class CompanyModel {
       'companySize': companySize,
       'activeJobs': activeJobs,
       'followersCount': followersCount,
+      'followers': followers,
+      'followRequests': followRequests,
       'employeeList': employeeList,
       'companyWeaknessList': companyWeaknessList,
       'companyStrengthList': companyStrengthList,
@@ -88,6 +94,8 @@ class CompanyModel {
       companySize: map['companySize'] ?? 0,
       activeJobs: map['activeJobs'] ?? 0,
       followersCount: map['followersCount'] ?? 0,
+      followers: List<String>.from(map['followers'] ?? []),
+      followRequests: List<String>.from(map['followRequests'] ?? []),
       employeeList: List<String>.from(map['employeeList'] ?? []),
       companyWeaknessList: List<String>.from(map['companyWeaknessList'] ?? []),
       companyStrengthList: List<String>.from(map['companyStrengthList'] ?? []),
@@ -109,6 +117,8 @@ class CompanyModel {
     int? companySize,
     int? activeJobs,
     int? followersCount,
+    List<String>? followers,
+    List<String>? followRequests,
     List<String>? employeeList,
     List<String>? companyWeaknessList,
     List<String>? companyStrengthList,
@@ -131,6 +141,8 @@ class CompanyModel {
       companySize: companySize ?? this.companySize,
       activeJobs: activeJobs ?? this.activeJobs,
       followersCount: followersCount ?? this.followersCount,
+      followers: followers ?? this.followers,
+      followRequests: followRequests ?? this.followRequests,
       employeeList: employeeList ?? this.employeeList,
       companyWeaknessList: companyWeaknessList ?? this.companyWeaknessList,
       companyStrengthList: companyStrengthList ?? this.companyStrengthList,

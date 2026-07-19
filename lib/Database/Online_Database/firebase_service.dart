@@ -1,5 +1,11 @@
 // firebase_service.dart
 // Database helper for Firestore read/write operations.
+//
+// NOTE: Community-related methods (unfollowUser, getPostsByAuthor,
+// getCommunityFeed, getMyCommunity) used to live in a separate
+// `firebase_service_community_extensions.dart` extension file. They have
+// been merged directly into this class — that file should be deleted and
+// no screen should import it anymore.
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/skill_model.dart';
@@ -17,23 +23,10 @@ import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/project_mo
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/result_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/review_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/test_model.dart';
-import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/user_index_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_seeker_model.dart';
 
 class FirebaseService {
   final FirebaseFirestore db = FirebaseFirestore.instance;
-
-  // User Index
-
-  Future<void> saveUserIndex(UserIndexModel index) async {
-    await db.collection('userIndex').doc(index.userID).set(index.toMap());
-  }
-
-  Future<UserIndexModel?> getUserIndex(String userID) async {
-    final doc = await db.collection('userIndex').doc(userID).get();
-    if (!doc.exists) return null;
-    return UserIndexModel.fromMap(doc.data()!);
-  }
 
   // Job Seeker
   Future<void> saveJobSeeker(JobSeekerModel jobSeeker) async {
@@ -125,6 +118,25 @@ class FirebaseService {
     await batch.commit();
   }
 
+  // Undo an already-accepted follow relationship. (Previously lived in
+  // firebase_service_community_extensions.dart — merged in here.)
+  Future<void> unfollowUser(
+    String fromID,
+    String toID, {
+    String toCollection = 'jobSeekers',
+  }) async {
+    final batch = db.batch();
+    batch.update(db.collection('jobSeekers').doc(fromID), {
+      'following': FieldValue.arrayRemove([toID]),
+      if (toCollection == 'companies')
+        'followedCompanies': FieldValue.arrayRemove([toID]),
+    });
+    batch.update(db.collection(toCollection).doc(toID), {
+      'followers': FieldValue.arrayRemove([fromID]),
+    });
+    await batch.commit();
+  }
+
   Future<bool> acceptFollowRequestForJobSeeker(
     String requestID, {
     String toCollection = 'jobSeekers',
@@ -147,6 +159,25 @@ class FirebaseService {
     });
     await batch.commit();
     return true;
+  }
+
+  // Returns 'Following' if fromID already follows toID, 'Pending' if a
+  // follow request is awaiting acceptance, otherwise 'None'. Used by the
+  // profile screen to decide whether to show Follow / Requested / Unfollow.
+  Future<String> getFollowStatus(String fromID, String toID) async {
+    final me = await getJobSeeker(fromID);
+    if (me != null && me.following.contains(toID)) return 'Following';
+
+    final snap = await db
+        .collection('followRequests')
+        .where('fromID', isEqualTo: fromID)
+        .where('toID', isEqualTo: toID)
+        .where('status', isEqualTo: 'Pending')
+        .limit(1)
+        .get();
+    if (snap.docs.isNotEmpty) return 'Pending';
+
+    return 'None';
   }
 
   Future<bool> rejectFollowRequestForJobSeeker(
@@ -483,6 +514,88 @@ class FirebaseService {
     return results;
   }
 
+  Future<List<PostModel>> getPostsByAuthor(String authorID) async {
+    final snap = await db
+        .collection('posts')
+        .where('authorID', isEqualTo: authorID)
+        .get();
+    final posts = snap.docs.map((d) => PostModel.fromMap(d.data())).toList();
+    posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return posts;
+  }
+
+  // Explore feed: every company's posts + posts from job seekers the
+  // current user follows + the current user's own posts.
+  Future<List<PostModel>> getCommunityFeed(String userID) async {
+    final seeker = await getJobSeeker(userID);
+    final following = <String>{...(seeker?.following ?? []), userID}.toList();
+
+    final companySnap = await db
+        .collection('posts')
+        .where('authorType', isEqualTo: 'Company')
+        .get();
+    final posts = companySnap.docs
+        .map((d) => PostModel.fromMap(d.data()))
+        .toList();
+
+    for (int i = 0; i < following.length; i += 10) {
+      final chunk = following.sublist(
+        i,
+        i + 10 > following.length ? following.length : i + 10,
+      );
+      final snap = await db
+          .collection('posts')
+          .where('authorID', whereIn: chunk)
+          .where('authorType', isEqualTo: 'JobSeeker')
+          .get();
+      posts.addAll(snap.docs.map((d) => PostModel.fromMap(d.data())));
+    }
+
+    posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return posts;
+  }
+
+  // Followers + following, resolved to raw maps (checks both collections
+  // since an ID alone doesn't say if it's a job seeker or a company).
+  // Each map has: id, name, subtitle, imageUrl, type.
+  // Previously lived in firebase_service_community_extensions.dart —
+  // merged in here.
+  Future<List<Map<String, String>>> getMyCommunity(String userID) async {
+    final seeker = await getJobSeeker(userID);
+    final ids = <String>{
+      ...(seeker?.followers ?? []),
+      ...(seeker?.following ?? []),
+    };
+
+    final result = <Map<String, String>>[];
+    for (final id in ids) {
+      final s = await getJobSeeker(id);
+      if (s != null) {
+        result.add({
+          'id': id,
+          'name': s.name,
+          'subtitle': s.experienceLevel.isNotEmpty
+              ? s.experienceLevel
+              : 'Job Seeker',
+          'imageUrl': s.profilePic,
+          'type': 'JobSeeker',
+        });
+        continue;
+      }
+      final c = await getCompany(id);
+      if (c != null) {
+        result.add({
+          'id': id,
+          'name': c.companyName,
+          'subtitle': c.industry.isNotEmpty ? c.industry : 'Company',
+          'imageUrl': c.logo,
+          'type': 'Company',
+        });
+      }
+    }
+    return result;
+  }
+
   Future<void> deleteUserCompletely(String userID, String userType) async {
     await db.collection('userIndex').doc(userID).delete();
 
@@ -539,18 +652,20 @@ class FirebaseService {
     final snap = await db
         .collection('comments')
         .where('postID', isEqualTo: postID)
-        .orderBy('createdAt')
         .get();
-    return snap.docs.map((d) => CommentModel.fromMap(d.data())).toList();
+    final comments = snap.docs
+        .map((d) => CommentModel.fromMap(d.data()))
+        .toList();
+    comments.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    return comments;
   }
 
-  Future<void> deleteComment(String commentID, String postID) async {
+Future<void> deleteComment(String commentID, String postID) async {
     await db.collection('comments').doc(commentID).delete();
     await db.collection('posts').doc(postID).update({
       'totalCommentCount': FieldValue.increment(-1),
     });
   }
-
   // Career Guidance Task
   Future<List<CareerGuidanceTaskModel>> viewCareerTasks(
     String jobSeekerID,

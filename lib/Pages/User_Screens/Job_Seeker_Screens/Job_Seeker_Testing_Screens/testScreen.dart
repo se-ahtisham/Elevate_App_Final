@@ -115,16 +115,16 @@ class TestScreen extends StatelessWidget {
                         buttonText: 'START',
                         imagePath: 'lib/Resources/Images/java.png',
                         onTap: () {},
-                        gradient: _purpleBlueGradient, // ✅
+                        gradient: _purpleBlueGradient,
                       ),
                       const SizedBox(height: 16),
                       SkillTestTile(
                         title: 'C++ Development',
                         subtitle: 'High-performance',
                         buttonText: 'START',
-                        imagePath: 'lib/Resources/Images/chash.png',
+                        imagePath: 'lib/Resources/Images/Skills/sharp.png',
                         onTap: () {},
-                        gradient: _purpleBlueGradient, // ✅
+                        gradient: _purpleBlueGradient,
                       ),
                       const SizedBox(height: 16),
                     ],

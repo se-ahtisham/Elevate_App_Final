@@ -4,27 +4,6 @@ import 'package:elevate_app/Custom_Widgets/User_Widgets/user_description_short.d
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 
-
-/*UserPostNew
-└── Container (width: 350, white,)
-    └── Padding (vertical: 20, horizontal: 25)
-        └── SingleChildScrollView
-            └── Column (crossAxisAlignment: start)
-                ├── Row
-                │   └── Expanded
-                │       └── UserDescriptionShort
-                ├── SizedBox (height: 20)
-                ├── CustomTextField (Title Field)
-                │   ├── controller: titleController
-                │   └── hintText: hintTitle
-                ├── SizedBox (height: 30)
-                ├── CustomTextField (Description Field)
-                │   ├── controller: shortdescriptionController
-                │   └── hintText: hintText
-                ├── SizedBox (height: 30)
-                ├── TextButtonGradient ("POST NOW")
-                └── SizedBox (height: 20) */
-
 class UserPostNew extends StatelessWidget {
   final String hintTitle;
   final String hintText;
@@ -58,10 +37,7 @@ class UserPostNew extends StatelessWidget {
       decoration: BoxDecoration(
         color: ElevateColor.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: borderColor,
-          width: borderSize.toDouble(),
-        ),
+        border: Border.all(color: borderColor, width: borderSize.toDouble()),
       ),
       child: Center(
         child: Padding(
@@ -74,34 +50,33 @@ class UserPostNew extends StatelessWidget {
                 name: name,
                 shortDescription: shortDescription,
               ),
-          
+
               SizedBox(height: 20),
-          
+
               CustomTextField(
                 controller: titleController,
                 hintText: hintTitle,
                 cursorColor: ElevateColor.lightgray,
                 underlineColor: ElevateColor.lightgray,
-                textColor: ElevateColor.white,
+                textColor: Colors
+                    .black, // was ElevateColor.white — invisible on white bg
               ),
-          
+
               SizedBox(height: 30),
-          
+
               CustomTextField(
                 controller: shortDescriptionController,
                 hintText: hintText,
                 cursorColor: ElevateColor.lightgray,
                 underlineColor: ElevateColor.lightgray,
-                textColor: ElevateColor.white,
+                textColor: Colors
+                    .black, // was ElevateColor.white — invisible on white bg
               ),
-          
+
               SizedBox(height: 30),
-          
-              TextButtonGradient(
-                text: "POST NOW",
-                onTap: onPost,
-              ),
-          
+
+              TextButtonGradient(text: "POST NOW", onTap: onPost),
+
               SizedBox(height: 20),
             ],
           ),

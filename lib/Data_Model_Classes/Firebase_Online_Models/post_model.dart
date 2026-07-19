@@ -6,7 +6,7 @@ class PostModel {
   final String authorType; // JobSeeker/Company
   final String title;
   final String content;
-  final int likes;
+  int likes; // <-- no longer final, so it can be updated optimistically
   final List<String> likedByUserIDs;
   final int totalCommentCount;
   final DateTime createdAt;

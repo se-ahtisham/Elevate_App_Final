@@ -1,6 +1,6 @@
-import 'package:elevate_app/Custom_Widgets/Buttons/text_button_gradient.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Custom_Widgets/User_Widgets/user_description_short.dart';
+import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 
 class UserCommentTile extends StatelessWidget {
@@ -12,6 +12,7 @@ class UserCommentTile extends StatelessWidget {
   final String shortDescription;
 
   final VoidCallback? onTap;
+  final VoidCallback? onDeleteTap;
 
   const UserCommentTile({
     super.key,
@@ -21,30 +22,54 @@ class UserCommentTile extends StatelessWidget {
     required this.name,
     required this.shortDescription,
     this.onTap,
+    this.onDeleteTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.all(12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 241, 241, 241),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color.fromARGB(255, 143, 143, 143)),
+        border: Border.all(color: ElevateColor.gray),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          UserDescriptionShort(
-            imageURL: imageURL,
-            name: name,
-            shortDescription: shortDescription,
+          Row(
+            children: [
+              Expanded(
+                child: UserDescriptionShort(
+                  imageURL: imageURL,
+                  name: name,
+                  shortDescription: shortDescription,
+                ),
+              ),
+              if (onDeleteTap != null)
+                IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    size: 25,
+                    color: Color.fromARGB(255, 22, 22, 22),
+                  ),
+                  onPressed: onDeleteTap,
+                ),
+            ],
           ),
-          const SizedBox(height: 16),
-          CustomText(text: title, fontSize: 14),
-          const SizedBox(height: 12),
-          CustomText(text: text, fontSize: 14, color: Colors.black87),
+          if (title.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            CustomText(text: title, fontSize: 14, fontWeight: FontWeight.bold),
+          ],
+          const SizedBox(height: 8),
+          CustomText(
+            text: text,
+            fontSize: 14,
+            color: Colors.black87,
+            fontWeight: FontWeight.w400,
+          ),
         ],
       ),
     );

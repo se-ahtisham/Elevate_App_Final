@@ -1,5 +1,5 @@
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
-import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Community_Screens/user_community_screen.dart';
+import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Community_Screens/community_search.dart';
 import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Jobs_Screens/Job_screen.dart';
 import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Portfolio_Screens/porfolio_screen.dart';
 import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Profile_Screens/job_Seeker_profile_screen.dart';
@@ -47,7 +47,7 @@ class _JobSeekerBottomNavigationState extends State<JobSeekerBottomNavigation> {
       Navigator(
         key: GlobalKey<NavigatorState>(),
         onGenerateRoute: (_) =>
-            MaterialPageRoute(builder: (_) => const UserCommunityScreen()),
+            MaterialPageRoute(builder: (_) => const CommunitySearch()),
       ),
       Navigator(
         key: GlobalKey<NavigatorState>(),
@@ -55,6 +55,7 @@ class _JobSeekerBottomNavigationState extends State<JobSeekerBottomNavigation> {
             MaterialPageRoute(builder: (_) => const PorfolioScreen()),
       ),
       Navigator(
+        //  Flow 1 (search → profile → follow/message) and Flow 2 (Community Center → Explore/My Community/My Post, with real per-post likes and comments)
         key: GlobalKey<NavigatorState>(),
         onGenerateRoute: (_) =>
             MaterialPageRoute(builder: (_) => const JobSeekerProfileScreen()),

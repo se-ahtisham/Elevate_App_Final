@@ -2,23 +2,6 @@ import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Resources/Colors/Gradient_Colors/gradient_colors.dart';
 import 'package:flutter/material.dart';
 
-/*TopNavigation
-└── DefaultTabController (length: titles.length)
-    └── Column
-        ├── Padding (vertical: 8)
-        │   └── TabBar
-        │       ├── isScrollable: true
-        │       ├── indicatorSize: TabBarIndicatorSize.tab
-        │       ├── indicator: BoxDecoration (gradient: grayToBlack, borderRadius: 30)
-        │       ├── labelColor: white
-        │       ├── unselectedLabelColor: grey
-        │       ├── labelPadding: EdgeInsets(horizontal: 20)
-        │       └── Tabs (one for each title)
-        │           └── Tab
-        │               └── CustomText (text: title, fontWeight: w500)
-        └── Expanded
-            └── TabBarView
-                └── screens (children: widgets corresponding to each tab) */
 
 class CommunityNavigation extends StatelessWidget {
   final List<String> titles;

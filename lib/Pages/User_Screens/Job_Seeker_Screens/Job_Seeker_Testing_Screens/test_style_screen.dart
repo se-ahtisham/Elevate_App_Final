@@ -52,7 +52,7 @@ class TestStyleScreen extends StatelessWidget {
                         title: 'Vibe Coding',
                         subtitle: 'Pure coding test',
                         buttonText: 'START',
-                        imagePath: 'lib/Resources/Images/chash.png', // optional
+                        imagePath: 'lib/Resources/Images/Skills/sharp.png',
                         onTap: () {
                           Navigator.push(
                             context,
@@ -67,7 +67,7 @@ class TestStyleScreen extends StatelessWidget {
                         title: 'Expert Coding',
                         subtitle: 'Pure coding test',
                         buttonText: 'START',
-                        imagePath: 'lib/Resources/Images/chash.png', // optional
+                        imagePath: 'lib/Resources/Images/Skills/sharp.png',
                         onTap: () {
                           Navigator.push(
                             context,
