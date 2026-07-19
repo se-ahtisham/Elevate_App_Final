@@ -3,7 +3,7 @@ import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Com
 import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Jobs_Screens/Job_screen.dart';
 import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Portfolio_Screens/porfolio_screen.dart';
 import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Profile_Screens/job_Seeker_profile_screen.dart';
-import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Testing_Screens/test_screen.dart';
+import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Testing_Screens/test_qr_entry.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -42,7 +42,7 @@ class _JobSeekerBottomNavigationState extends State<JobSeekerBottomNavigation> {
       Navigator(
         key: GlobalKey<NavigatorState>(),
         onGenerateRoute: (_) =>
-            MaterialPageRoute(builder: (_) => const TestScreen()),
+            MaterialPageRoute(builder: (_) => const TestQrEntry()),
       ),
       Navigator(
         key: GlobalKey<NavigatorState>(),

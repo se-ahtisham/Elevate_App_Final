@@ -7,6 +7,7 @@ import "package:elevate_app/Custom_Widgets/User_Widgets/user_education.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_socialMedia.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_work.dart";
 import "package:elevate_app/Database/Online_Database/auth_provider.dart";
+import "package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Profile_Screens/job_seeker_follow_requests.dart";
 import "package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Profile_Screens/job_seeker_update_profile.dart";
 import "package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart";
 import "package:flutter/material.dart";
@@ -101,7 +102,30 @@ class _JobSeekerProfileScreenState
                           textAlign: TextAlign.left,
                           lineHeight: 1.0,
                         ),
-                        const SizedBox(width: 70),
+                        const Spacer(),
+                        IconTextButton(
+                          text: "Requests",
+                          iconData: Icons.person_add_alt_1_outlined,
+                          backgroundColor: ElevateColor.white,
+                          iconColor: ElevateColor.lightgray,
+                          textColor: ElevateColor.gray,
+                          textWeight: FontWeight.bold,
+                          borderColor: ElevateColor.gray,
+                          borderRadius: 50,
+                          textSize: 12,
+                          height: 50,
+                          width: 130,
+                          onTap: () async {
+                            await Navigator.push(
+                              context,
+                              SlideLeftRoute(
+                                page: const JobSeekerFollowRequests(),
+                              ),
+                            );
+                            loadUser();
+                          },
+                        ),
+                        const SizedBox(width: 10),
                         IconTextButton(
                           text: "Update Profile",
                           iconData: Icons.settings,

@@ -46,6 +46,8 @@ dependencies:
   firebase_auth: ^4.2.1
   cloud_firestore: ^4.16.2
   firebase_storage: ^11.7.4
+  mobile_scanner: ^5.2.3
+  permission_handler: ^11.3.1
   
 
 
@@ -104,6 +106,7 @@ flutter:
     - lib/Resources/Images/Skills/python.png
     - lib/Resources/Images/app_logo.png
     - lib/Resources/Images/splash_background.jpeg
+    - lib/Animation/QR_Scan.gif
     - .env
      
 

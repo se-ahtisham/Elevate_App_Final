@@ -660,12 +660,40 @@ class FirebaseService {
     return comments;
   }
 
-Future<void> deleteComment(String commentID, String postID) async {
+  Future<List<Map<String, String>>> getFollowRequestsForJobSeeker(
+    String jobSeekerID,
+  ) async {
+    final seeker = await getJobSeeker(jobSeekerID);
+    final requestIDs = seeker?.followRequests ?? [];
+
+    final result = <Map<String, String>>[];
+    for (final requestID in requestIDs) {
+      final request = await getFollowRequest(requestID);
+      if (request == null || request.status != 'Pending') continue;
+
+      final fromUser = await getJobSeeker(request.fromID);
+      if (fromUser == null) continue;
+
+      result.add({
+        'requestID': request.requestID,
+        'fromID': request.fromID,
+        'name': fromUser.name,
+        'imageURL': fromUser.profilePic,
+        'shortDescription': fromUser.experienceLevel.isNotEmpty
+            ? fromUser.experienceLevel
+            : 'Job Seeker',
+      });
+    }
+    return result;
+  }
+
+  Future<void> deleteComment(String commentID, String postID) async {
     await db.collection('comments').doc(commentID).delete();
     await db.collection('posts').doc(postID).update({
       'totalCommentCount': FieldValue.increment(-1),
     });
   }
+
   // Career Guidance Task
   Future<List<CareerGuidanceTaskModel>> viewCareerTasks(
     String jobSeekerID,
