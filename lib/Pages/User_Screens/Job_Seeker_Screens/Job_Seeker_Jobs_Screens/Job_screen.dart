@@ -216,11 +216,48 @@ class JobScreenState extends ConsumerState<JobScreen> {
                   const SizedBox(height: 30),
 
                   if (mySkills.isNotEmpty) ...[
-                    const CustomText(
-                      text: 'Filter By Passed Skill',
-                      fontSize: 16,
-                      color: ElevateColor.gray,
-                      fontWeight: FontWeight.w700,
+                    Row(
+                      children: [
+                        CustomText(
+                          text: 'OTHER JOBS FOR YOU',
+                          fontSize: 16,
+                          color: ElevateColor.gray,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        SizedBox(width: 120),
+                        InkWell(
+                          borderRadius: BorderRadius.circular(20),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const OtherPlatformJobs(
+                                  experience: "",
+                                  niche: "",
+                                ),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            height: 34,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF595959), Color(0xFF111111)],
+                              ),
+                            ),
+                            child: const Center(
+                              child: CustomText(
+                                text: 'MORE JOBS',
+                                fontSize: 10,
+                                color: ElevateColor.white,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 12),
 
@@ -232,9 +269,8 @@ class JobScreenState extends ConsumerState<JobScreen> {
                           Padding(
                             padding: const EdgeInsets.only(right: 10),
                             child: JobSkillFilterChip(
-                              skillName: "All",
-                              tier: "Bronze",
-                              isActive: activeSkillID == null,
+                              text: "All",
+                              isSelected: activeSkillID == null,
                               onTap: () => selectSkill(null),
                             ),
                           ),
@@ -242,9 +278,8 @@ class JobScreenState extends ConsumerState<JobScreen> {
                             return Padding(
                               padding: const EdgeInsets.only(right: 10),
                               child: JobSkillFilterChip(
-                                skillName: entry.value['name'] as String,
-                                tier: entry.value['tier'] as String,
-                                isActive: activeSkillID == entry.key,
+                                text: entry.value['name'] as String,
+                                isSelected: activeSkillID == entry.key,
                                 onTap: () => selectSkill(entry.key),
                               ),
                             );
@@ -296,92 +331,6 @@ class JobScreenState extends ConsumerState<JobScreen> {
 
                     const SizedBox(height: 30),
                   ],
-
-                  Row(
-                    children: [
-                      const Expanded(
-                        child: CustomText(
-                          text: 'OTHER JOBS FOR YOU',
-                          fontSize: 16,
-                          color: ElevateColor.gray,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      InkWell(
-                        borderRadius: BorderRadius.circular(20),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const OtherPlatformJobs(
-                                experience: "",
-                                niche: "",
-                              ),
-                            ),
-                          );
-                        },
-                        child: Container(
-                          height: 34,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF595959), Color(0xFF111111)],
-                            ),
-                          ),
-                          child: const Center(
-                            child: CustomText(
-                              text: 'MORE JOBS',
-                              fontSize: 10,
-                              color: ElevateColor.white,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  if (otherPlatformJobs.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 20),
-                      child: Center(
-                        child: CustomText(
-                          text: "No other jobs posted yet.",
-                          fontSize: 13,
-                          color: ElevateColor.gray,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    )
-                  else
-                    Column(
-                      children: otherPlatformJobs.map((job) {
-                        final company = companiesByID[job.companyID];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: JobCompactTile(
-                            title: job.title,
-                            company: company?.companyName ?? 'Company',
-                            location: job.location,
-                            salary: job.salary,
-                            isRemote: job.location.toLowerCase().contains(
-                              'remote',
-                            ),
-                            jobType: job.jobType,
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Open job details'),
-                                ),
-                              );
-                            },
-                          ),
-                        );
-                      }).toList(),
-                    ),
 
                   const SizedBox(height: 12),
                 ],
