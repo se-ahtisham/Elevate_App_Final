@@ -4,7 +4,8 @@ import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 
 class FeaturedJobCard extends StatelessWidget {
-  final String initials;
+  final String
+  initials; // two-letter avatar text shown in the circular badge "TS" for "Tech Solutions Inc"
   final String title;
   final String companyAndLocation;
   final String description;
@@ -30,7 +31,7 @@ class FeaturedJobCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
         gradient: const LinearGradient(
@@ -47,13 +48,16 @@ class FeaturedJobCard extends StatelessWidget {
         ],
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          SizedBox(height: 8),
+          // Avatar + title + company/location row
           Row(
             children: [
               Container(
-                width: 48,
-                height: 48,
+                width: 44,
+                height: 44,
                 decoration: const BoxDecoration(
                   color: Color(0xFFD9D9D9),
                   shape: BoxShape.circle,
@@ -61,7 +65,7 @@ class FeaturedJobCard extends StatelessWidget {
                 alignment: Alignment.center,
                 child: CustomText(
                   text: initials,
-                  fontSize: 20,
+                  fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: ElevateColor.gray,
                 ),
@@ -92,7 +96,9 @@ class FeaturedJobCard extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 14),
+
+          const SizedBox(height: 10),
+
           CustomText(
             text: description,
             fontSize: 9,
@@ -102,26 +108,67 @@ class FeaturedJobCard extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 10),
-          const Divider(
-            color: Color(0xFF565656),
-            thickness: 0.7,
-            height: 1,
+
+          const SizedBox(height: 8),
+          const Divider(color: Color(0xFF565656), thickness: 0.7, height: 1),
+          const SizedBox(height: 8),
+
+          // Mode / type / salary chips — scrolls horizontally so long
+          // text (like longer salary strings) never overflows the card
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                CustomTextBox(
+                  text: jobMode,
+                  textSize: 9,
+                  textColor: const Color(0xFFCBCBCB),
+                  textWeight: FontWeight.w500,
+                  height: 22,
+                  paddingLeft: 12,
+                  paddingRight: 12,
+                  backgroundColor: const Color(0x00111111),
+                  borderColor: const Color(0xFF5E5E5E),
+                  borderWidth: 0.8,
+                  borderRadius: 18,
+                ),
+                const SizedBox(width: 8),
+                CustomTextBox(
+                  text: jobType,
+                  textSize: 9,
+                  textColor: const Color(0xFFCBCBCB),
+                  textWeight: FontWeight.w500,
+                  height: 22,
+                  paddingLeft: 12,
+                  paddingRight: 12,
+                  backgroundColor: const Color(0x00111111),
+                  borderColor: const Color(0xFF5E5E5E),
+                  borderWidth: 0.8,
+                  borderRadius: 18,
+                ),
+                const SizedBox(width: 8),
+                CustomTextBox(
+                  text: salary,
+                  textSize: 9,
+                  textColor: const Color(0xFFCBCBCB),
+                  textWeight: FontWeight.w500,
+                  height: 22,
+                  paddingLeft: 12,
+                  paddingRight: 12,
+                  backgroundColor: const Color(0x00111111),
+                  borderColor: const Color(0xFF5E5E5E),
+                  borderWidth: 0.8,
+                  borderRadius: 18,
+                ),
+              ],
+            ),
           ),
+
           const SizedBox(height: 10),
-          Row(
-            children: [
-              _chip(jobMode),
-              const SizedBox(width: 8),
-              _chip(jobType),
-              const SizedBox(width: 8),
-              _chip(salary),
-            ],
-          ),
-          const SizedBox(height: 12),
+
           SizedBox(
             width: double.infinity,
-            height: 30,
+            height: 28,
             child: ElevatedButton(
               onPressed: onApplyTap,
               style: ElevatedButton.styleFrom(
@@ -142,22 +189,6 @@ class FeaturedJobCard extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _chip(String text) {
-    return CustomTextBox(
-      text: text,
-      textSize: 9,
-      textColor: const Color(0xFFCBCBCB),
-      textWeight: FontWeight.w500,
-      height: 23,
-      paddingLeft: 12,
-      paddingRight: 12,
-      backgroundColor: const Color(0x00111111),
-      borderColor: const Color(0xFF5E5E5E),
-      borderWidth: 0.8,
-      borderRadius: 18,
     );
   }
 }

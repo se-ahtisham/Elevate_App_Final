@@ -1214,4 +1214,131 @@ class FirebaseService {
     if (snap.docs.isEmpty) return null;
     return JobSeekerModel.fromMap(snap.docs.first.data());
   }
+
+  // ---------------- Skill Tier / Job Matching ----------------
+
+  static String tierForScore(double score) {
+    if (score >= 90) return 'Gold';
+    if (score >= 75) return 'Silver';
+    if (score >= 50) return 'Bronze';
+    return 'None';
+  }
+
+  static String jobExperienceTier(String experienceLevel) {
+    final level = experienceLevel.toLowerCase();
+
+    if (level.contains('intern') || level.contains('0 year')) {
+      return 'Bronze';
+    }
+    if (level.contains('1 to 5') || level.contains('1-5')) {
+      return 'Silver';
+    }
+    if (level.contains('5 to onward') || level.contains('5+')) {
+      return 'Gold';
+    }
+
+    return 'Bronze';
+  }
+
+  static List<String> eligibleJobTiersFor(String skillTier) {
+    if (skillTier == 'Gold') return ['Gold', 'Bronze'];
+    if (skillTier == 'Silver') return ['Silver'];
+    if (skillTier == 'Bronze') return ['Bronze'];
+    return [];
+  }
+
+  Future<Map<String, double>> getBestPassedScoresBySkill(
+    String jobSeekerID,
+  ) async {
+    final allResults = await getTestHistory(jobSeekerID);
+    final passedResults = allResults.where((result) => result.isPassed);
+
+    final testCache = <String, TestModel?>{};
+
+    Future<TestModel?> getTestCached(String testID) async {
+      if (testCache.containsKey(testID)) return testCache[testID];
+      final test = await getTest(testID);
+      testCache[testID] = test;
+      return test;
+    }
+
+    final bestScoreBySkill = <String, double>{};
+
+    for (final result in passedResults) {
+      final test = await getTestCached(result.testID);
+      if (test == null) continue;
+
+      final currentBest = bestScoreBySkill[test.skillID];
+      if (currentBest == null || result.score > currentBest) {
+        bestScoreBySkill[test.skillID] = result.score;
+      }
+    }
+
+    return bestScoreBySkill;
+  }
+
+  Future<List<JobPostModel>> getJobsForSkillTier(
+    String skillID,
+    String skillTier,
+  ) async {
+    final snap = await db
+        .collection('jobs')
+        .where('requiredSkills', arrayContains: skillID)
+        .where('isClosed', isEqualTo: false)
+        .get();
+
+    final allowedJobTiers = eligibleJobTiersFor(skillTier);
+    final jobs = snap.docs.map((d) => JobPostModel.fromMap(d.data())).toList();
+
+    return jobs.where((job) {
+      final jobTier = jobExperienceTier(job.experienceLevel);
+      return allowedJobTiers.contains(jobTier);
+    }).toList();
+  }
+
+  Future<List<JobPostModel>> getRecommendedJobs(
+    String jobSeekerID, {
+    int limit = 10,
+  }) async {
+    final bestScoreBySkill = await getBestPassedScoresBySkill(jobSeekerID);
+    if (bestScoreBySkill.isEmpty) return [];
+
+    final seenJobIDs = <String>{};
+    final recommendedJobs = <JobPostModel>[];
+
+    for (final entry in bestScoreBySkill.entries) {
+      final skillID = entry.key;
+      final score = entry.value;
+      final tier = tierForScore(score);
+
+      final matchingJobs = await getJobsForSkillTier(skillID, tier);
+      for (final job in matchingJobs) {
+        if (seenJobIDs.add(job.jobID)) {
+          recommendedJobs.add(job);
+        }
+      }
+    }
+
+    recommendedJobs.sort((a, b) => b.postedAt.compareTo(a.postedAt));
+    return recommendedJobs.take(limit).toList();
+  }
+
+  Future<List<JobPostModel>> getOtherPlatformJobs({
+    List<String> excludeJobIDs = const [],
+    int limit = 10,
+  }) async {
+    final snap = await db
+        .collection('jobs')
+        .where('isExternal', isEqualTo: false)
+        .where('isClosed', isEqualTo: false)
+        .get();
+
+    final jobs = snap.docs
+        .map((d) => JobPostModel.fromMap(d.data()))
+        .where((job) => !excludeJobIDs.contains(job.jobID))
+        .toList();
+
+    jobs.sort((a, b) => b.postedAt.compareTo(a.postedAt));
+    return jobs.take(limit).toList();
+  }
 }
