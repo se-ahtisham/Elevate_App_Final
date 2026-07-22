@@ -173,11 +173,12 @@ class CommunitySearchState
           children: [
             Stack(
               children: [
-                const ElevateHeader(
+                ElevateHeader(
                   title: "Discover",
                   subTitle: "Your Network",
                   titleSize: 40,
                   subtitleSize: 25,
+                  showBackButton: true,
                 ),
                 Positioned(
                   top: 170,

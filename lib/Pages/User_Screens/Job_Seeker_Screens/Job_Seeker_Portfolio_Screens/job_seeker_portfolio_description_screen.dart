@@ -1,31 +1,35 @@
 import 'package:elevate_app/Custom_Widgets/Buttons/circle_icon_button.dart';
 import 'package:elevate_app/Custom_Widgets/Buttons/text_button_gradient.dart';
-import 'package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
-import 'package:elevate_app/Custom_Widgets/Text/custom_gradient_text.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/project_model.dart';
 import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Portfolio_Screens/portfolio_update_screen.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 
 class JobSeekerPortfolioDescriptionScreen extends StatelessWidget {
-  static const List<String> previewImages = [
-    "lib/Resources/Images/mock.png",
-    "lib/Resources/Images/mock2.png",
-    "lib/Resources/Images/mock.png",
-    "lib/Resources/Images/mock2.png",
-  ];
-  const JobSeekerPortfolioDescriptionScreen({super.key});
+  final ProjectModel? project;
+
+  const JobSeekerPortfolioDescriptionScreen({super.key, this.project});
 
   @override
   Widget build(BuildContext context) {
+    final p = project;
+    final previewImages = p?.mediaFiles ?? [];
+
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 245, 245, 245),
       body: Stack(
         children: [
           Column(
             children: [
-              ElevateHeader(),
+              ElevateHeader(
+                title: "",
+                subTitle: "",
+                titleSize: 40,
+                subtitleSize: 25,
+                showBackButton: true,
+              ),
               Expanded(
                 child: SingleChildScrollView(
                   child: Padding(
@@ -44,22 +48,36 @@ class JobSeekerPortfolioDescriptionScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 12),
 
-                        SizedBox(
-                          height: 92,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
-                            itemCount: previewImages.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(width: 14),
-                            itemBuilder: (context, i) {
-                              return _PreviewCard(
-                                imagePath: previewImages[i],
-                                heroTag: "preview_$i",
-                              );
-                            },
+                        // Preview images
+                        if (previewImages.isNotEmpty)
+                          SizedBox(
+                            height: 92,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              physics: const BouncingScrollPhysics(),
+                              itemCount: previewImages.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(width: 14),
+                              itemBuilder: (context, i) {
+                                return _NetworkPreviewCard(
+                                  imageUrl: previewImages[i],
+                                  heroTag: "preview_$i",
+                                );
+                              },
+                            ),
+                          )
+                        else
+                          Container(
+                            height: 92,
+                            alignment: Alignment.center,
+                            child: const Text(
+                              "No images uploaded.",
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 13,
+                              ),
+                            ),
                           ),
-                        ),
 
                         const SizedBox(height: 20),
                         const CustomText(
@@ -70,11 +88,10 @@ class JobSeekerPortfolioDescriptionScreen extends StatelessWidget {
                           lineHeight: 1.2,
                         ),
                         const SizedBox(height: 10),
-                        const CustomText(
-                          text:
-                              "We are seeking a talented UI/UX Designer to join "
-                              "our team and craft engaging, user-friendly digital "
-                              "experiences. You will be responsible for designing",
+                        CustomText(
+                          text: p?.projectDescription.isNotEmpty == true
+                              ? p!.projectDescription
+                              : "No description provided.",
                           fontSize: 13.5,
                           fontWeight: FontWeight.w400,
                           color: ElevateColor.whitegray,
@@ -92,9 +109,21 @@ class JobSeekerPortfolioDescriptionScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 12),
 
-                        _FilePill(fileName: "index.html", onDownload: () {}),
-                        const SizedBox(height: 12),
-                        _FilePill(fileName: "java.zip", onDownload: () {}),
+                        if (p == null || p.techStack.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.only(bottom: 12),
+                            child: Text(
+                              "No files attached.",
+                              style: TextStyle(color: Colors.grey, fontSize: 13),
+                            ),
+                          )
+                        else
+                          ...p.techStack.map(
+                            (f) => Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: _FilePill(fileName: f, onDownload: () {}),
+                            ),
+                          ),
 
                         const SizedBox(height: 20),
 
@@ -104,7 +133,6 @@ class JobSeekerPortfolioDescriptionScreen extends StatelessWidget {
                           textColor: const Color.fromARGB(255, 255, 255, 255),
                           textWeight: FontWeight.w500,
                           textAlign: TextAlign.center,
-
                           borderRadius: 30,
                           borderWidth: 1,
                           height: 50,
@@ -113,7 +141,8 @@ class JobSeekerPortfolioDescriptionScreen extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => PortfolioUpdateScreen(),
+                                builder: (context) =>
+                                    PortfolioUpdateScreen(project: p),
                               ),
                             );
                           },
@@ -129,7 +158,7 @@ class JobSeekerPortfolioDescriptionScreen extends StatelessWidget {
           ),
 
           Padding(
-            padding: EdgeInsets.only(left: 18, right: 18, top: 150),
+            padding: const EdgeInsets.only(left: 18, right: 18, top: 150),
             child: Container(
               width: double.infinity,
               height: 140,
@@ -145,19 +174,23 @@ class JobSeekerPortfolioDescriptionScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              child: const Column(
+              child: Column(
                 children: [
                   CustomText(
-                    text: "E-Commerce\nMobile Application",
+                    text: p?.projectTitle.isNotEmpty == true
+                        ? p!.projectTitle
+                        : "Project",
                     textAlign: TextAlign.center,
                     fontSize: 26,
                     fontWeight: FontWeight.w700,
                     color: ElevateColor.lightgray,
                     lineHeight: 1.15,
                   ),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
                   CustomText(
-                    text: "Lead Developer",
+                    text: p?.techStack.isNotEmpty == true
+                        ? p!.techStack.first
+                        : "Developer",
                     fontSize: 12.5,
                     fontWeight: FontWeight.w500,
                     color: ElevateColor.whitegray,
@@ -173,13 +206,13 @@ class JobSeekerPortfolioDescriptionScreen extends StatelessWidget {
   }
 }
 
-// Preview Card
+// Network Preview Card
 
-class _PreviewCard extends StatelessWidget {
-  final String imagePath;
+class _NetworkPreviewCard extends StatelessWidget {
+  final String imageUrl;
   final String heroTag;
 
-  const _PreviewCard({required this.imagePath, required this.heroTag});
+  const _NetworkPreviewCard({required this.imageUrl, required this.heroTag});
 
   @override
   Widget build(BuildContext context) {
@@ -190,7 +223,7 @@ class _PreviewCard extends StatelessWidget {
           context,
           MaterialPageRoute(
             builder: (_) =>
-                _FullScreenImage(imagePath: imagePath, heroTag: heroTag),
+                _FullScreenNetworkImage(imageUrl: imageUrl, heroTag: heroTag),
           ),
         );
       },
@@ -210,8 +243,8 @@ class _PreviewCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: Hero(
           tag: heroTag,
-          child: Image.asset(
-            imagePath,
+          child: Image.network(
+            imageUrl,
             fit: BoxFit.cover,
             errorBuilder: (_, __, ___) => Container(
               color: const Color(0xFFF2F2F2),
@@ -229,11 +262,12 @@ class _PreviewCard extends StatelessWidget {
   }
 }
 
-class _FullScreenImage extends StatelessWidget {
-  final String imagePath;
+class _FullScreenNetworkImage extends StatelessWidget {
+  final String imageUrl;
   final String heroTag;
 
-  const _FullScreenImage({required this.imagePath, required this.heroTag});
+  const _FullScreenNetworkImage(
+      {required this.imageUrl, required this.heroTag});
 
   @override
   Widget build(BuildContext context) {
@@ -247,7 +281,7 @@ class _FullScreenImage extends StatelessWidget {
               child: InteractiveViewer(
                 minScale: 0.8,
                 maxScale: 4.0,
-                child: Image.asset(imagePath),
+                child: Image.network(imageUrl),
               ),
             ),
           ),

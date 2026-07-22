@@ -1,12 +1,3 @@
-// firebase_service.dart
-// Database helper for Firestore read/write operations.
-//
-// NOTE: Community-related methods (unfollowUser, getPostsByAuthor,
-// getCommunityFeed, getMyCommunity) used to live in a separate
-// `firebase_service_community_extensions.dart` extension file. They have
-// been merged directly into this class — that file should be deleted and
-// no screen should import it anymore.
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/skill_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/admin_model.dart';
@@ -333,37 +324,28 @@ class FirebaseService {
     await batch.commit();
   }
 
-  Future<ReviewModel> submitEmployeeReview({
-    required String employeeID,
-    required String companyID,
-    required String jobSeekerID,
-    required double rating,
-    required String rawReviewText,
-    String sentiment = '',
-    List<String> strengths = const [],
-    List<String> weaknesses = const [],
-  }) async {
-    final review = ReviewModel(
-      reviewID: db.collection('reviews').doc().id,
-      companyID: companyID,
-      jobSeekerID: jobSeekerID,
-      rating: rating,
-      text: rawReviewText,
-      sentiment: sentiment,
-    );
+  Future<ReviewModel> submitEmployeeReview(ReviewModel review) async {
     await saveReview(review);
-    await db.collection('employees').doc(employeeID).update({
-      'hasSubmittedReview': true,
-    });
-
-    if (strengths.isNotEmpty) {
-      await db.collection('companies').doc(companyID).update({
-        'companyStrengthList': FieldValue.arrayUnion(strengths),
-      });
-    }
-    if (weaknesses.isNotEmpty) {
-      await db.collection('companies').doc(companyID).update({
-        'companyWeaknessList': FieldValue.arrayUnion(weaknesses),
+    // Update company rating
+    final companyDoc = await db
+        .collection('companies')
+        .doc(review.companyID)
+        .get();
+    if (companyDoc.exists) {
+      final reviewsSnap = await db
+          .collection('reviews')
+          .where('companyID', isEqualTo: review.companyID)
+          .get();
+      double totalRating = 0;
+      for (final doc in reviewsSnap.docs) {
+        totalRating += (doc.data()['rating'] as num? ?? 0).toDouble();
+      }
+      final double avgRating = reviewsSnap.docs.isNotEmpty
+          ? totalRating / reviewsSnap.docs.length
+          : 0.0;
+      await db.collection('companies').doc(review.companyID).update({
+        'rating': avgRating,
+        'reviewCount': reviewsSnap.docs.length,
       });
     }
     return review;
@@ -1215,8 +1197,6 @@ class FirebaseService {
     return JobSeekerModel.fromMap(snap.docs.first.data());
   }
 
-  // ---------------- Skill Tier / Job Matching ----------------
-
   static String tierForScore(double score) {
     if (score >= 90) return 'Gold';
     if (score >= 75) return 'Silver';
@@ -1241,8 +1221,8 @@ class FirebaseService {
   }
 
   static List<String> eligibleJobTiersFor(String skillTier) {
-    if (skillTier == 'Gold') return ['Gold', 'Bronze'];
-    if (skillTier == 'Silver') return ['Silver'];
+    if (skillTier == 'Gold') return ['Gold', 'Silver', 'Bronze'];
+    if (skillTier == 'Silver') return ['Silver', 'Bronze'];
     if (skillTier == 'Bronze') return ['Bronze'];
     return [];
   }
@@ -1340,5 +1320,80 @@ class FirebaseService {
 
     jobs.sort((a, b) => b.postedAt.compareTo(a.postedAt));
     return jobs.take(limit).toList();
+  }
+
+  // ─── Projects / Portfolio ──────────────────────────────────────────────────
+
+  static String generateID() =>
+      FirebaseFirestore.instance.collection('_').doc().id;
+
+  /// Save a new project and add its ID to the jobSeeker's portfolio array.
+  Future<void> saveProject(ProjectModel project) async {
+    final batch = db.batch();
+    batch.set(
+      db.collection('projects').doc(project.projectID),
+      project.toMap(),
+    );
+    batch.update(db.collection('jobSeekers').doc(project.jobSeekerID), {
+      'portfolio': FieldValue.arrayUnion([project.projectID]),
+    });
+    await batch.commit();
+  }
+
+  /// Fetch all projects belonging to a job seeker.
+  Future<List<ProjectModel>> getProjectsForJobSeeker(String jobSeekerID) async {
+    final snap = await db
+        .collection('projects')
+        .where('jobSeekerID', isEqualTo: jobSeekerID)
+        .get();
+    return snap.docs.map((d) => ProjectModel.fromMap(d.data())).toList();
+  }
+
+  /// Update specific fields of a project document.
+  Future<void> updateProject(
+    String projectID,
+    Map<String, dynamic> data,
+  ) async {
+    await db.collection('projects').doc(projectID).update(data);
+  }
+
+  /// Delete a project and remove it from the jobSeeker's portfolio array.
+  Future<void> deleteProject(String projectID, String jobSeekerID) async {
+    final batch = db.batch();
+    batch.delete(db.collection('projects').doc(projectID));
+    batch.update(db.collection('jobSeekers').doc(jobSeekerID), {
+      'portfolio': FieldValue.arrayRemove([projectID]),
+    });
+    await batch.commit();
+  }
+
+  // ─── Employees & Reviews ───────────────────────────────────────────────────
+
+  /// Fetch all employments for a given job seeker.
+  Future<List<CompanyEmployeeModel>> getEmployeesForJobSeeker(
+    String jobSeekerID,
+  ) async {
+    final snap = await db
+        .collection('employees')
+        .where('jobSeekerID', isEqualTo: jobSeekerID)
+        .get();
+    return snap.docs
+        .map((d) => CompanyEmployeeModel.fromMap(d.data()))
+        .toList();
+  }
+
+  /// Check if a job seeker has already submitted a review for a company.
+  Future<ReviewModel?> getReviewForSeekerAndCompany(
+    String companyID,
+    String jobSeekerID,
+  ) async {
+    final snap = await db
+        .collection('reviews')
+        .where('companyID', isEqualTo: companyID)
+        .where('jobSeekerID', isEqualTo: jobSeekerID)
+        .limit(1)
+        .get();
+    if (snap.docs.isEmpty) return null;
+    return ReviewModel.fromMap(snap.docs.first.data());
   }
 }

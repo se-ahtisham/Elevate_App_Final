@@ -9,7 +9,6 @@ import 'package:elevate_app/Custom_Widgets/User_Widgets/user_description.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/education_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_experience_model.dart';
 import 'package:elevate_app/Database/Online_Database/auth_provider.dart';
-import 'package:elevate_app/Database/Online_Database/auth_provider.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -114,6 +113,7 @@ class _State extends ConsumerState<JobSeekerUpdateProfile> {
             ElevateHeader(
               title: "Update Profile",
               subTitle: "Make your profile stand out in the system",
+              showBackButton: true,
             ),
             Expanded(
               child: SingleChildScrollView(

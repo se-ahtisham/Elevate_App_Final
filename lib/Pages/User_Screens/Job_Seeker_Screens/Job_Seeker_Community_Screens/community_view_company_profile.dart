@@ -94,9 +94,100 @@ class CommunityViewCompanyProfileState
   }
 
   void onMessageTap() {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text("Messaging is coming soon.")));
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final TextEditingController controller = TextEditingController();
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(24),
+              gradient: const LinearGradient(
+                colors: [
+                  Color.fromARGB(255, 31, 31, 31),
+                  Color.fromARGB(255, 65, 65, 65),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CustomText(
+                  text: "Send Message",
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: controller,
+                  maxLines: 3,
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: "Write a message...",
+                    hintStyle: const TextStyle(color: Colors.white54),
+                    filled: true,
+                    fillColor: Colors.black26,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 28),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TexxtButton(
+                        onTap: () => Navigator.pop(ctx),
+                        text: "Cancel",
+                        textSize: 14,
+                        textColor: Colors.white,
+                        textWeight: FontWeight.w400,
+                        backgroundColor: Colors.transparent,
+                        borderRadius: 50,
+                        borderColor: Colors.white,
+                        borderWidth: 1,
+                      ),
+                    ),
+                    const SizedBox(width: 15),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Message sent successfully"),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: const CustomText(
+                          text: "Send",
+                          color: Colors.black,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   String get followButtonLabel {
@@ -136,9 +227,12 @@ class CommunityViewCompanyProfileState
         child: SingleChildScrollView(
           child: Column(
             children: [
-              const ElevateHeader(
-                title: "Your Digital Identity",
-                subTitle: "Account Control Center",
+              ElevateHeader(
+                title: "Digital Identity",
+                subTitle: "Company",
+                titleSize: 30,
+                subtitleSize: 15,
+                showBackButton: true,
               ),
               Padding(
                 padding: const EdgeInsets.only(left: 10.0, right: 20),

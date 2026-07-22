@@ -8,12 +8,17 @@ import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_post_m
 import 'package:elevate_app/Database/Online_Database/auth_provider.dart';
 import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
 import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Jobs_Screens/other_platform_jobs.dart';
+import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Jobs_Screens/job_selection.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class JobScreen extends ConsumerStatefulWidget {
-  const JobScreen({super.key});
+  final String niche;
+  final String experience;
+
+  const JobScreen({super.key, this.niche = '', this.experience = ''});
 
   @override
   ConsumerState<JobScreen> createState() => JobScreenState();
@@ -201,9 +206,15 @@ class JobScreenState extends ConsumerState<JobScreen> {
                                   jobType: job.jobType,
                                   salary: job.salary,
                                   onApplyTap: () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Open job details'),
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => JobSelection(
+                                          jobPost: job,
+                                          companyEmail: company?.email,
+                                          companyName:
+                                              company?.companyName ?? 'Company',
+                                        ),
                                       ),
                                     );
                                   },
@@ -231,10 +242,7 @@ class JobScreenState extends ConsumerState<JobScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => const OtherPlatformJobs(
-                                  experience: "",
-                                  niche: "",
-                                ),
+                                builder: (context) => const OtherPlatformJobs(),
                               ),
                             );
                           },
@@ -318,9 +326,15 @@ class JobScreenState extends ConsumerState<JobScreen> {
                               ),
                               jobType: job.jobType,
                               onTap: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Open job details'),
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => JobSelection(
+                                      jobPost: job,
+                                      companyEmail: company?.email,
+                                      companyName:
+                                          company?.companyName ?? 'Company',
+                                    ),
                                   ),
                                 );
                               },

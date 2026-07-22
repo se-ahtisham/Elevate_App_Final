@@ -1,11 +1,30 @@
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
-import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Jobs_Screens/Job_screen.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_post_model.dart';
+import 'package:elevate_app/Database/Online_Database/auth_provider.dart';
+import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
 import 'package:elevate_app/Resources/Colors/Gradient_Colors/gradient_colors.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class UserApplyCompanyJob extends StatelessWidget {
-  const UserApplyCompanyJob({super.key});
+class UserApplyCompanyJob extends ConsumerStatefulWidget {
+  final JobPostModel jobPost;
+  final String coldEmail;
+
+  const UserApplyCompanyJob({
+    super.key,
+    required this.jobPost,
+    required this.coldEmail,
+  });
+
+  @override
+  ConsumerState<UserApplyCompanyJob> createState() => _UserApplyCompanyJobState();
+}
+
+class _UserApplyCompanyJobState extends ConsumerState<UserApplyCompanyJob> {
+  final _firebaseService = FirebaseService();
+  late final TextEditingController _controller;
+  bool _isApplying = false;
 
   static const double _pageHorizontal = 20;
   static const double _sectionGap = 18;
@@ -13,18 +32,67 @@ class UserApplyCompanyJob extends StatelessWidget {
   static const double _buttonGap = 10;
 
   @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.coldEmail);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submitApplication() async {
+    final myID = ref.read(authProvider).jobSeeker?.jobSeekerID;
+    if (myID == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Error: User session not found.")),
+      );
+      return;
+    }
+
+    setState(() => _isApplying = true);
+    try {
+      await _firebaseService.applyJob(
+        jobSeekerID: myID,
+        jobID: widget.jobPost.jobID,
+        coldEmail: _controller.text,
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Application submitted successfully!")),
+      );
+      // Pop back twice to return to the jobs list
+      Navigator.pop(context);
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceAll("Exception: ", ""))),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isApplying = false);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ElevateColor.white,
       body: Column(
         children: [
-          const ElevateHeader(
+          ElevateHeader(
             title: 'Grab Opportunity',
             subTitle: 'Go and Grab opportunity until its gone',
             titleSize: 30,
             subtitleSize: 13,
             titleLineHeight: 1.05,
             subtitleLineHeight: 3.2,
+            showBackButton: true,
           ),
           Expanded(
             child: Padding(
@@ -49,7 +117,30 @@ class UserApplyCompanyJob extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: _labelToContentGap),
-                    _MessageBox(),
+                    TextFormField(
+                      controller: _controller,
+                      maxLines: null,
+                      keyboardType: TextInputType.multiline,
+                      decoration: InputDecoration(
+                        fillColor: const Color(0xFFFDFDFD),
+                        filled: true,
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFFE2E2E2)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFFE2E2E2)),
+                        ),
+                        contentPadding: const EdgeInsets.all(14),
+                      ),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        height: 1.35,
+                        color: Color(0xFF454545),
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
                     const SizedBox(height: _sectionGap),
                     Text(
                       'Files',
@@ -62,16 +153,18 @@ class UserApplyCompanyJob extends StatelessWidget {
                     const SizedBox(height: _labelToContentGap),
                     _FileTile(),
                     const SizedBox(height: _sectionGap),
-                    _PrimaryButton(
-                      title: 'Done',
-                      icon: Icons.keyboard_arrow_down_rounded,
-                      onTap: () {} /*() {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => JobScreen()),
-                        );
-                      },*/,
-                    ),
+                    _isApplying
+                        ? const Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 10),
+                              child: CircularProgressIndicator(color: Colors.black),
+                            ),
+                          )
+                        : _PrimaryButton(
+                            title: 'Done',
+                            icon: Icons.keyboard_arrow_down_rounded,
+                            onTap: _submitApplication,
+                          ),
                     const SizedBox(height: _buttonGap),
                     _SecondaryButton(
                       title: 'Back',
@@ -86,47 +179,6 @@ class UserApplyCompanyJob extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _MessageBox extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFDFDFD),
-        border: Border.all(color: const Color(0xFFE2E2E2)),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0D000000),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Text(
-        'Thanks for Considering me for the UI/UX Designer '
-        'position at Microsoft. I appreciate you sharing the '
-        'details of the role and I am very excited about the '
-        'opportunity to contribute to your team.\n\n'
-        'With my experience in designing user-friendly interfaces and '
-        'creating seamless user experiences for both web and mobile '
-        'applications, I am confident in my ability to add value to your '
-        'projects. I have worked extensively with tools like Figma, Adobe XD, '
-        'and Sketch.\n\n'
-        'I would love to learn more about your team, current projects, and '
-        'how I can support your vision.',
-        style: const TextStyle(
-          fontSize: 12,
-          height: 1.35,
-          color: Color(0xFF454545),
-          fontWeight: FontWeight.w400,
-        ),
       ),
     );
   }
@@ -265,12 +317,12 @@ class _SecondaryButton extends StatelessWidget {
                   color: ElevateColor.lightgray,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
-    );
+      );
+    }
   }
-}

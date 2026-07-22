@@ -1,24 +1,56 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:elevate_app/Custom_Widgets/Buttons/text_button_gradient.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/project_model.dart';
+import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
 import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Portfolio_Screens/porfolio_screen.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
-class PortfolioUpdateScreen extends StatelessWidget {
-  PortfolioUpdateScreen({super.key});
+class PortfolioUpdateScreen extends ConsumerStatefulWidget {
+  final ProjectModel? project;
 
-  final ValueNotifier<List<File>> imagesNotifier = ValueNotifier<List<File>>(
-    [],
-  );
+  const PortfolioUpdateScreen({super.key, this.project});
+
+  @override
+  ConsumerState<PortfolioUpdateScreen> createState() =>
+      _PortfolioUpdateScreenState();
+}
+
+class _PortfolioUpdateScreenState
+    extends ConsumerState<PortfolioUpdateScreen> {
+  final firebaseService = FirebaseService();
+
+  final ValueNotifier<List<File>> imagesNotifier =
+      ValueNotifier<List<File>>([]);
   final ValueNotifier<List<PlatformFile>> filesNotifier =
       ValueNotifier<List<PlatformFile>>([]);
 
-  final TextEditingController descriptionController = TextEditingController();
+  late final TextEditingController descriptionController;
   final ImagePicker picker = ImagePicker();
+
+  bool isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    descriptionController = TextEditingController(
+      text: widget.project?.projectDescription ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    descriptionController.dispose();
+    imagesNotifier.dispose();
+    filesNotifier.dispose();
+    super.dispose();
+  }
 
   Future<void> pickImage() async {
     final XFile? pickedFile = await picker.pickImage(
@@ -56,6 +88,42 @@ class PortfolioUpdateScreen extends StatelessWidget {
     filesNotifier.value = currentFiles;
   }
 
+  Future<void> onUpdate() async {
+    final project = widget.project;
+    if (project == null) return;
+
+    setState(() => isSaving = true);
+
+    try {
+      final fileNames = filesNotifier.value.map((f) => f.name).toList();
+
+      await firebaseService.updateProject(
+        project.projectID,
+        {
+          'projectDescription': descriptionController.text.trim(),
+          'techStack': fileNames.isNotEmpty ? fileNames : project.techStack,
+          'updatedAt': FieldValue.serverTimestamp(),
+        },
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Project updated successfully!")),
+      );
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const PorfolioScreen()),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: ${e.toString()}")),
+      );
+    } finally {
+      if (mounted) setState(() => isSaving = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -63,7 +131,13 @@ class PortfolioUpdateScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            ElevateHeader(title: "Ecommerce", subTitle: "MObile Application"),
+            ElevateHeader(
+              title: widget.project?.projectTitle ?? "Project",
+              subTitle: "Update",
+              titleSize: 22,
+              subtitleSize: 14,
+              showBackButton: true,
+            ),
             Expanded(
               child: SingleChildScrollView(
                 child: Padding(
@@ -277,8 +351,8 @@ class PortfolioUpdateScreen extends StatelessWidget {
                                     ),
                                     borderRadius: BorderRadius.circular(30),
                                   ),
-                                  child: Row(
-                                    children: const [
+                                  child: const Row(
+                                    children: [
                                       Icon(
                                         Icons.add_circle_outline,
                                         color: Colors.grey,
@@ -310,15 +384,8 @@ class PortfolioUpdateScreen extends StatelessWidget {
                       const SizedBox(height: 24),
                       TextButtonGradient(
                         height: 40,
-                        text: "UPDATE",
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => PorfolioScreen(),
-                            ),
-                          );
-                        },
+                        text: isSaving ? "SAVING..." : "UPDATE",
+                        onTap: isSaving ? null : onUpdate,
                       ),
 
                       const SizedBox(height: 20),

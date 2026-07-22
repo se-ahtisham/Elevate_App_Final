@@ -1,5 +1,6 @@
 import "package:elevate_app/Animation/slide_left_route.dart";
 import "package:elevate_app/Custom_Widgets/Buttons/icon_text_button.dart";
+import "package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart";
 import "package:elevate_app/Custom_Widgets/Header/elevate_header.dart";
 import "package:elevate_app/Custom_Widgets/Text/custom_text.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_description.dart";
@@ -7,8 +8,10 @@ import "package:elevate_app/Custom_Widgets/User_Widgets/user_education.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_socialMedia.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_work.dart";
 import "package:elevate_app/Database/Online_Database/auth_provider.dart";
+import "package:elevate_app/Pages/Login_Screens/Login_Screen.dart";
 import "package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Profile_Screens/job_seeker_follow_requests.dart";
 import "package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Profile_Screens/job_seeker_update_profile.dart";
+import "package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Profile_Screens/job_seeker_working_companies.dart";
 import "package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart";
 import "package:flutter/material.dart";
 import 'package:flutter/services.dart';
@@ -38,6 +41,14 @@ class _JobSeekerProfileScreenState
     setState(() => isLoading = false);
   }
 
+  void _handleLogout() {
+    ref.read(authProvider.notifier).logout();
+    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
@@ -64,9 +75,11 @@ class _JobSeekerProfileScreenState
         child: SingleChildScrollView(
           child: Column(
             children: [
-              const ElevateHeader(
+              ElevateHeader(
                 title: "Your Digital Identity",
                 subTitle: "Account Control Center",
+                titleSize: 25,
+                subtitleSize: 15,
               ),
               Padding(
                 padding: const EdgeInsets.only(left: 10.0, right: 20),
@@ -87,22 +100,24 @@ class _JobSeekerProfileScreenState
               Padding(
                 padding: const EdgeInsets.symmetric(
                   vertical: 30,
-                  horizontal: 40,
+                  horizontal: 20,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const CustomText(
+                      text: "ABOUT ME",
+                      fontSize: 20,
+                      color: ElevateColor.lightgray,
+                      fontWeight: FontWeight.bold,
+                      textAlign: TextAlign.left,
+                      lineHeight: 1.0,
+                    ),
+                    const SizedBox(height: 10),
+
+                    // ── Row 1: Requests + Update Profile ──────────
                     Row(
                       children: [
-                        CustomText(
-                          text: "ABOUT ME",
-                          fontSize: 20,
-                          color: ElevateColor.lightgray,
-                          fontWeight: FontWeight.bold,
-                          textAlign: TextAlign.left,
-                          lineHeight: 1.0,
-                        ),
-                        const Spacer(),
                         IconTextButton(
                           text: "Requests",
                           iconData: Icons.person_add_alt_1_outlined,
@@ -113,8 +128,8 @@ class _JobSeekerProfileScreenState
                           borderColor: ElevateColor.gray,
                           borderRadius: 50,
                           textSize: 12,
-                          height: 50,
-                          width: 130,
+                          height: 40,
+                          width: 120,
                           onTap: () async {
                             await Navigator.push(
                               context,
@@ -136,8 +151,8 @@ class _JobSeekerProfileScreenState
                           borderColor: ElevateColor.gray,
                           borderRadius: 50,
                           textSize: 12,
-                          height: 50,
-                          width: 150,
+                          height: 40,
+                          width: 140,
                           onTap: () async {
                             await Navigator.push(
                               context,
@@ -150,6 +165,34 @@ class _JobSeekerProfileScreenState
                         ),
                       ],
                     ),
+
+                    const SizedBox(height: 10),
+
+                    // ── Row 2: Working Companies (full width below) ─
+                    IconTextButton(
+                      text: "Working Companies",
+                      iconData: Icons.business_center_outlined,
+                      backgroundColor: ElevateColor.white,
+                      iconColor: ElevateColor.lightgray,
+                      textColor: ElevateColor.gray,
+                      textWeight: FontWeight.bold,
+                      borderColor: ElevateColor.gray,
+                      borderRadius: 50,
+                      textSize: 12,
+                      height: 40,
+                      width: double.infinity,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          SlideLeftRoute(
+                            page: JobSeekerWorkingCompanies(
+                              jobSeekerID: jobSeeker.jobSeekerID,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+
                     const SizedBox(height: 12),
                     CustomText(
                       text: jobSeeker.about.isNotEmpty
@@ -189,7 +232,7 @@ class _JobSeekerProfileScreenState
                           crossAxisAlignment: CrossAxisAlignment.center,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            CustomText(
+                            const CustomText(
                               text: "EXPERIENCE",
                               fontSize: 20,
                               color: ElevateColor.lightgray,
@@ -214,7 +257,7 @@ class _JobSeekerProfileScreenState
                     ),
 
                     const SizedBox(height: 22),
-                    CustomText(
+                    const CustomText(
                       text: "EDUCATION",
                       fontSize: 20,
                       color: ElevateColor.lightgray,
@@ -224,7 +267,7 @@ class _JobSeekerProfileScreenState
                     ),
                     const SizedBox(height: 15),
                     if (jobSeeker.education.isEmpty)
-                      CustomText(
+                      const CustomText(
                         text: "No education added yet.",
                         fontSize: 13,
                         color: ElevateColor.whitegray,
@@ -247,7 +290,7 @@ class _JobSeekerProfileScreenState
                       ),
 
                     const SizedBox(height: 22),
-                    CustomText(
+                    const CustomText(
                       text: "WORK",
                       fontSize: 20,
                       color: ElevateColor.lightgray,
@@ -257,7 +300,7 @@ class _JobSeekerProfileScreenState
                     ),
                     const SizedBox(height: 15),
                     if (jobSeeker.jobExperience.isEmpty)
-                      CustomText(
+                      const CustomText(
                         text: "No work experience added yet.",
                         fontSize: 13,
                         color: ElevateColor.whitegray,
@@ -279,6 +322,23 @@ class _JobSeekerProfileScreenState
                           ],
                         ],
                       ),
+
+                    const SizedBox(height: 40),
+
+                    // ── Log Out ────────────────────────────────
+                    TexxtButton(
+                      text: "Log Out",
+                      textSize: 13,
+                      textColor: Colors.black,
+                      textWeight: FontWeight.w500,
+                      textAlign: TextAlign.center,
+                      backgroundColor: Colors.white,
+                      borderColor: Colors.black,
+                      borderRadius: 30,
+                      borderWidth: 1,
+                      height: 50,
+                      onTap: _handleLogout,
+                    ),
                   ],
                 ),
               ),

@@ -1,44 +1,60 @@
 import 'package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/PortfolioCard.dart';
+import 'package:elevate_app/Database/Online_Database/auth_provider.dart';
+import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/project_model.dart';
 import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Portfolio_Screens/job_seeker_portfolio_description_screen.dart';
 import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Portfolio_Screens/new_portfolio_Screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class PorfolioScreen extends StatefulWidget {
-  const PorfolioScreen({super.key});
+class PorfolioScreen extends ConsumerStatefulWidget {
+  /// If provided, shows the portfolio of another job seeker (read-only).
+  /// If null, shows the current user's own portfolio.
+  final String? jobSeekerID;
+
+  const PorfolioScreen({super.key, this.jobSeekerID});
 
   @override
-  State<PorfolioScreen> createState() => _PorfolioScreenState();
+  ConsumerState<PorfolioScreen> createState() => _PorfolioScreenState();
 }
 
-class _PorfolioScreenState extends State<PorfolioScreen> {
-  int currentIndex = 0;
-
+class _PorfolioScreenState extends ConsumerState<PorfolioScreen> {
+  final firebaseService = FirebaseService();
   final ScrollController _scrollController = ScrollController();
 
-  final List<Map<String, String>> portfolioList = [
-    {
-      "title": "E-Commerce\nMobile Application",
-      "desc": "A mobile platform for online shopping",
-      "role": "Lead Developer",
-    },
-    {
-      "title": "Food Delivery\nApplication",
-      "desc": "Fast and reliable food delivery system",
-      "role": "Backend Developer",
-    },
-    {
-      "title": "Chat Application",
-      "desc": "Real-time messaging app",
-      "role": "Flutter Developer",
-    },
-    {
-      "title": "Portfolio Website",
-      "desc": "Personal branding website",
-      "role": "Frontend Developer",
-    },
-  ];
+  List<ProjectModel> projects = [];
+  bool isLoading = true;
+
+  String get effectiveJobSeekerID {
+    return widget.jobSeekerID ??
+        ref.read(authProvider).jobSeeker?.jobSeekerID ??
+        '';
+  }
+
+  bool get isOwnPortfolio => widget.jobSeekerID == null;
+
+  @override
+  void initState() {
+    super.initState();
+    loadProjects();
+  }
+
+  Future<void> loadProjects() async {
+    if (!mounted) return;
+    setState(() => isLoading = true);
+
+    final loaded = await firebaseService.getProjectsForJobSeeker(
+      effectiveJobSeekerID,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      projects = loaded;
+      isLoading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,63 +63,78 @@ class _PorfolioScreenState extends State<PorfolioScreen> {
         children: [
           Stack(
             children: [
-              const ElevateHeader(
-                title: "MOIZ PORTFOLIO",
-                subTitle: "Showcasing your proven technical abilities",
+              ElevateHeader(
+                title: "MY PORTFOLIO",
+                subTitle: "Proven technical abilities",
+                titleSize: 25,
+                subtitleSize: 15,
               ),
 
-              Padding(
-                padding: const EdgeInsets.only(left: 220, top: 70),
-                child: TexxtButton(
-                  text: "New Project",
-                  textSize: 13,
-                  textColor: Colors.white,
-                  textWeight: FontWeight.w500,
-                  backgroundColor: const Color.fromARGB(144, 155, 155, 155),
-                  borderRadius: 30,
-                  borderWidth: 1,
-                  height: 50,
-                  width: 150,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => NewPortfolioScreen(),
-                      ),
-                    );
-                  },
+              if (isOwnPortfolio)
+                Padding(
+                  padding: const EdgeInsets.only(left: 220, top: 70),
+                  child: TexxtButton(
+                    text: "New Project",
+                    textSize: 13,
+                    textColor: Colors.white,
+                    textWeight: FontWeight.w500,
+                    backgroundColor: const Color.fromARGB(144, 155, 155, 155),
+                    borderRadius: 30,
+                    borderWidth: 1,
+                    height: 50,
+                    width: 150,
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const NewPortfolioScreen(),
+                        ),
+                      );
+                      loadProjects();
+                    },
+                  ),
                 ),
-              ),
             ],
           ),
 
           Expanded(
-            child: ListView.separated(
-              controller: _scrollController,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              itemCount: portfolioList.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final item = portfolioList[index];
-                final bool isActive = currentIndex == index;
-
-                return PortfolioCard(
-                  isActive: isActive,
-                  title: item["title"]!,
-                  description: item["desc"]!,
-                  role: item["role"]!,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            JobSeekerPortfolioDescriptionScreen(),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
+            child: isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(color: Colors.black),
+                  )
+                : projects.isEmpty
+                ? const Center(child: Text("No projects yet."))
+                : ListView.separated(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    itemCount: projects.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final project = projects[index];
+                      return PortfolioCard(
+                        isActive: false,
+                        title: project.projectTitle,
+                        description: project.projectDescription,
+                        role: project.techStack.isNotEmpty
+                            ? project.techStack.join(', ')
+                            : 'Developer',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  JobSeekerPortfolioDescriptionScreen(
+                                    project: project,
+                                  ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
           ),
         ],
       ),
