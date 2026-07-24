@@ -1,5 +1,6 @@
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/manage_white_black_full.dart';
+import 'package:elevate_app/Pages/User_Screens/Admin_Screens/Admin_Api_Management/admin_api_status_screen.dart';
 import 'package:elevate_app/Pages/User_Screens/Admin_Screens/Admin_Manage%20Screens/Admin_Manage_Badges/admin_badge_management.dart';
 import 'package:elevate_app/Pages/User_Screens/Admin_Screens/Admin_Manage%20Screens/Admin_Manage_Community/admin_community_management.dart';
 import 'package:elevate_app/Pages/User_Screens/Admin_Screens/Admin_Manage%20Screens/Admin_Manage_Company/admin_manage_company.dart';
@@ -30,7 +31,7 @@ class AdminManage extends StatelessWidget {
             ),
             Expanded(
               child: Padding(
-                padding: EdgeInsetsGeometry.symmetric(horizontal: 40),
+                padding: const EdgeInsets.symmetric(horizontal: 40),
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
@@ -47,12 +48,13 @@ class AdminManage extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => AdminManageJobSeeker(),
+                              builder: (context) =>
+                                  const AdminManageJobSeeker(),
                             ),
                           );
                         },
                       ),
-                      SizedBox(height: 20),
+                      const SizedBox(height: 20),
                       ManageWhiteBlackFull(
                         titleText: 'Manage',
                         subtitleText: 'COMPANIES',
@@ -66,12 +68,12 @@ class AdminManage extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => AdminManageCompany(),
+                              builder: (context) => const AdminManageCompany(),
                             ),
                           );
                         },
                       ),
-                      SizedBox(height: 20),
+                      const SizedBox(height: 20),
                       ManageWhiteBlackFull(
                         titleText: 'Manage',
                         subtitleText: 'JOBS',
@@ -85,12 +87,12 @@ class AdminManage extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => AdminSearchJobs(),
+                              builder: (context) => const AdminSearchJobs(),
                             ),
                           );
                         },
                       ),
-                      SizedBox(height: 20),
+                      const SizedBox(height: 20),
                       ManageWhiteBlackFull(
                         titleText: 'Manage',
                         subtitleText: 'SKILLS',
@@ -104,12 +106,13 @@ class AdminManage extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => AdminSkillManagement(),
+                              builder: (context) =>
+                                  const AdminSkillManagement(),
                             ),
                           );
                         },
                       ),
-                      SizedBox(height: 20),
+                      const SizedBox(height: 20),
                       ManageWhiteBlackFull(
                         titleText: 'Manage',
                         subtitleText: 'BADGES',
@@ -123,12 +126,13 @@ class AdminManage extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => AdminBadgesManagement(),
+                              builder: (context) =>
+                                  const AdminBadgesManagement(),
                             ),
                           );
                         },
                       ),
-                      SizedBox(height: 20),
+                      const SizedBox(height: 20),
                       ManageWhiteBlackFull(
                         titleText: 'Manage',
                         subtitleText: 'PORTFOLIOS',
@@ -142,12 +146,13 @@ class AdminManage extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => AdminSearchPortfolio(),
+                              builder: (context) =>
+                                  const AdminSearchPortfolio(),
                             ),
                           );
                         },
                       ),
-                      SizedBox(height: 20),
+                      const SizedBox(height: 20),
                       ManageWhiteBlackFull(
                         titleText: 'Manage',
                         subtitleText: 'COMMUNITY',
@@ -161,11 +166,35 @@ class AdminManage extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => AdminCommunityManagement(),
+                              builder: (context) =>
+                                  const AdminCommunityManagement(),
                             ),
                           );
                         },
                       ),
+                      const SizedBox(height: 20),
+
+                      // NEW TILE: API STATUS & ENGINE DIAGNOSTICS
+                      ManageWhiteBlackFull(
+                        titleText: 'Manage',
+                        subtitleText: 'API STATUS',
+                        firstContainerWidth: 240,
+                        titleFontSize: 23,
+                        subtitleFontSize: 30,
+                        tileHeight: 100,
+                        lineHeight: 1,
+                        firstContainerColor: ElevateColor.white,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const AdminApiStatusScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),
