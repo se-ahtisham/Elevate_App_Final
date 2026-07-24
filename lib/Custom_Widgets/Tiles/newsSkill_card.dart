@@ -1,5 +1,6 @@
 import 'package:elevate_app/Custom_Widgets/Test_Fields/custom_Text_Field.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
+import 'package:elevate_app/Pages/User_Screens/Admin_Screens/Admin_Manage%20Screens/Admin_Manage_Skills/admin_manage_topics.dart';
 import 'package:flutter/material.dart';
 
 class NewSkillCard extends StatelessWidget {
@@ -99,6 +100,47 @@ class NewSkillCard extends StatelessWidget {
           ),
 
           const SizedBox(height: 25),
+
+          // NEW: Manage Topics button — lets admin set up the topic pool
+          // using whatever skill name is currently typed above, before
+          // or after actually creating the skill.
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () {
+                final skillName = titleController.text.trim();
+                if (skillName.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Type a skill name first')),
+                  );
+                  return;
+                }
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        AdminManageTopics(skillName: skillName),
+                  ),
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                side: const BorderSide(color: Colors.white, width: 1),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(50),
+                ),
+              ),
+              child: const CustomText(
+                text: "MANAGE TOPICS",
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 15),
 
           SizedBox(
             width: double.infinity,

@@ -4,19 +4,7 @@ import 'package:elevate_app/Resources/Colors/Gradient_Colors/gradient_colors.dar
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 
-/*
-StatelessWidget: ElevateHeader
-└── Stack
-    ├── Container (Background Gradient)
-    ├── Padding (Large Logo Position)
-    │   └── Image.asset (Elevate_Large_Logo)
-    ├── (optional) Positioned Back Button (top-right)
-    └── Padding (Content Column)
-        └── Column (crossAxisAlignment: start)
-            ├── Image.asset (Elevate_Logo)
-            ├── SizedBox (height: 50)
-            ├── CustomText (title)
-            └── CustomText (subTitle)
+  └── CustomText (subTitle)
  */
 class ElevateHeader extends StatelessWidget {
   final String title;
