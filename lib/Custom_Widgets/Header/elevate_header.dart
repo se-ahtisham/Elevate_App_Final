@@ -4,8 +4,6 @@ import 'package:elevate_app/Resources/Colors/Gradient_Colors/gradient_colors.dar
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 
-  └── CustomText (subTitle)
- */
 class ElevateHeader extends StatelessWidget {
   final String title;
   final double titleSize;
