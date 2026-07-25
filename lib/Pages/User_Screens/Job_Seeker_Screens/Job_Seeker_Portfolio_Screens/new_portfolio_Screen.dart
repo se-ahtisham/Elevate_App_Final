@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:elevate_app/Custom_Widgets/Buttons/contain_icon_text_button.dart';
 import 'package:elevate_app/Custom_Widgets/Buttons/text_button_gradient.dart';
 import 'package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
@@ -8,6 +7,7 @@ import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/project_model.dart';
 import 'package:elevate_app/Database/Online_Database/auth_provider.dart';
 import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
+import 'package:elevate_app/Database/Online_Database/firebase_storage_service.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -18,30 +18,45 @@ class NewPortfolioScreen extends ConsumerStatefulWidget {
   const NewPortfolioScreen({super.key});
 
   @override
-  ConsumerState<NewPortfolioScreen> createState() => _NewPortfolioScreenState();
+  ConsumerState<NewPortfolioScreen> createState() => NewPortfolioScreenState();
 }
 
-class _NewPortfolioScreenState extends ConsumerState<NewPortfolioScreen> {
+class NewPortfolioScreenState extends ConsumerState<NewPortfolioScreen> {
   final firebaseService = FirebaseService();
+  final storageService = FirebaseStorageService();
 
-  final TextEditingController titleController = TextEditingController();
-  final TextEditingController descriptionController = TextEditingController();
+  final titleController = TextEditingController();
+  final descriptionController = TextEditingController();
 
-  final ValueNotifier<List<File>> imagesNotifier =
-      ValueNotifier<List<File>>([]);
-  final ValueNotifier<List<PlatformFile>> filesNotifier =
-      ValueNotifier<List<PlatformFile>>([]);
+  final imagesNotifier = ValueNotifier<List<File>>([]);
+  final filesNotifier = ValueNotifier<List<PlatformFile>>([]);
 
-  final ImagePicker picker = ImagePicker();
+  final picker = ImagePicker();
   bool isSaving = false;
+
+  @override
+  void dispose() {
+    titleController.dispose();
+    descriptionController.dispose();
+    imagesNotifier.dispose();
+    filesNotifier.dispose();
+    super.dispose();
+  }
 
   Future<void> pickImage() async {
     final XFile? pickedFile = await picker.pickImage(
       source: ImageSource.gallery,
     );
-    if (pickedFile != null) {
+    if (pickedFile != null && mounted) {
+      final file = File(pickedFile.path);
+
+      // Validate size < 100 KB before adding to list
+      if (!storageService.validateFileSize(file, context)) {
+        return;
+      }
+
       final currentImages = List<File>.from(imagesNotifier.value);
-      currentImages.add(File(pickedFile.path));
+      currentImages.add(file);
       imagesNotifier.value = currentImages;
     }
   }
@@ -70,15 +85,14 @@ class _NewPortfolioScreenState extends ConsumerState<NewPortfolioScreen> {
   }
 
   Future<void> onAddProject() async {
-    if (titleController.text.isEmpty) {
+    if (titleController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Title is required")),
       );
       return;
     }
 
-    final myID =
-        ref.read(authProvider).jobSeeker?.jobSeekerID ?? '';
+    final myID = ref.read(authProvider).jobSeeker?.jobSeekerID ?? '';
     if (myID.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("User not found. Please log in again.")),
@@ -89,15 +103,31 @@ class _NewPortfolioScreenState extends ConsumerState<NewPortfolioScreen> {
     setState(() => isSaving = true);
 
     try {
+      final projectId = FirebaseService.generateID();
+      final uploadedUrls = <String>[];
+
+      // Upload selected images to Firebase Storage
+      for (final imgFile in imagesNotifier.value) {
+        final url = await storageService.uploadPortfolioImage(
+          userId: myID,
+          projectId: projectId,
+          file: imgFile,
+          context: context,
+        );
+        if (url != null) {
+          uploadedUrls.add(url);
+        }
+      }
+
       final fileNames = filesNotifier.value.map((f) => f.name).toList();
 
       final project = ProjectModel(
-        projectID: FirebaseService.generateID(),
+        projectID: projectId,
         jobSeekerID: myID,
         projectTitle: titleController.text.trim(),
         projectDescription: descriptionController.text.trim(),
         techStack: fileNames,
-        mediaFiles: [], // In production, upload images and store URLs here
+        mediaFiles: uploadedUrls,
       );
 
       await firebaseService.saveProject(project);
@@ -118,105 +148,114 @@ class _NewPortfolioScreenState extends ConsumerState<NewPortfolioScreen> {
   }
 
   @override
-  void dispose() {
-    titleController.dispose();
-    descriptionController.dispose();
-    imagesNotifier.dispose();
-    filesNotifier.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      body: Column(
-        children: [
-          ElevateHeader(
-            title: "Portfolio Project",
-            subTitle: "Add new project",
-            titleSize: 25,
-            subtitleSize: 15,
-            showBackButton: true,
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+      backgroundColor: ElevateColor.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            const ElevateHeader(
+              title: "New Portfolio",
+              subTitle: "Add your latest work to shine",
+              titleSize: 30,
+              subtitleSize: 13,
+              showBackButton: true,
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 20),
-
                     const CustomText(
-                      text: "UPLOAD IMAGES",
+                      text: "Project Title",
                       fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: ElevateColor.lightgray,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 8),
+                    CustomTextField(
+                      controller: titleController,
+                      hintText: "E.g. E-Commerce Flutter App",
+                      cursorColor: Colors.black,
+                      underlineColor: Colors.grey,
+                      textColor: Colors.black,
+                    ),
+                    const SizedBox(height: 20),
+                    const CustomText(
+                      text: "Project Description",
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                    const SizedBox(height: 8),
+                    CustomTextField(
+                      controller: descriptionController,
+                      hintText: "Describe your role, architecture, & achievements",
+                      cursorColor: Colors.black,
+                      underlineColor: Colors.grey,
+                      textColor: Colors.black,
+                    ),
+                    const SizedBox(height: 25),
 
-                    SizedBox(
-                      height: 120,
-                      child: ValueListenableBuilder<List<File>>(
-                        valueListenable: imagesNotifier,
-                        builder: (context, images, child) {
-                          return ListView.builder(
+                    // Screenshots / Images Section
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const CustomText(
+                          text: "Screenshots (< 100KB each)",
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black,
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add_a_photo_outlined),
+                          onPressed: pickImage,
+                        ),
+                      ],
+                    ),
+                    ValueListenableBuilder<List<File>>(
+                      valueListenable: imagesNotifier,
+                      builder: (context, images, _) {
+                        if (images.isEmpty) {
+                          return const Text(
+                            "No screenshots selected",
+                            style: TextStyle(color: Colors.grey, fontSize: 12),
+                          );
+                        }
+                        return SizedBox(
+                          height: 90,
+                          child: ListView.separated(
                             scrollDirection: Axis.horizontal,
-                            itemCount: images.length + 1,
+                            itemCount: images.length,
+                            separatorBuilder: (_, __) => const SizedBox(width: 8),
                             itemBuilder: (context, index) {
-                              if (index == images.length) {
-                                return GestureDetector(
-                                  onTap: pickImage,
-                                  child: Container(
-                                    width: 140,
-                                    margin: const EdgeInsets.only(right: 12),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFEAEAEA),
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    child: const Center(
-                                      child: Icon(
-                                        Icons.add,
-                                        size: 40,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }
-
                               return Stack(
                                 children: [
-                                  Container(
-                                    width: 140,
-                                    margin: const EdgeInsets.only(right: 12),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    clipBehavior: Clip.antiAlias,
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
                                     child: Image.file(
                                       images[index],
+                                      width: 90,
+                                      height: 90,
                                       fit: BoxFit.cover,
-                                      width: 140,
-                                      height: 120,
                                     ),
                                   ),
                                   Positioned(
-                                    top: 6,
-                                    right: 18,
+                                    top: 2,
+                                    right: 2,
                                     child: GestureDetector(
                                       onTap: () => removeImage(index),
                                       child: Container(
-                                        padding: const EdgeInsets.all(4),
+                                        padding: const EdgeInsets.all(2),
                                         decoration: const BoxDecoration(
-                                          color: Colors.red,
+                                          color: Colors.black54,
                                           shape: BoxShape.circle,
                                         ),
                                         child: const Icon(
-                                          Icons.remove,
+                                          Icons.close,
+                                          size: 14,
                                           color: Colors.white,
-                                          size: 16,
                                         ),
                                       ),
                                     ),
@@ -224,119 +263,82 @@ class _NewPortfolioScreenState extends ConsumerState<NewPortfolioScreen> {
                                 ],
                               );
                             },
-                          );
-                        },
-                      ),
+                          ),
+                        );
+                      },
                     ),
 
-                    const SizedBox(height: 30),
-
-                    CustomTextField(
-                      controller: titleController,
-                      hintText: "Title",
-                      cursorColor: Colors.black,
-                      underlineColor: Colors.grey,
-                    ),
-                    const SizedBox(height: 40),
-
-                    CustomTextField(
-                      controller: descriptionController,
-                      hintText: "Description",
-                      cursorColor: Colors.black,
-                      underlineColor: Colors.grey,
-                    ),
                     const SizedBox(height: 25),
 
-                    const CustomText(
-                      text: "Files",
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: ElevateColor.lightgray,
+                    // Tech Stack Files / Attachments Section
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const CustomText(
+                          text: "Attach Tech Files / Specs",
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black,
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.attach_file),
+                          onPressed: pickFiles,
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 12),
-
-                    ContainIconTextButton(text: "Add Files", onTap: pickFiles),
-                    const SizedBox(height: 12),
-
                     ValueListenableBuilder<List<PlatformFile>>(
                       valueListenable: filesNotifier,
-                      builder: (context, files, child) {
-                        if (files.isEmpty) return const SizedBox.shrink();
-                        return Column(
-                          children: files.asMap().entries.map((entry) {
-                            int index = entry.key;
-                            PlatformFile file = entry.value;
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8.0),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.insert_drive_file,
-                                    color: Colors.grey,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: CustomText(
-                                      text: file.name,
-                                      fontSize: 14,
-                                      color: ElevateColor.black,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(
-                                      Icons.close,
-                                      color: Colors.red,
-                                      size: 20,
-                                    ),
-                                    onPressed: () => removeFile(index),
-                                  ),
-                                ],
+                      builder: (context, files, _) {
+                        if (files.isEmpty) {
+                          return const Text(
+                            "No files selected",
+                            style: TextStyle(color: Colors.grey, fontSize: 12),
+                          );
+                        }
+                        return Wrap(
+                          spacing: 8,
+                          children: List.generate(files.length, (index) {
+                            return Chip(
+                              label: Text(
+                                files[index].name,
+                                style: const TextStyle(fontSize: 12),
                               ),
+                              onDeleted: () => removeFile(index),
                             );
-                          }).toList(),
+                          }),
                         );
                       },
                     ),
 
                     const SizedBox(height: 40),
 
-                    TextButtonGradient(
-                      text: isSaving ? "SAVING..." : "ADD PROJECT",
-                      height: 50,
-                      textSize: 14,
-                      textColor: ElevateColor.white,
-                      textWeight: FontWeight.w400,
-                      borderRadius: 50,
-                      borderColor: ElevateColor.gray,
-                      borderWidth: 1,
-                      onTap: isSaving ? null : onAddProject,
-                    ),
-                    const SizedBox(height: 35),
-
+                    isSaving
+                        ? const Center(
+                            child: CircularProgressIndicator(color: Colors.black),
+                          )
+                        : TextButtonGradient(
+                            text: "SAVE PROJECT",
+                            onTap: onAddProject,
+                          ),
+                    const SizedBox(height: 15),
                     TexxtButton(
-                      text: "Back",
-                      height: 50,
+                      text: "Cancel",
+                      width: double.infinity,
+                      height: 48,
                       textSize: 14,
-                      backgroundColor: Colors.white,
-                      textColor: Colors.black,
-                      borderColor: Colors.black,
-                      borderWidth: 1,
                       textWeight: FontWeight.w400,
+                      textColor: Colors.black,
+                      backgroundColor: Colors.transparent,
                       borderRadius: 50,
-                      onTap: () {
-                        Navigator.pop(context);
-                      },
+                      borderColor: Colors.black,
+                      onTap: () => Navigator.pop(context),
                     ),
-
-                    const SizedBox(height: 40),
                   ],
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
