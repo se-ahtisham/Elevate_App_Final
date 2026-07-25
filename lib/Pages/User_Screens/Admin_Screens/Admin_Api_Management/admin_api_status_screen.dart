@@ -2,6 +2,7 @@
 
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
+import 'package:elevate_app/Custom_Widgets/Buttons/text_button_gradient.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'api_status_service.dart';
@@ -10,44 +11,36 @@ class AdminApiStatusScreen extends StatefulWidget {
   const AdminApiStatusScreen({super.key});
 
   @override
-  State<AdminApiStatusScreen> createState() => _AdminApiStatusScreenState();
+  State<AdminApiStatusScreen> createState() => AdminApiStatusScreenState();
 }
 
-class _AdminApiStatusScreenState extends State<AdminApiStatusScreen> {
-  bool _isLoading = false;
-  List<ApiEndpointStatus> _statusList = [];
+class AdminApiStatusScreenState extends State<AdminApiStatusScreen> {
+  bool isLoading = false;
+  List<ApiEndpointStatus> statusList = [];
 
   @override
   void initState() {
     super.initState();
-    _runDiagnostics();
+    runDiagnostics();
   }
 
-  Future<void> _runDiagnostics() async {
-    setState(() => _isLoading = true);
+  Future<void> runDiagnostics() async {
+    setState(() => isLoading = true);
     final results = await ApiStatusChecker.checkAllEndpoints();
     setState(() {
-      _statusList = results;
-      _isLoading = false;
+      statusList = results;
+      isLoading = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final liveItems = _statusList
-        .where((item) => item.environment == 'Live (Render)')
-        .toList();
-    final localItems = _statusList
-        .where((item) => item.environment == 'Local Machine')
-        .toList();
-
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
         backgroundColor: const Color.fromARGB(255, 243, 243, 243),
         body: Column(
           children: [
-            // Custom Brand Header
             ElevateHeader(
               title: "API Engine",
               subTitle: "Diagnostics & Health",
@@ -58,88 +51,7 @@ class _AdminApiStatusScreenState extends State<AdminApiStatusScreen> {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: _isLoading
-                    ? const Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            CircularProgressIndicator(color: Colors.black),
-                            SizedBox(height: 16),
-                            CustomText(
-                              text: "Checking System Endpoints...",
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black,
-                            ),
-                          ],
-                        ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _runDiagnostics,
-                        color: Colors.black,
-                        child: SingleChildScrollView(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 10),
-
-                              // Overall summary bar
-                              _buildSummaryBar(),
-
-                              const SizedBox(height: 20),
-
-                              // Section 1: Live Render Server
-                              _buildSectionHeader(
-                                "LIVE PRODUCTION SERVER (RENDER)",
-                                liveItems,
-                              ),
-                              const SizedBox(height: 12),
-                              ...liveItems.map(
-                                (item) => _buildApiEndpointCard(item),
-                              ),
-
-                              const SizedBox(height: 25),
-
-                              // Section 2: Local Server
-                              _buildSectionHeader(
-                                "LOCAL DEVELOPMENT SERVER",
-                                localItems,
-                              ),
-                              const SizedBox(height: 12),
-                              ...localItems.map(
-                                (item) => _buildApiEndpointCard(item),
-                              ),
-
-                              const SizedBox(height: 25),
-
-                              // Re-run Refresh Button
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  onPressed: _runDiagnostics,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.black,
-                                    foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(50),
-                                    ),
-                                  ),
-                                  child: const CustomText(
-                                    text: "RUN DIAGNOSTICS AGAIN",
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 30),
-                            ],
-                          ),
-                        ),
-                      ),
+                child: isLoading ? loadingView() : resultsView(),
               ),
             ),
           ],
@@ -148,10 +60,50 @@ class _AdminApiStatusScreenState extends State<AdminApiStatusScreen> {
     );
   }
 
-  // Top banner: "X / Y Endpoints Online" across the whole diagnostic run
-  Widget _buildSummaryBar() {
-    final total = _statusList.length;
-    final online = _statusList.where((item) => item.isRunning).length;
+  Widget loadingView() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(color: Colors.black),
+          SizedBox(height: 16),
+          CustomText(
+            text: "Checking System Endpoints...",
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget resultsView() {
+    return RefreshIndicator(
+      onRefresh: runDiagnostics,
+      color: Colors.black,
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 10),
+            summaryBar(),
+            const SizedBox(height: 20),
+            sectionHeader("LIVE PRODUCTION SERVER (RENDER)"),
+            const SizedBox(height: 12),
+            ...statusList.map(endpointCard),
+            const SizedBox(height: 25),
+            rerunButton(),
+            const SizedBox(height: 30),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget summaryBar() {
+    final total = statusList.length;
+    final online = statusList.where((item) => item.isRunning).length;
     final allOnline = total > 0 && online == total;
     final color = allOnline
         ? Colors.green
@@ -186,10 +138,9 @@ class _AdminApiStatusScreenState extends State<AdminApiStatusScreen> {
     );
   }
 
-  // Section header showing environment name + how many of its endpoints are online
-  Widget _buildSectionHeader(String title, List<ApiEndpointStatus> items) {
-    final total = items.length;
-    final online = items.where((item) => item.isRunning).length;
+  Widget sectionHeader(String title) {
+    final total = statusList.length;
+    final online = statusList.where((item) => item.isRunning).length;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -212,10 +163,21 @@ class _AdminApiStatusScreenState extends State<AdminApiStatusScreen> {
     );
   }
 
-  // White Card with full details view
-  Widget _buildApiEndpointCard(ApiEndpointStatus status) {
-    final bool isOnline = status.isRunning;
-    final Color badgeColor = isOnline ? Colors.green : Colors.red;
+  Widget rerunButton() {
+    return TextButtonGradient(
+      text: "REFRESH",
+      textSize: 15,
+      textWeight: FontWeight.w500,
+      width: double.infinity,
+      height: 50,
+      borderRadius: 50,
+      onTap: runDiagnostics,
+    );
+  }
+
+  Widget endpointCard(ApiEndpointStatus status) {
+    final isOnline = status.isRunning;
+    final badgeColor = isOnline ? Colors.green : Colors.red;
 
     return Container(
       width: double.infinity,
@@ -236,7 +198,6 @@ class _AdminApiStatusScreenState extends State<AdminApiStatusScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Row 1: Endpoint Title + Status Pill
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -270,10 +231,7 @@ class _AdminApiStatusScreenState extends State<AdminApiStatusScreen> {
               ),
             ],
           ),
-
           const SizedBox(height: 12),
-
-          // Row 2: Target URL
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(10),
@@ -290,39 +248,14 @@ class _AdminApiStatusScreenState extends State<AdminApiStatusScreen> {
               textAlign: TextAlign.left,
             ),
           ),
-
-          // Row 3: Full Un-truncated Response / Error Details
-          if (status.responseMessage != null &&
-              status.responseMessage!.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            const CustomText(
-              text: "Response Body:",
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
+          if (!isOnline && status.message != null) ...[
+            const SizedBox(height: 10),
+            CustomText(
+              text: status.message!,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: Colors.red.shade400,
               textAlign: TextAlign.left,
-            ),
-            const SizedBox(height: 6),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isOnline
-                    ? const Color.fromARGB(255, 245, 247, 250)
-                    : const Color.fromARGB(255, 255, 235, 235),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: isOnline ? Colors.grey.shade300 : Colors.red.shade200,
-                ),
-              ),
-              child: SelectableText(
-                status.responseMessage!,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontFamily: 'monospace',
-                  color: isOnline ? Colors.black : Colors.red.shade900,
-                ),
-              ),
             ),
           ],
         ],

@@ -4,196 +4,115 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class ApiEndpointStatus {
-  final String environment;
   final String name;
   final String url;
   final String method;
-  bool isRunning;
-  int? statusCode;
-  String? responseMessage;
+  final bool isRunning;
+  final int statusCode;
+  final String? message;
 
   ApiEndpointStatus({
-    required this.environment,
     required this.name,
     required this.url,
     required this.method,
-    this.isRunning = false,
-    this.statusCode,
-    this.responseMessage,
+    required this.isRunning,
+    required this.statusCode,
+    this.message,
   });
 }
 
 class ApiStatusChecker {
   static const String liveBaseUrl = 'https://elevate-backend-rtdg.onrender.com';
-  static const String localBaseUrl = 'http://127.0.0.1:8000';
+  static const Duration requestTimeout = Duration(seconds: 15);
 
-  // Cap how much of a response body we keep around for display.
-  // (e.g. /docs returns a full HTML page, ai-logs could grow large)
-  static const int _maxResponseChars = 1000;
+  // Payloads below match what Swagger actually confirmed each endpoint
+  // expects — verified by hand, one endpoint at a time, on 25 Jul 2026.
+  static const Map<String, dynamic> recordAnswerPayload = {
+    'user_id': 'admin_test',
+    'skill': 'Flutter',
+    'level': 'Beginner',
+    'mode': 'pure',
+    'topic': 'Widgets',
+    'difficulty_level': 1,
+    'question_type': 'mcq',
+    'was_correct': true,
+  };
 
-  static Future<ApiEndpointStatus> checkEndpoint({
-    required String environment,
-    required String name,
-    required String url,
-    required String method,
+  static const Map<String, dynamic> evaluateMcqPayload = {
+    'selected_option': 'StatelessWidget',
+    'correct_option': 'StatelessWidget',
+  };
+
+  static const Map<String, dynamic> evaluateTheoryPayload = {
+    'candidate_answer':
+        'A StatelessWidget is immutable and does not depend on mutable state.',
+    'model_answer':
+        'A StatelessWidget is immutable and does not depend on mutable state.',
+  };
+
+  static const Map<String, dynamic> evaluateCodingPayload = {
+    'source_code': 'def add(a, b):\n    return a + b',
+    'language': 'python',
+    'test_cases': [
+      {'input': '2,3', 'expected_output': '5'},
+    ],
+  };
+
+  static Future<ApiEndpointStatus> pingEndpoint(
+    String name,
+    String url,
+    String method, [
     Map<String, dynamic>? body,
-  }) async {
+  ]) async {
+    final uri = Uri.parse(url);
+
     try {
-      http.Response response;
-      final uri = Uri.parse(url);
+      final response = method == 'POST'
+          ? await http
+                .post(
+                  uri,
+                  headers: {'Content-Type': 'application/json'},
+                  body: jsonEncode(body ?? {}),
+                )
+                .timeout(requestTimeout)
+          : await http.get(uri).timeout(requestTimeout);
 
-      if (method == 'POST') {
-        response = await http
-            .post(
-              uri,
-              headers: {'Content-Type': 'application/json'},
-              body: jsonEncode(body ?? {}),
-            )
-            .timeout(const Duration(seconds: 15));
-      } else {
-        response = await http.get(uri).timeout(const Duration(seconds: 15));
-      }
-
-      bool isOk = response.statusCode >= 200 && response.statusCode < 300;
-
-      String message = response.body;
-      if (message.length > _maxResponseChars) {
-        message =
-            '${message.substring(0, _maxResponseChars)}\n… (truncated, ${response.body.length} chars total)';
-      }
+      final ok = response.statusCode >= 200 && response.statusCode < 300;
 
       return ApiEndpointStatus(
-        environment: environment,
         name: name,
         url: url,
         method: method,
-        isRunning: isOk,
+        isRunning: ok,
         statusCode: response.statusCode,
-        responseMessage: message,
+        message: ok ? null : shorten(response.body),
       );
     } catch (e) {
       return ApiEndpointStatus(
-        environment: environment,
         name: name,
         url: url,
         method: method,
         isRunning: false,
         statusCode: 0,
-        responseMessage: e.toString(),
+        message: shorten(e.toString()),
       );
     }
   }
 
-  /// Tries [primaryUrl] first; if that 404s, falls back to [fallbackUrl].
-  /// Useful while the backend's exact route naming (underscore vs dash) is
-  /// still being confirmed.
-  static Future<ApiEndpointStatus> _checkWithFallback({
-    required String environment,
-    required String name,
-    required String primaryUrl,
-    required String fallbackUrl,
-    required String method,
-    Map<String, dynamic>? body,
-  }) async {
-    var result = await checkEndpoint(
-      environment: environment,
-      name: name,
-      url: primaryUrl,
-      method: method,
-      body: body,
-    );
-    if (!result.isRunning && result.statusCode == 404) {
-      result = await checkEndpoint(
-        environment: environment,
-        name: name,
-        url: fallbackUrl,
-        method: method,
-        body: body,
-      );
-    }
-    return result;
+  static String shorten(String text, {int maxLength = 120}) {
+    final singleLine = text.replaceAll('\n', ' ').trim();
+    if (singleLine.length <= maxLength) return singleLine;
+    return '${singleLine.substring(0, maxLength)}…';
   }
 
-  static Future<List<ApiEndpointStatus>> checkAllEndpoints() async {
-    List<ApiEndpointStatus> results = [];
-
-    // Validated payload based on FastAPI schema error logs
-    final Map<String, dynamic> recordAnswerBody = {
-      'user_id': 'admin_test',
-      'skill': 'Flutter',
-      'level': 'Beginner',
-      'mode': 'pure',
-      'topic': 'Widgets',
-      'difficulty_level': 1, // Changed from string 'easy' to int 1
-      'question_type': 'mcq', // Added required missing field
-      'was_correct': true,
-      'is_correct': true,
-      'question_id': 'test_q_101',
-      'selected_answer': 'StatelessWidget',
-      'user_answer': 'StatelessWidget',
-    };
-
-    // Best-guess payloads for the evaluate endpoints, following the same
-    // field naming pattern confirmed on record-answer. These haven't been
-    // schema-validated yet — if the card shows a 422, the Response Body
-    // will list exactly which fields the backend actually expects, same
-    // way record-answer's payload above was worked out.
-    final Map<String, dynamic> evaluateMcqBody = {
-      'user_id': 'admin_test',
-      'skill': 'Flutter',
-      'level': 'Beginner',
-      'topic': 'Widgets',
-      'question_type': 'mcq',
-      'question_id': 'test_q_101',
-      'selected_answer': 'StatelessWidget',
-      'correct_answer': 'StatelessWidget',
-    };
-
-    final Map<String, dynamic> evaluateTheoryBody = {
-      'user_id': 'admin_test',
-      'skill': 'Flutter',
-      'level': 'Beginner',
-      'topic': 'Widgets',
-      'question_type': 'theory',
-      'question_id': 'test_q_102',
-      'user_answer':
-          'A StatelessWidget is immutable and does not depend on any mutable state.',
-    };
-
-    final Map<String, dynamic> evaluateCodingBody = {
-      'user_id': 'admin_test',
-      'skill': 'Flutter',
-      'level': 'Beginner',
-      'topic': 'Widgets',
-      'question_type': 'coding',
-      'question_id': 'test_q_103',
-      'language': 'dart',
-      'user_code':
-          'class MyWidget extends StatelessWidget {\n  @override\n  Widget build(BuildContext context) => Container();\n}',
-    };
-
-    // ==========================================
-    // 🌐 LIVE PRODUCTION SERVER (RENDER)
-    // ==========================================
-
-    // 1. Health Check
-    results.add(
-      await checkEndpoint(
-        environment: 'Live (Render)',
-        name: 'Health Check',
-        url: '$liveBaseUrl/health',
-        method: 'GET',
-      ),
-    );
-
-    // 2. Generate Question
-    results.add(
-      await checkEndpoint(
-        environment: 'Live (Render)',
-        name: 'Generate Question',
-        url: '$liveBaseUrl/generate-question',
-        method: 'POST',
-        body: {
+  static Future<List<ApiEndpointStatus>> checkAllEndpoints() {
+    return Future.wait([
+      pingEndpoint('Health Check', '$liveBaseUrl/health', 'GET'),
+      pingEndpoint(
+        'Generate Question',
+        '$liveBaseUrl/generate-question',
+        'POST',
+        {
           'user_id': 'admin_test',
           'skill': 'Flutter',
           'level': 'Beginner',
@@ -201,171 +120,32 @@ class ApiStatusChecker {
           'question_type': 'mcq',
         },
       ),
-    );
-
-    // 3. Record Answer
-    results.add(
-      await _checkWithFallback(
-        environment: 'Live (Render)',
-        name: 'Record Answer',
-        primaryUrl: '$liveBaseUrl/record_answer',
-        fallbackUrl: '$liveBaseUrl/record-answer',
-        method: 'POST',
-        body: recordAnswerBody,
+      pingEndpoint(
+        'Record Answer',
+        '$liveBaseUrl/record-answer',
+        'POST',
+        recordAnswerPayload,
       ),
-    );
-
-    // 4. Evaluate MCQ
-    results.add(
-      await checkEndpoint(
-        environment: 'Live (Render)',
-        name: 'Evaluate MCQ',
-        url: '$liveBaseUrl/evaluate-mcq',
-        method: 'POST',
-        body: evaluateMcqBody,
+      pingEndpoint(
+        'Evaluate MCQ',
+        '$liveBaseUrl/evaluate-mcq',
+        'POST',
+        evaluateMcqPayload,
       ),
-    );
-
-    // 5. Evaluate Theory
-    results.add(
-      await checkEndpoint(
-        environment: 'Live (Render)',
-        name: 'Evaluate Theory',
-        url: '$liveBaseUrl/evaluate-theory',
-        method: 'POST',
-        body: evaluateTheoryBody,
+      pingEndpoint(
+        'Evaluate Theory',
+        '$liveBaseUrl/evaluate-theory',
+        'POST',
+        evaluateTheoryPayload,
       ),
-    );
-
-    // 6. Evaluate Coding
-    results.add(
-      await checkEndpoint(
-        environment: 'Live (Render)',
-        name: 'Evaluate Coding',
-        url: '$liveBaseUrl/evaluate-coding',
-        method: 'POST',
-        body: evaluateCodingBody,
+      pingEndpoint(
+        'Evaluate Coding',
+        '$liveBaseUrl/evaluate-coding',
+        'POST',
+        evaluateCodingPayload,
       ),
-    );
-
-    // 7. Get AI Logs
-    results.add(
-      await _checkWithFallback(
-        environment: 'Live (Render)',
-        name: 'Get AI Logs',
-        primaryUrl: '$liveBaseUrl/get_ai_logs',
-        fallbackUrl: '$liveBaseUrl/ai-logs',
-        method: 'GET',
-      ),
-    );
-
-    // 8. Interactive Docs (Swagger)
-    results.add(
-      await checkEndpoint(
-        environment: 'Live (Render)',
-        name: 'Interactive Docs (Swagger)',
-        url: '$liveBaseUrl/docs',
-        method: 'GET',
-      ),
-    );
-
-    // ==========================================
-    // 💻 LOCAL DEVELOPMENT SERVER
-    // ==========================================
-
-    // 1. Health Check
-    results.add(
-      await checkEndpoint(
-        environment: 'Local Machine',
-        name: 'Health Check',
-        url: '$localBaseUrl/health',
-        method: 'GET',
-      ),
-    );
-
-    // 2. Generate Question
-    results.add(
-      await checkEndpoint(
-        environment: 'Local Machine',
-        name: 'Generate Question',
-        url: '$localBaseUrl/generate-question',
-        method: 'POST',
-        body: {
-          'user_id': 'admin_test',
-          'skill': 'Flutter',
-          'level': 'Beginner',
-          'mode': 'pure',
-          'question_type': 'mcq',
-        },
-      ),
-    );
-
-    // 3. Record Answer
-    results.add(
-      await _checkWithFallback(
-        environment: 'Local Machine',
-        name: 'Record Answer',
-        primaryUrl: '$localBaseUrl/record_answer',
-        fallbackUrl: '$localBaseUrl/record-answer',
-        method: 'POST',
-        body: recordAnswerBody,
-      ),
-    );
-
-    // 4. Evaluate MCQ
-    results.add(
-      await checkEndpoint(
-        environment: 'Local Machine',
-        name: 'Evaluate MCQ',
-        url: '$localBaseUrl/evaluate-mcq',
-        method: 'POST',
-        body: evaluateMcqBody,
-      ),
-    );
-
-    // 5. Evaluate Theory
-    results.add(
-      await checkEndpoint(
-        environment: 'Local Machine',
-        name: 'Evaluate Theory',
-        url: '$localBaseUrl/evaluate-theory',
-        method: 'POST',
-        body: evaluateTheoryBody,
-      ),
-    );
-
-    // 6. Evaluate Coding
-    results.add(
-      await checkEndpoint(
-        environment: 'Local Machine',
-        name: 'Evaluate Coding',
-        url: '$localBaseUrl/evaluate-coding',
-        method: 'POST',
-        body: evaluateCodingBody,
-      ),
-    );
-
-    // 7. Get AI Logs
-    results.add(
-      await _checkWithFallback(
-        environment: 'Local Machine',
-        name: 'Get AI Logs',
-        primaryUrl: '$localBaseUrl/get_ai_logs',
-        fallbackUrl: '$localBaseUrl/ai-logs',
-        method: 'GET',
-      ),
-    );
-
-    // 8. Interactive Docs (Swagger)
-    results.add(
-      await checkEndpoint(
-        environment: 'Local Machine',
-        name: 'Interactive Docs (Swagger)',
-        url: '$localBaseUrl/docs',
-        method: 'GET',
-      ),
-    );
-
-    return results;
+      pingEndpoint('AI Logs', '$liveBaseUrl/ai-logs', 'GET'),
+      pingEndpoint('Interactive Docs (Swagger)', '$liveBaseUrl/docs', 'GET'),
+    ]);
   }
 }
