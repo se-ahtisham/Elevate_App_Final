@@ -5,26 +5,29 @@ class JobSkillFilterChip extends StatelessWidget {
   final String text;
   final bool isSelected;
   final VoidCallback onTap;
+  final Color? selectedColor;
 
   const JobSkillFilterChip({
     super.key,
     required this.text,
     required this.isSelected,
     required this.onTap,
+    this.selectedColor,
   });
 
   @override
   Widget build(BuildContext context) {
+    final activeColor = selectedColor ?? const Color(0xFF333333); // Charcoal
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(30),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.black : Colors.white,
+          color: isSelected ? activeColor : Colors.white,
           borderRadius: BorderRadius.circular(30),
           border: Border.all(
-            color: isSelected ? Colors.black : const Color(0xFFE0DED8),
+            color: isSelected ? activeColor : const Color(0xFFE0DED8),
           ),
         ),
         child: CustomText(

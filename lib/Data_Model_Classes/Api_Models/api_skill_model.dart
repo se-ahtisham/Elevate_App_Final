@@ -15,11 +15,15 @@ class SkillModel {
 
   factory SkillModel.fromJson(Map<String, dynamic> json) {
     return SkillModel(
-      title: json['title'] ?? '',
-      company: json['company'] ?? '',
-      location: json['location'] ?? '',
-      salaryStart: json['salary_start'] ?? 0,
-      salaryEnd: json['salary_end'] ?? 0,
+      title: json['title']?.toString() ?? '',
+      company: json['company']?.toString() ?? '',
+      location: json['location']?.toString() ?? '',
+      salaryStart: (json['salary_start'] is num)
+          ? (json['salary_start'] as num).toInt()
+          : (int.tryParse(json['salary_start']?.toString() ?? '') ?? 0),
+      salaryEnd: (json['salary_end'] is num)
+          ? (json['salary_end'] as num).toInt()
+          : (int.tryParse(json['salary_end']?.toString() ?? '') ?? 0),
     );
   }
 }

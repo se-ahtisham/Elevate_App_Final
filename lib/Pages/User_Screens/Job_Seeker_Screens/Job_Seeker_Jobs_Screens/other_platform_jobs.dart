@@ -1,146 +1,219 @@
+import 'package:elevate_app/Custom_Widgets/Buttons/icon_text_button_gradient.dart';
+import 'package:elevate_app/Custom_Widgets/Drop_Down_Menu/custom_drop_down.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
+import 'package:elevate_app/Custom_Widgets/Search_Bar/custom_search_bar.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Custom_Widgets/Text/icon_text.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/job_compact_tile.dart';
+import 'package:elevate_app/Custom_Widgets/Tiles/job_skill_filter_chip.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/platform_filter_chip.dart';
-import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/company_model.dart';
-import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_post_model.dart';
+import 'package:elevate_app/Data_Model_Classes/Api_Models/api_job_model.dart';
 import 'package:elevate_app/Database/Online_Database/auth_provider.dart';
 import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
-import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Jobs_Screens/job_selection.dart';
-import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
+import 'package:elevate_app/Services/job_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class OtherPlatformJobs extends ConsumerStatefulWidget {
   const OtherPlatformJobs({super.key});
 
   @override
-  ConsumerState<OtherPlatformJobs> createState() => _OtherPlatformJobsState();
+  ConsumerState<OtherPlatformJobs> createState() => OtherPlatformJobsState();
 }
 
-class _OtherPlatformJobsState extends ConsumerState<OtherPlatformJobs> {
-  final _firebaseService = FirebaseService();
+class OtherPlatformJobsState extends ConsumerState<OtherPlatformJobs> {
+  final jobService = JobService();
+  final firebaseService = FirebaseService();
+
+  List<ApiJobModel> jobs = [];
+  List<ApiJobModel> filteredJobs = [];
+  List<String> passedSkillNames = [];
+  List<Map<String, String>> passedSkillDetails = [];
 
   bool isLoading = true;
+  bool hasError = false;
 
-  Map<String, Map<String, dynamic>> passedSkills = {};
-  Map<String, CompanyModel> companiesByID = {};
-
-  List<JobPostModel> allJobs = [];
-  List<JobPostModel> filteredJobs = [];
-
-  String? activeSkillID;
+  String? selectedPlatform;
+  String? selectedSkill;
+  String? selectedCompany;
+  String searchQuery = '';
 
   @override
   void initState() {
     super.initState();
-    loadData();
+    loadPassedSkillsAndJobs();
   }
 
-  Future<void> loadData() async {
+  Future<void> loadPassedSkillsAndJobs() async {
     if (!mounted) return;
-    setState(() => isLoading = true);
-
-    final myID = ref.read(authProvider).jobSeeker?.jobSeekerID;
+    setState(() {
+      isLoading = true;
+      hasError = false;
+    });
 
     try {
-      final companies = await _firebaseService.listAllCompanies();
-      final companyMap = {for (final c in companies) c.companyID: c};
+      final myID = ref.read(authProvider).jobSeeker?.jobSeekerID;
+      List<String> skillNames = [];
+      List<Map<String, String>> skillDetails = [];
 
       if (myID != null) {
-        final bestScores = await _firebaseService.getBestPassedScoresBySkill(myID);
-        final allSkillList = await _firebaseService.listAllSkills();
-        final skillsById = {for (final s in allSkillList) s.skillID: s};
-
-        final map = <String, Map<String, dynamic>>{};
-        final loadedJobs = <JobPostModel>[];
-        final seenJobIDs = <String>{};
+        final bestScores =
+            await firebaseService.getBestPassedScoresBySkill(myID);
+        final allSkills = await firebaseService.listAllSkills();
+        final skillsById = {for (final s in allSkills) s.skillID: s};
 
         for (final entry in bestScores.entries) {
-          final skillID = entry.key;
-          final score = entry.value;
-          final skill = skillsById[skillID];
-          if (skill == null) continue;
-
-          final tier = FirebaseService.tierForScore(score);
-          map[skillID] = {
-            'id': skillID,
-            'name': skill.skillName,
-            'score': score,
-            'tier': tier,
-          };
-
-          // Fetch jobs for this skill and tier (Gold -> Gold, Silver, Bronze; Silver -> Silver, Bronze; Bronze -> Bronze)
-          final matchingJobs = await _firebaseService.getJobsForSkillTier(
-            skillID,
-            tier,
-          );
-          for (final j in matchingJobs) {
-            if (seenJobIDs.add(j.jobID)) {
-              loadedJobs.add(j);
-            }
+          final skill = skillsById[entry.key];
+          if (skill != null && skill.skillName.isNotEmpty) {
+            final score = entry.value;
+            final tier = FirebaseService.tierForScore(score);
+            skillNames.add(skill.skillName);
+            skillDetails.add({
+              'name': skill.skillName,
+              'tier': tier,
+              'category': skill.category.isNotEmpty ? skill.category : 'Tech',
+            });
           }
         }
-
-        // If no passed skill jobs found, fallback to viewAllJobs
-        if (loadedJobs.isEmpty) {
-          final fallbackJobs = await _firebaseService.viewAllJobs();
-          for (final j in fallbackJobs) {
-            if (!j.isClosed && seenJobIDs.add(j.jobID)) {
-              loadedJobs.add(j);
-            }
-          }
-        }
-
-        if (!mounted) return;
-        setState(() {
-          passedSkills = map;
-          companiesByID = companyMap;
-          allJobs = loadedJobs;
-          filteredJobs = loadedJobs;
-          isLoading = false;
-        });
-      } else {
-        final jobs = await _firebaseService.viewAllJobs();
-        if (!mounted) return;
-        setState(() {
-          companiesByID = companyMap;
-          allJobs = jobs.where((j) => !j.isClosed).toList();
-          filteredJobs = allJobs;
-          isLoading = false;
-        });
       }
-    } catch (_) {
+
+      String searchTarget = skillNames.isNotEmpty
+          ? skillNames.join(" ")
+          : "Software Developer";
+
+      List<ApiJobModel> fetchedJobs = [];
+      try {
+        fetchedJobs = await jobService.fetchAllJobs(searchTarget);
+      } catch (_) {
+        fetchedJobs = await jobService.fetchAllJobs("Developer");
+      }
+
       if (!mounted) return;
-      setState(() => isLoading = false);
+      setState(() {
+        passedSkillNames = skillNames;
+        passedSkillDetails = skillDetails;
+        jobs = fetchedJobs;
+        isLoading = false;
+      });
+      applyFilters();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        jobs = [];
+        filteredJobs = [];
+        isLoading = false;
+        hasError = true;
+      });
     }
   }
 
-  void selectSkill(String? skillID) {
+  void applyFilters() {
     setState(() {
-      activeSkillID = skillID;
-      if (skillID == null) {
-        filteredJobs = allJobs;
-      } else {
-        final skillInfo = passedSkills[skillID];
-        final skillTier = skillInfo?['tier'] as String? ?? 'Bronze';
-        final allowedJobTiers = FirebaseService.eligibleJobTiersFor(skillTier);
+      filteredJobs = jobs.where((job) {
+        final matchPlatform = selectedPlatform == null ||
+            job.platform.toLowerCase() == selectedPlatform!.toLowerCase();
 
-        filteredJobs = allJobs.where((j) {
-          final hasSkill = j.requiredSkills.contains(skillID);
-          final jobTier = FirebaseService.jobExperienceTier(j.experienceLevel);
-          return hasSkill && allowedJobTiers.contains(jobTier);
-        }).toList();
-      }
+        final matchSkill = selectedSkill == null ||
+            job.title.toLowerCase().contains(selectedSkill!.toLowerCase()) ||
+            (job.description?.toLowerCase().contains(
+                  selectedSkill!.toLowerCase(),
+                ) ??
+                false);
+
+        final matchCompany = selectedCompany == null ||
+            job.company.toLowerCase() == selectedCompany!.toLowerCase();
+
+        final matchSearch = searchQuery.isEmpty ||
+            job.title.toLowerCase().contains(searchQuery.toLowerCase()) ||
+            job.company.toLowerCase().contains(searchQuery.toLowerCase()) ||
+            job.location.toLowerCase().contains(searchQuery.toLowerCase());
+
+        return matchPlatform && matchSkill && matchCompany && matchSearch;
+      }).toList();
     });
+  }
+
+  void onSearch(String q) {
+    searchQuery = q;
+    applyFilters();
+  }
+
+  void onPlatformSelected(String? platform) {
+    setState(() {
+      selectedPlatform = selectedPlatform == platform ? null : platform;
+    });
+    applyFilters();
+  }
+
+  void onSkillSelected(String? skill) {
+    setState(() {
+      selectedSkill = selectedSkill == skill ? null : skill;
+    });
+    applyFilters();
+  }
+
+  void clearAllFilters() {
+    setState(() {
+      selectedPlatform = null;
+      selectedSkill = null;
+      selectedCompany = null;
+      searchQuery = '';
+    });
+    applyFilters();
+  }
+
+  Future<void> openExternalApply(ApiJobModel job) async {
+    final url = job.applyUrl;
+    if (url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("No direct apply URL available for this job."),
+        ),
+      );
+      return;
+    }
+
+    final uri = Uri.tryParse(url);
+    if (uri != null) {
+      try {
+        final launched = await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
+        if (!launched) {
+          await launchUrl(uri);
+        }
+      } catch (_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Opening ${job.platform}...")),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final platforms = jobs
+        .map((e) => e.platform)
+        .where((p) => p.isNotEmpty)
+        .toSet()
+        .toList();
+
+    final companies = jobs
+        .map((e) => e.company)
+        .where((c) => c.isNotEmpty)
+        .toSet()
+        .toList();
+
+    final bool hasActiveFilters = selectedPlatform != null ||
+        selectedSkill != null ||
+        selectedCompany != null ||
+        searchQuery.isNotEmpty;
+
     return Scaffold(
-      extendBodyBehindAppBar: true,
       backgroundColor: const Color.fromARGB(255, 243, 243, 243),
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.light,
@@ -148,84 +221,159 @@ class _OtherPlatformJobsState extends ConsumerState<OtherPlatformJobs> {
           children: [
             const ElevateHeader(
               title: "More Jobs",
-              subTitle: "Jobs matched to your passed skills",
-              titleSize: 26,
+              subTitle: "Skill-matched positions from external platforms",
+              titleSize: 28,
               subtitleSize: 14,
               showBackButton: true,
             ),
-
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.only(
-                  left: 20.0,
-                  bottom: 30,
-                  right: 20,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Padding(
-                      padding: EdgeInsets.only(left: 10.0),
-                      child: IconText(
-                        text: "Matched Positions",
-                        iconData: Icons.work_outline,
-                        textSize: 20,
-                        textWeight: FontWeight.bold,
-                        iconSize: 25,
-                        iconTextSpacing: 10,
-                      ),
+                    const SizedBox(height: 12),
+                    const IconText(
+                      text: "External Opportunities",
+                      iconData: Icons.public_outlined,
+                      textSize: 18,
+                      textWeight: FontWeight.bold,
+                      iconSize: 24,
+                      iconTextSpacing: 8,
                     ),
-
-                    const SizedBox(height: 15),
-
-                    // ── Passed Skill Filter Chips ───────────────
-                    if (passedSkills.isNotEmpty) ...[
-                      const Padding(
-                        padding: EdgeInsets.only(left: 4, bottom: 8),
-                        child: CustomText(
-                          text: "YOUR PASSED SKILLS",
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: ElevateColor.gray,
-                        ),
+                    const SizedBox(height: 12),
+                    CustomSearchBar(
+                      hintText: "Search title, company, location...",
+                      backgroundColor: Colors.white,
+                      width: double.infinity,
+                      height: 48,
+                      textSize: 13,
+                      iconSize: 22,
+                      onChanged: onSearch,
+                    ),
+                    if (passedSkillDetails.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      const CustomText(
+                        text: "Your Passed Skills",
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
                       ),
+                      const SizedBox(height: 6),
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 2),
                         child: Row(
                           children: [
-                            PlatformFilterChip(
-                              label: "All Passed Skills",
-                              isSelected: activeSkillID == null,
-                              onTap: () => selectSkill(null),
+                            JobSkillFilterChip(
+                              text: "All Skills",
+                              isSelected: selectedSkill == null,
+                              onTap: () => onSkillSelected(null),
                             ),
-                            ...passedSkills.entries.map((entry) {
-                              final name = entry.value['name'] as String;
-                              final tier = entry.value['tier'] as String;
-                              return PlatformFilterChip(
-                                label: "$name ($tier)",
-                                isSelected: activeSkillID == entry.key,
-                                onTap: () => selectSkill(entry.key),
+                            const SizedBox(width: 8),
+                            ...passedSkillDetails.map((skill) {
+                              final name = skill['name']!;
+                              final tier = skill['tier']!;
+                              final labelText = "$name • $tier";
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: JobSkillFilterChip(
+                                  text: labelText,
+                                  isSelected: selectedSkill == name,
+                                  onTap: () => onSkillSelected(name),
+                                ),
                               );
                             }),
                           ],
                         ),
                       ),
-                      const SizedBox(height: 12),
                     ],
-
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8, bottom: 10),
-                      child: Text(
-                        "${filteredJobs.length} jobs found",
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
+                    if (platforms.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      const CustomText(
+                        text: "Platforms",
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.grey,
+                      ),
+                      const SizedBox(height: 6),
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            PlatformFilterChip(
+                              label: "All Platforms",
+                              isSelected: selectedPlatform == null,
+                              onTap: () => onPlatformSelected(null),
+                            ),
+                            ...platforms.map((p) {
+                              return PlatformFilterChip(
+                                label: p,
+                                isSelected: selectedPlatform == p,
+                                onTap: () => onPlatformSelected(p),
+                              );
+                            }),
+                          ],
                         ),
                       ),
-                    ),
-
+                    ],
+                    if (companies.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      CustomDropDown(
+                        hintText: "All Companies",
+                        items: companies,
+                        value: selectedCompany,
+                        height: 42,
+                        borderRadius: 12,
+                        hintTextSize: 12,
+                        textSize: 12,
+                        backgroundColor: Colors.white,
+                        borderColor: const Color(0xFFE0DED8),
+                        onChanged: (val) {
+                          setState(() {
+                            selectedCompany = val;
+                          });
+                          applyFilters();
+                        },
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    if (!isLoading && !hasError)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "${filteredJobs.length} jobs found",
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          if (hasActiveFilters)
+                            InkWell(
+                              onTap: clearAllFilters,
+                              child: Row(
+                                children: const [
+                                  Icon(
+                                    Icons.close,
+                                    size: 14,
+                                    color: Colors.grey,
+                                  ),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    "Clear Filters",
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    const SizedBox(height: 8),
                     Expanded(
                       child: isLoading
                           ? const Center(
@@ -233,55 +381,83 @@ class _OtherPlatformJobsState extends ConsumerState<OtherPlatformJobs> {
                                 color: Colors.black,
                               ),
                             )
-                          : filteredJobs.isEmpty
-                              ? const Center(
-                                  child: CustomText(
-                                    text: "No jobs match the selected skill tier.",
-                                    fontSize: 13,
-                                    color: ElevateColor.gray,
-                                    fontWeight: FontWeight.w500,
+                          : hasError
+                              ? Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(
+                                        Icons.wifi_off,
+                                        size: 48,
+                                        color: Colors.grey,
+                                      ),
+                                      const SizedBox(height: 12),
+                                      const CustomText(
+                                        text: "Failed to load external jobs",
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      SizedBox(
+                                        width: 160,
+                                        child: IconTextButtonGradient(
+                                          text: "Retry",
+                                          iconData: Icons.refresh,
+                                          textSize: 14,
+                                          textColor: Colors.white,
+                                          borderRadius: 24,
+                                          height: 44,
+                                          startColor: const Color(0xFF595959),
+                                          endColor: const Color(0xFF111111),
+                                          onTap: loadPassedSkillsAndJobs,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 )
-                              : ListView.builder(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 4,
-                                  ),
-                                  itemCount: filteredJobs.length,
-                                  itemBuilder: (_, i) {
-                                    final job = filteredJobs[i];
-                                    final company =
-                                        companiesByID[job.companyID];
-
-                                    return Padding(
-                                      padding: const EdgeInsets.only(
-                                        bottom: 12,
+                              : filteredJobs.isEmpty
+                                  ? const Center(
+                                      child: CustomText(
+                                        text:
+                                            "No jobs match your filter criteria.",
+                                        fontSize: 14,
+                                        color: Colors.grey,
                                       ),
-                                      child: JobCompactTile(
-                                        title: job.title,
-                                        company:
-                                            company?.companyName ?? 'Company',
-                                        location: job.location,
-                                        isRemote: job.location
-                                            .toLowerCase()
-                                            .contains('remote'),
-                                        jobType: job.jobType,
-                                        salary: job.salary,
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) => JobSelection(
-                                                jobPost: job,
-                                                companyEmail: company?.email,
-                                                companyName: company?.companyName ?? 'Company',
-                                              ),
+                                    )
+                                  : RefreshIndicator(
+                                      onRefresh: loadPassedSkillsAndJobs,
+                                      color: Colors.black,
+                                      child: ListView.builder(
+                                        physics:
+                                            const AlwaysScrollableScrollPhysics(),
+                                        padding: const EdgeInsets.only(
+                                          bottom: 20,
+                                          top: 4,
+                                        ),
+                                        itemCount: filteredJobs.length,
+                                        itemBuilder: (context, index) {
+                                          final job = filteredJobs[index];
+                                          return Padding(
+                                            padding: const EdgeInsets.only(
+                                              bottom: 12,
+                                            ),
+                                            child: JobCompactTile(
+                                              title: job.title,
+                                              company:
+                                                  "${job.company} • ${job.platform}",
+                                              location: job.location,
+                                              isRemote: job.isRemote,
+                                              jobType:
+                                                  job.jobType ?? "Full Time",
+                                              salary:
+                                                  job.salary ?? "Not disclosed",
+                                              onTap: () =>
+                                                  openExternalApply(job),
                                             ),
                                           );
                                         },
                                       ),
-                                    );
-                                  },
-                                ),
+                                    ),
                     ),
                   ],
                 ),

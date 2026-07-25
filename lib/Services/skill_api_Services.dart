@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class SkillApiServices {
-  static String apiKey = dotenv.env['Top_Skill_Ai_API_KEY'] ?? '';
+  static String get apiKey => dotenv.env['Top_Skill_Ai_API_KEY'] ?? '';
 
   static const String _host = "chatgpt-42.p.rapidapi.com";
 
@@ -13,11 +13,16 @@ class SkillApiServices {
 
   static Future<List<SkillModel>> fetchTrendingSkills() async {
     try {
+      final key = apiKey;
+      if (key.isEmpty) {
+        throw Exception("Top_Skill_Ai_API_KEY is not set in .env file.");
+      }
+
       final response = await http.post(
         Uri.parse(_url),
         headers: {
           "Content-Type": "application/json",
-          "x-rapidapi-key": apiKey,
+          "x-rapidapi-key": key,
           "x-rapidapi-host": _host,
         },
         body: jsonEncode({
@@ -37,9 +42,9 @@ class SkillApiServices {
                   "No explanation. No markdown. No extra text.",
             },
           ],
-          "temperature": 0.9,
+          "temperature": 0.7,
           "top_p": 0.9,
-          "max_tokens": 500,
+          "max_tokens": 1500,
           "web_access": false,
         }),
       );
@@ -54,11 +59,17 @@ class SkillApiServices {
             .replaceAll("```", "")
             .trim();
 
+        int startIndex = content.indexOf('[');
+        int endIndex = content.lastIndexOf(']');
+        if (startIndex != -1 && endIndex != -1 && endIndex > startIndex) {
+          content = content.substring(startIndex, endIndex + 1);
+        }
+
         final List<dynamic> parsed = jsonDecode(content);
 
         return parsed.map((e) => SkillModel.fromJson(e)).toList();
       } else {
-        throw Exception("API Error: ${response.body}");
+        throw Exception("API Error: ${response.statusCode} - ${response.body}");
       }
     } catch (e) {
       throw Exception("Exception: $e");

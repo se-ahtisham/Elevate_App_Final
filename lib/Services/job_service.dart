@@ -6,7 +6,7 @@ import '../utils/job_cleaner.dart';
 import '../utils/job_ranker.dart';
 
 class JobService {
-  static String _apiKey = dotenv.env['Job_Ai_API_KEY'] ?? '';
+  static String get _apiKey => dotenv.env['Job_Ai_API_KEY'] ?? '';
 
   static const String _arbeitnowUrl =
       'https://www.arbeitnow.com/api/job-board-api';
