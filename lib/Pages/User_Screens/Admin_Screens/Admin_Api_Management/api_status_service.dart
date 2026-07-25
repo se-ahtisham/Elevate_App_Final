@@ -27,6 +27,10 @@ class ApiStatusChecker {
   static const String liveBaseUrl = 'https://elevate-backend-rtdg.onrender.com';
   static const String localBaseUrl = 'http://127.0.0.1:8000';
 
+  // Cap how much of a response body we keep around for display.
+  // (e.g. /docs returns a full HTML page, ai-logs could grow large)
+  static const int _maxResponseChars = 1000;
+
   static Future<ApiEndpointStatus> checkEndpoint({
     required String environment,
     required String name,
@@ -52,6 +56,12 @@ class ApiStatusChecker {
 
       bool isOk = response.statusCode >= 200 && response.statusCode < 300;
 
+      String message = response.body;
+      if (message.length > _maxResponseChars) {
+        message =
+            '${message.substring(0, _maxResponseChars)}\n… (truncated, ${response.body.length} chars total)';
+      }
+
       return ApiEndpointStatus(
         environment: environment,
         name: name,
@@ -59,7 +69,7 @@ class ApiStatusChecker {
         method: method,
         isRunning: isOk,
         statusCode: response.statusCode,
-        responseMessage: response.body,
+        responseMessage: message,
       );
     } catch (e) {
       return ApiEndpointStatus(
@@ -72,6 +82,36 @@ class ApiStatusChecker {
         responseMessage: e.toString(),
       );
     }
+  }
+
+  /// Tries [primaryUrl] first; if that 404s, falls back to [fallbackUrl].
+  /// Useful while the backend's exact route naming (underscore vs dash) is
+  /// still being confirmed.
+  static Future<ApiEndpointStatus> _checkWithFallback({
+    required String environment,
+    required String name,
+    required String primaryUrl,
+    required String fallbackUrl,
+    required String method,
+    Map<String, dynamic>? body,
+  }) async {
+    var result = await checkEndpoint(
+      environment: environment,
+      name: name,
+      url: primaryUrl,
+      method: method,
+      body: body,
+    );
+    if (!result.isRunning && result.statusCode == 404) {
+      result = await checkEndpoint(
+        environment: environment,
+        name: name,
+        url: fallbackUrl,
+        method: method,
+        body: body,
+      );
+    }
+    return result;
   }
 
   static Future<List<ApiEndpointStatus>> checkAllEndpoints() async {
@@ -91,6 +131,45 @@ class ApiStatusChecker {
       'question_id': 'test_q_101',
       'selected_answer': 'StatelessWidget',
       'user_answer': 'StatelessWidget',
+    };
+
+    // Best-guess payloads for the evaluate endpoints, following the same
+    // field naming pattern confirmed on record-answer. These haven't been
+    // schema-validated yet — if the card shows a 422, the Response Body
+    // will list exactly which fields the backend actually expects, same
+    // way record-answer's payload above was worked out.
+    final Map<String, dynamic> evaluateMcqBody = {
+      'user_id': 'admin_test',
+      'skill': 'Flutter',
+      'level': 'Beginner',
+      'topic': 'Widgets',
+      'question_type': 'mcq',
+      'question_id': 'test_q_101',
+      'selected_answer': 'StatelessWidget',
+      'correct_answer': 'StatelessWidget',
+    };
+
+    final Map<String, dynamic> evaluateTheoryBody = {
+      'user_id': 'admin_test',
+      'skill': 'Flutter',
+      'level': 'Beginner',
+      'topic': 'Widgets',
+      'question_type': 'theory',
+      'question_id': 'test_q_102',
+      'user_answer':
+          'A StatelessWidget is immutable and does not depend on any mutable state.',
+    };
+
+    final Map<String, dynamic> evaluateCodingBody = {
+      'user_id': 'admin_test',
+      'skill': 'Flutter',
+      'level': 'Beginner',
+      'topic': 'Widgets',
+      'question_type': 'coding',
+      'question_id': 'test_q_103',
+      'language': 'dart',
+      'user_code':
+          'class MyWidget extends StatelessWidget {\n  @override\n  Widget build(BuildContext context) => Container();\n}',
     };
 
     // ==========================================
@@ -125,47 +204,76 @@ class ApiStatusChecker {
     );
 
     // 3. Record Answer
-    var recordAnswerResultLive = await checkEndpoint(
-      environment: 'Live (Render)',
-      name: 'Record Answer',
-      url: '$liveBaseUrl/record_answer',
-      method: 'POST',
-      body: recordAnswerBody,
-    );
-    if (!recordAnswerResultLive.isRunning &&
-        recordAnswerResultLive.statusCode == 404) {
-      recordAnswerResultLive = await checkEndpoint(
+    results.add(
+      await _checkWithFallback(
         environment: 'Live (Render)',
         name: 'Record Answer',
-        url: '$liveBaseUrl/record-answer',
+        primaryUrl: '$liveBaseUrl/record_answer',
+        fallbackUrl: '$liveBaseUrl/record-answer',
         method: 'POST',
         body: recordAnswerBody,
-      );
-    }
-    results.add(recordAnswerResultLive);
-
-    // 4. Get AI Logs
-    var aiLogsResultLive = await checkEndpoint(
-      environment: 'Live (Render)',
-      name: 'Get AI Logs',
-      url: '$liveBaseUrl/get_ai_logs',
-      method: 'GET',
+      ),
     );
-    if (!aiLogsResultLive.isRunning && aiLogsResultLive.statusCode == 404) {
-      aiLogsResultLive = await checkEndpoint(
+
+    // 4. Evaluate MCQ
+    results.add(
+      await checkEndpoint(
+        environment: 'Live (Render)',
+        name: 'Evaluate MCQ',
+        url: '$liveBaseUrl/evaluate-mcq',
+        method: 'POST',
+        body: evaluateMcqBody,
+      ),
+    );
+
+    // 5. Evaluate Theory
+    results.add(
+      await checkEndpoint(
+        environment: 'Live (Render)',
+        name: 'Evaluate Theory',
+        url: '$liveBaseUrl/evaluate-theory',
+        method: 'POST',
+        body: evaluateTheoryBody,
+      ),
+    );
+
+    // 6. Evaluate Coding
+    results.add(
+      await checkEndpoint(
+        environment: 'Live (Render)',
+        name: 'Evaluate Coding',
+        url: '$liveBaseUrl/evaluate-coding',
+        method: 'POST',
+        body: evaluateCodingBody,
+      ),
+    );
+
+    // 7. Get AI Logs
+    results.add(
+      await _checkWithFallback(
         environment: 'Live (Render)',
         name: 'Get AI Logs',
-        url: '$liveBaseUrl/ai-logs',
+        primaryUrl: '$liveBaseUrl/get_ai_logs',
+        fallbackUrl: '$liveBaseUrl/ai-logs',
         method: 'GET',
-      );
-    }
-    results.add(aiLogsResultLive);
+      ),
+    );
+
+    // 8. Interactive Docs (Swagger)
+    results.add(
+      await checkEndpoint(
+        environment: 'Live (Render)',
+        name: 'Interactive Docs (Swagger)',
+        url: '$liveBaseUrl/docs',
+        method: 'GET',
+      ),
+    );
 
     // ==========================================
     // 💻 LOCAL DEVELOPMENT SERVER
     // ==========================================
 
-    // 5. Health Check
+    // 1. Health Check
     results.add(
       await checkEndpoint(
         environment: 'Local Machine',
@@ -175,7 +283,7 @@ class ApiStatusChecker {
       ),
     );
 
-    // 6. Generate Question
+    // 2. Generate Question
     results.add(
       await checkEndpoint(
         environment: 'Local Machine',
@@ -192,42 +300,71 @@ class ApiStatusChecker {
       ),
     );
 
-    // 7. Record Answer
-    var recordAnswerResultLocal = await checkEndpoint(
-      environment: 'Local Machine',
-      name: 'Record Answer',
-      url: '$localBaseUrl/record_answer',
-      method: 'POST',
-      body: recordAnswerBody,
-    );
-    if (!recordAnswerResultLocal.isRunning &&
-        recordAnswerResultLocal.statusCode == 404) {
-      recordAnswerResultLocal = await checkEndpoint(
+    // 3. Record Answer
+    results.add(
+      await _checkWithFallback(
         environment: 'Local Machine',
         name: 'Record Answer',
-        url: '$localBaseUrl/record-answer',
+        primaryUrl: '$localBaseUrl/record_answer',
+        fallbackUrl: '$localBaseUrl/record-answer',
         method: 'POST',
         body: recordAnswerBody,
-      );
-    }
-    results.add(recordAnswerResultLocal);
-
-    // 8. Get AI Logs
-    var aiLogsResultLocal = await checkEndpoint(
-      environment: 'Local Machine',
-      name: 'Get AI Logs',
-      url: '$localBaseUrl/get_ai_logs',
-      method: 'GET',
+      ),
     );
-    if (!aiLogsResultLocal.isRunning && aiLogsResultLocal.statusCode == 404) {
-      aiLogsResultLocal = await checkEndpoint(
+
+    // 4. Evaluate MCQ
+    results.add(
+      await checkEndpoint(
+        environment: 'Local Machine',
+        name: 'Evaluate MCQ',
+        url: '$localBaseUrl/evaluate-mcq',
+        method: 'POST',
+        body: evaluateMcqBody,
+      ),
+    );
+
+    // 5. Evaluate Theory
+    results.add(
+      await checkEndpoint(
+        environment: 'Local Machine',
+        name: 'Evaluate Theory',
+        url: '$localBaseUrl/evaluate-theory',
+        method: 'POST',
+        body: evaluateTheoryBody,
+      ),
+    );
+
+    // 6. Evaluate Coding
+    results.add(
+      await checkEndpoint(
+        environment: 'Local Machine',
+        name: 'Evaluate Coding',
+        url: '$localBaseUrl/evaluate-coding',
+        method: 'POST',
+        body: evaluateCodingBody,
+      ),
+    );
+
+    // 7. Get AI Logs
+    results.add(
+      await _checkWithFallback(
         environment: 'Local Machine',
         name: 'Get AI Logs',
-        url: '$localBaseUrl/ai-logs',
+        primaryUrl: '$localBaseUrl/get_ai_logs',
+        fallbackUrl: '$localBaseUrl/ai-logs',
         method: 'GET',
-      );
-    }
-    results.add(aiLogsResultLocal);
+      ),
+    );
+
+    // 8. Interactive Docs (Swagger)
+    results.add(
+      await checkEndpoint(
+        environment: 'Local Machine',
+        name: 'Interactive Docs (Swagger)',
+        url: '$localBaseUrl/docs',
+        method: 'GET',
+      ),
+    );
 
     return results;
   }

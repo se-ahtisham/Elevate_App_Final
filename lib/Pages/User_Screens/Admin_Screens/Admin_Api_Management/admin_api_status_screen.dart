@@ -34,6 +34,13 @@ class _AdminApiStatusScreenState extends State<AdminApiStatusScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final liveItems = _statusList
+        .where((item) => item.environment == 'Live (Render)')
+        .toList();
+    final localItems = _statusList
+        .where((item) => item.environment == 'Local Machine')
+        .toList();
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
@@ -76,37 +83,32 @@ class _AdminApiStatusScreenState extends State<AdminApiStatusScreen> {
                             children: [
                               const SizedBox(height: 10),
 
+                              // Overall summary bar
+                              _buildSummaryBar(),
+
+                              const SizedBox(height: 20),
+
                               // Section 1: Live Render Server
-                              const CustomText(
-                                text: "LIVE PRODUCTION SERVER (RENDER)",
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
+                              _buildSectionHeader(
+                                "LIVE PRODUCTION SERVER (RENDER)",
+                                liveItems,
                               ),
                               const SizedBox(height: 12),
-                              ..._statusList
-                                  .where(
-                                    (item) =>
-                                        item.environment == 'Live (Render)',
-                                  )
-                                  .map((item) => _buildApiEndpointCard(item)),
+                              ...liveItems.map(
+                                (item) => _buildApiEndpointCard(item),
+                              ),
 
                               const SizedBox(height: 25),
 
                               // Section 2: Local Server
-                              const CustomText(
-                                text: "LOCAL DEVELOPMENT SERVER",
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
+                              _buildSectionHeader(
+                                "LOCAL DEVELOPMENT SERVER",
+                                localItems,
                               ),
                               const SizedBox(height: 12),
-                              ..._statusList
-                                  .where(
-                                    (item) =>
-                                        item.environment == 'Local Machine',
-                                  )
-                                  .map((item) => _buildApiEndpointCard(item)),
+                              ...localItems.map(
+                                (item) => _buildApiEndpointCard(item),
+                              ),
 
                               const SizedBox(height: 25),
 
@@ -146,6 +148,70 @@ class _AdminApiStatusScreenState extends State<AdminApiStatusScreen> {
     );
   }
 
+  // Top banner: "X / Y Endpoints Online" across the whole diagnostic run
+  Widget _buildSummaryBar() {
+    final total = _statusList.length;
+    final online = _statusList.where((item) => item.isRunning).length;
+    final allOnline = total > 0 && online == total;
+    final color = allOnline
+        ? Colors.green
+        : (online == 0 ? Colors.red : Colors.orange);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        border: Border.all(color: color, width: 1.5),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          CustomText(
+            text: allOnline
+                ? "All Systems Operational"
+                : "$online of $total Endpoints Online",
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: color,
+            textAlign: TextAlign.left,
+          ),
+          Icon(
+            allOnline ? Icons.check_circle : Icons.warning_amber_rounded,
+            color: color,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Section header showing environment name + how many of its endpoints are online
+  Widget _buildSectionHeader(String title, List<ApiEndpointStatus> items) {
+    final total = items.length;
+    final online = items.where((item) => item.isRunning).length;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        CustomText(
+          text: title,
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: Colors.black,
+        ),
+        CustomText(
+          text: "$online/$total",
+          fontSize: 13,
+          fontWeight: FontWeight.bold,
+          color: online == total && total > 0
+              ? Colors.green
+              : Colors.grey.shade700,
+        ),
+      ],
+    );
+  }
+
   // White Card with full details view
   Widget _buildApiEndpointCard(ApiEndpointStatus status) {
     final bool isOnline = status.isRunning;
@@ -164,7 +230,7 @@ class _AdminApiStatusScreenState extends State<AdminApiStatusScreen> {
             color: Colors.black.withOpacity(0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
-          )
+          ),
         ],
       ),
       child: Column(
@@ -195,7 +261,7 @@ class _AdminApiStatusScreenState extends State<AdminApiStatusScreen> {
                 ),
                 child: CustomText(
                   text: isOnline
-                      ? "ONLINE (200)"
+                      ? "ONLINE (${status.statusCode})"
                       : "OFFLINE (${status.statusCode})",
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
@@ -213,10 +279,7 @@ class _AdminApiStatusScreenState extends State<AdminApiStatusScreen> {
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: const Color.fromARGB(255, 250, 250, 250),
-              border: Border.all(
-                color: Colors.grey.shade300,
-                width: 1,
-              ),
+              border: Border.all(color: Colors.grey.shade300, width: 1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: CustomText(
