@@ -4,8 +4,10 @@ class ProjectModel {
   final String projectTitle;
   final String projectDescription;
   final String projectURL;
-  final List<String> techStack;
-  final List<String> mediaFiles; // URLs
+  final List<String> techStack; // file names
+  final List<String>
+  techFileUrls; // matching download URLs (same order as techStack)
+  final List<String> mediaFiles; // image URLs
   final DateTime createdAt;
 
   ProjectModel({
@@ -15,6 +17,7 @@ class ProjectModel {
     this.projectDescription = '',
     this.projectURL = '',
     this.techStack = const [],
+    this.techFileUrls = const [],
     this.mediaFiles = const [],
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
@@ -27,6 +30,7 @@ class ProjectModel {
       'projectDescription': projectDescription,
       'projectURL': projectURL,
       'techStack': techStack,
+      'techFileUrls': techFileUrls,
       'mediaFiles': mediaFiles,
       'createdAt': createdAt.toIso8601String(),
     };
@@ -40,6 +44,7 @@ class ProjectModel {
       projectDescription: map['projectDescription'] ?? '',
       projectURL: map['projectURL'] ?? '',
       techStack: List<String>.from(map['techStack'] ?? []),
+      techFileUrls: List<String>.from(map['techFileUrls'] ?? []),
       mediaFiles: List<String>.from(map['mediaFiles'] ?? []),
       createdAt: map['createdAt'] != null
           ? DateTime.tryParse(map['createdAt'])
@@ -52,6 +57,7 @@ class ProjectModel {
     String? projectDescription,
     String? projectURL,
     List<String>? techStack,
+    List<String>? techFileUrls,
     List<String>? mediaFiles,
   }) {
     return ProjectModel(
@@ -61,6 +67,7 @@ class ProjectModel {
       projectDescription: projectDescription ?? this.projectDescription,
       projectURL: projectURL ?? this.projectURL,
       techStack: techStack ?? this.techStack,
+      techFileUrls: techFileUrls ?? this.techFileUrls,
       mediaFiles: mediaFiles ?? this.mediaFiles,
       createdAt: createdAt,
     );

@@ -1,5 +1,4 @@
 import 'package:elevate_app/Custom_Widgets/Buttons/text_button_gradient.dart';
-import 'package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/user_Comment_tile.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/comment_model.dart';
@@ -71,16 +70,22 @@ class CommunityCommentsState extends ConsumerState<CommunityComments> {
   }
 
   Future<void> submitComment() async {
-    final me = ref.read(authProvider).jobSeeker;
+    final authState = ref.read(authProvider);
+    final meSeeker = authState.jobSeeker;
+    final meCompany = authState.company;
+
+    final myID = meSeeker?.jobSeekerID ?? meCompany?.companyID;
+    final myName = meSeeker?.name ?? meCompany?.companyName ?? "User";
     final text = commentController.text.trim();
-    if (me == null || text.isEmpty) return;
+
+    if (myID == null || text.isEmpty) return;
 
     setState(() => isSending = true);
     try {
       await firebaseService.addComment(
         widget.postID,
-        me.jobSeekerID,
-        me.name,
+        myID,
+        myName,
         text,
       );
       commentController.clear();
@@ -95,24 +100,11 @@ class CommunityCommentsState extends ConsumerState<CommunityComments> {
     }
   }
 
-  Future<void> deleteComment(CommentModel comment) async {
-    try {
-      await firebaseService.deleteComment(comment.commentID, widget.postID);
-      if (!mounted) return;
-      setState(() {
-        comments.removeWhere((c) => c.commentID == comment.commentID);
-      });
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Failed to delete comment.")),
-      );
-    }
-  }
+
+
 
   @override
   Widget build(BuildContext context) {
-    final myID = ref.read(authProvider).jobSeeker?.jobSeekerID;
     final headerTitle = widget.postTitle.isNotEmpty
         ? widget.postTitle
         : "${widget.postAuthorName}'s post";
@@ -225,20 +217,16 @@ class CommunityCommentsState extends ConsumerState<CommunityComments> {
                           physics: const AlwaysScrollableScrollPhysics(),
                           child: Column(
                             children: comments.map((comment) {
-                              final isMine = comment.authorID == myID;
                               return Padding(
                                 key: ValueKey(comment.commentID),
                                 padding: const EdgeInsets.only(bottom: 12),
                                 child: UserCommentTile(
                                   title: "",
                                   text: comment.commentText,
-                                  imageURL:
-                                      "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg",
+                                  imageURL: "",
                                   name: comment.authorName,
-                                  shortDescription: "Job Seeker",
-                                  onDeleteTap: isMine
-                                      ? () => deleteComment(comment)
-                                      : null,
+                                  shortDescription: "Member",
+                                  onDeleteTap: null,
                                 ),
                               );
                             }).toList(),

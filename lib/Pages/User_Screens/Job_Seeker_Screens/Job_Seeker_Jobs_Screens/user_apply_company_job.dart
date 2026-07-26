@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_post_model.dart';
 import 'package:elevate_app/Database/Online_Database/auth_provider.dart';
 import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
-import 'package:elevate_app/Resources/Colors/Gradient_Colors/gradient_colors.dart';
+import 'package:elevate_app/Database/Online_Database/firebase_storage_service.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,32 +20,66 @@ class UserApplyCompanyJob extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<UserApplyCompanyJob> createState() => _UserApplyCompanyJobState();
+  ConsumerState<UserApplyCompanyJob> createState() =>
+      UserApplyCompanyJobState();
 }
 
-class _UserApplyCompanyJobState extends ConsumerState<UserApplyCompanyJob> {
-  final _firebaseService = FirebaseService();
-  late final TextEditingController _controller;
-  bool _isApplying = false;
+class UserApplyCompanyJobState extends ConsumerState<UserApplyCompanyJob> {
+  final firebaseService = FirebaseService();
+  final storageService = FirebaseStorageService();
 
-  static const double _pageHorizontal = 20;
-  static const double _sectionGap = 18;
-  static const double _labelToContentGap = 10;
-  static const double _buttonGap = 10;
+  late final TextEditingController controller;
+  bool isApplying = false;
+
+  File? selectedResumeFile;
+  String? selectedResumeFileName;
+
+  static const double pageHorizontal = 20;
+  static const double sectionGap = 18;
+  static const double labelToContentGap = 10;
+  static const double buttonGap = 10;
 
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController(text: widget.coldEmail);
+    controller = TextEditingController(text: widget.coldEmail);
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    controller.dispose();
     super.dispose();
   }
 
-  Future<void> _submitApplication() async {
+  Future<void> pickResumeFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'doc', 'docx', 'jpg', 'png'],
+    );
+
+    if (result != null && result.files.single.path != null && mounted) {
+      final file = File(result.files.single.path!);
+
+      // Validate file size < 100 KB
+      if (!storageService.validateFileSize(file, context)) {
+        return;
+      }
+
+      setState(() {
+        selectedResumeFile = file;
+        selectedResumeFileName = result.files.single.name;
+      });
+    }
+  }
+
+  void removeResumeFile() {
+    setState(() {
+      selectedResumeFile = null;
+      selectedResumeFileName = null;
+    });
+  }
+
+  Future<void> submitApplication() async {
     final myID = ref.read(authProvider).jobSeeker?.jobSeekerID;
     if (myID == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -52,19 +88,36 @@ class _UserApplyCompanyJobState extends ConsumerState<UserApplyCompanyJob> {
       return;
     }
 
-    setState(() => _isApplying = true);
+    setState(() => isApplying = true);
     try {
-      await _firebaseService.applyJob(
+      String? resumeUrl;
+
+      // Upload resume to Firebase Storage if selected
+      if (selectedResumeFile != null) {
+        resumeUrl = await storageService.uploadResumeFile(
+          userId: myID,
+          file: selectedResumeFile!,
+          context: context,
+        );
+      }
+
+      await firebaseService.applyJob(
         jobSeekerID: myID,
         jobID: widget.jobPost.jobID,
-        coldEmail: _controller.text,
+        coldEmail: controller.text,
       );
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Application submitted successfully!")),
+        SnackBar(
+          content: Text(
+            resumeUrl != null
+                ? "Application with resume submitted successfully!"
+                : "Application submitted successfully!",
+          ),
+        ),
       );
-      // Pop back twice to return to the jobs list
+
       Navigator.pop(context);
       Navigator.pop(context);
     } catch (e) {
@@ -74,7 +127,7 @@ class _UserApplyCompanyJobState extends ConsumerState<UserApplyCompanyJob> {
       );
     } finally {
       if (mounted) {
-        setState(() => _isApplying = false);
+        setState(() => isApplying = false);
       }
     }
   }
@@ -85,7 +138,7 @@ class _UserApplyCompanyJobState extends ConsumerState<UserApplyCompanyJob> {
       backgroundColor: ElevateColor.white,
       body: Column(
         children: [
-          ElevateHeader(
+          const ElevateHeader(
             title: 'Grab Opportunity',
             subTitle: 'Go and Grab opportunity until its gone',
             titleSize: 30,
@@ -100,15 +153,15 @@ class _UserApplyCompanyJobState extends ConsumerState<UserApplyCompanyJob> {
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(
-                  _pageHorizontal,
+                  pageHorizontal,
                   10,
-                  _pageHorizontal,
+                  pageHorizontal,
                   20,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Your message',
                       style: TextStyle(
                         color: ElevateColor.gray,
@@ -116,9 +169,9 @@ class _UserApplyCompanyJobState extends ConsumerState<UserApplyCompanyJob> {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: _labelToContentGap),
+                    const SizedBox(height: labelToContentGap),
                     TextFormField(
-                      controller: _controller,
+                      controller: controller,
                       maxLines: null,
                       keyboardType: TextInputType.multiline,
                       decoration: InputDecoration(
@@ -126,11 +179,15 @@ class _UserApplyCompanyJobState extends ConsumerState<UserApplyCompanyJob> {
                         filled: true,
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFE2E2E2)),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFE2E2E2),
+                          ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFE2E2E2)),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFE2E2E2),
+                          ),
                         ),
                         contentPadding: const EdgeInsets.all(14),
                       ),
@@ -138,41 +195,141 @@ class _UserApplyCompanyJobState extends ConsumerState<UserApplyCompanyJob> {
                         fontSize: 12,
                         height: 1.35,
                         color: Color(0xFF454545),
-                        fontWeight: FontWeight.w400,
                       ),
                     ),
-                    const SizedBox(height: _sectionGap),
-                    Text(
-                      'Files',
-                      style: TextStyle(
-                        color: ElevateColor.gray,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    const SizedBox(height: sectionGap),
+
+                    // Resume Document Attachment Section (< 100 KB)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Attach Resume / CV (< 100KB)',
+                          style: TextStyle(
+                            color: ElevateColor.gray,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.attach_file,
+                            color: Colors.black,
+                          ),
+                          onPressed: pickResumeFile,
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: _labelToContentGap),
-                    _FileTile(),
-                    const SizedBox(height: _sectionGap),
-                    _isApplying
+                    if (selectedResumeFileName != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF5F5F5),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFE0E0E0)),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.description,
+                              size: 20,
+                              color: Colors.grey.shade700,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                selectedResumeFileName!,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: removeResumeFile,
+                              child: const Icon(
+                                Icons.close,
+                                size: 18,
+                                color: Colors.red,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      const Text(
+                        "No resume file selected (optional)",
+                        style: TextStyle(fontSize: 11, color: Colors.grey),
+                      ),
+
+                    const SizedBox(height: sectionGap * 1.5),
+
+                    isApplying
                         ? const Center(
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(vertical: 10),
-                              child: CircularProgressIndicator(color: Colors.black),
+                            child: CircularProgressIndicator(
+                              color: Colors.black,
                             ),
                           )
-                        : _PrimaryButton(
-                            title: 'Done',
-                            icon: Icons.keyboard_arrow_down_rounded,
-                            onTap: _submitApplication,
+                        : Column(
+                            children: [
+                              GestureDetector(
+                                onTap: submitApplication,
+                                child: Container(
+                                  height: 50,
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        Color(0xFF595959),
+                                        Color(0xFF111111),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(50),
+                                  ),
+                                  child: const Center(
+                                    child: Text(
+                                      'SUBMIT APPLICATION',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: buttonGap),
+                              GestureDetector(
+                                onTap: () => Navigator.pop(context),
+                                child: Container(
+                                  height: 50,
+                                  width: double.infinity,
+                                  decoration: BoxDecoration(
+                                    color: Colors.transparent,
+                                    borderRadius: BorderRadius.circular(50),
+                                    border: Border.all(
+                                      color: ElevateColor.gray,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: const Center(
+                                    child: Text(
+                                      'CANCEL',
+                                      style: TextStyle(
+                                        color: ElevateColor.gray,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                    const SizedBox(height: _buttonGap),
-                    _SecondaryButton(
-                      title: 'Back',
-                      icon: Icons.logout_rounded,
-                      onTap: () {
-                        Navigator.pop(context);
-                      },
-                    ),
                   ],
                 ),
               ),
@@ -183,146 +340,3 @@ class _UserApplyCompanyJobState extends ConsumerState<UserApplyCompanyJob> {
     );
   }
 }
-
-class _FileTile extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F5F5),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFDCDCDC)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0A000000),
-            blurRadius: 6,
-            offset: Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Text(
-            'CV.pdf',
-            style: TextStyle(
-              color: ElevateColor.gray,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const Spacer(),
-          Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              color: ElevateColor.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFD8D8D8)),
-            ),
-            alignment: Alignment.center,
-            child: Icon(
-              Icons.ios_share_rounded,
-              size: 14,
-              color: ElevateColor.lightgray,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PrimaryButton extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _PrimaryButton({
-    required this.title,
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 42,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: ElevateGradientColors.grayToBlack,
-          borderRadius: BorderRadius.circular(11),
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(11),
-            onTap: onTap,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 18, color: ElevateColor.white),
-                const SizedBox(width: 6),
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: ElevateColor.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SecondaryButton extends StatelessWidget {
-  final String title;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _SecondaryButton({
-    required this.title,
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 42,
-      child: Material(
-        color: const Color(0xFFF5F5F5),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(11),
-          side: const BorderSide(color: Color(0xFFBFBFBF)),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(11),
-          onTap: onTap,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 16, color: ElevateColor.lightgray),
-              const SizedBox(width: 6),
-              Text(
-                title,
-                style: TextStyle(
-                  color: ElevateColor.lightgray,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-  }

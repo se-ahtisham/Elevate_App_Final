@@ -17,6 +17,8 @@ class UserCommunityExploreScreen extends ConsumerStatefulWidget {
       UserCommunityExploreScreenState();
 }
 
+enum ExploreFilter { all, jobSeekers, companies }
+
 class UserCommunityExploreScreenState
     extends ConsumerState<UserCommunityExploreScreen> {
   final firebaseService = FirebaseService();
@@ -24,6 +26,7 @@ class UserCommunityExploreScreenState
 
   List<PostModel> allPosts = [];
   List<PostModel> visiblePosts = [];
+  ExploreFilter activeFilter = ExploreFilter.all;
   bool isLoading = true;
 
   String? get myID => ref.read(authProvider).jobSeeker?.jobSeekerID;
@@ -57,18 +60,42 @@ class UserCommunityExploreScreenState
     if (!mounted) return;
     setState(() {
       allPosts = fetched;
-      visiblePosts = fetched;
+      visiblePosts = applyFilterAndSearch();
       isLoading = false;
     });
   }
 
-  void onSearchChanged(String query) {
-    query = query.toLowerCase();
-    setState(() {
-      visiblePosts = allPosts.where((post) {
+  List<PostModel> applyFilterAndSearch() {
+    List<PostModel> posts = allPosts;
+
+    if (activeFilter == ExploreFilter.jobSeekers) {
+      posts = posts.where((p) => p.authorType.toLowerCase() == 'jobseeker').toList();
+    } else if (activeFilter == ExploreFilter.companies) {
+      posts = posts.where((p) => p.authorType.toLowerCase() == 'company').toList();
+    }
+
+    final query = searchController.text.toLowerCase();
+    if (query.isNotEmpty) {
+      posts = posts.where((post) {
         return post.authorName.toLowerCase().contains(query) ||
-            post.title.toLowerCase().contains(query);
+            post.title.toLowerCase().contains(query) ||
+            post.content.toLowerCase().contains(query);
       }).toList();
+    }
+
+    return posts;
+  }
+
+  void onSearchChanged(String query) {
+    setState(() {
+      visiblePosts = applyFilterAndSearch();
+    });
+  }
+
+  void setFilter(ExploreFilter filter) {
+    setState(() {
+      activeFilter = filter;
+      visiblePosts = applyFilterAndSearch();
     });
   }
 
@@ -123,6 +150,30 @@ class UserCommunityExploreScreenState
     ).then((value) => loadFeed());
   }
 
+  Widget filterChip(String label, ExploreFilter filter) {
+    final isActive = activeFilter == filter;
+
+    return GestureDetector(
+      onTap: () => setFilter(filter),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isActive ? Colors.black : ElevateColor.white,
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(
+            color: isActive ? Colors.black : ElevateColor.gray,
+          ),
+        ),
+        child: CustomText(
+          text: label,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: isActive ? ElevateColor.white : Colors.black,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final uid = myID;
@@ -140,7 +191,20 @@ class UserCommunityExploreScreenState
             onChanged: onSearchChanged,
             width: 350,
           ),
-          const SizedBox(height: 30),
+          const SizedBox(height: 15),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                filterChip("All Posts", ExploreFilter.all),
+                const SizedBox(width: 8),
+                filterChip("Job Seekers", ExploreFilter.jobSeekers),
+                const SizedBox(width: 8),
+                filterChip("Companies", ExploreFilter.companies),
+              ],
+            ),
+          ),
+          const SizedBox(height: 25),
 
           const CustomText(
             text: "What's other Posted",
@@ -179,7 +243,9 @@ class UserCommunityExploreScreenState
                 usershortDescription: post.authorType,
                 image: post.authorProfilePic.isNotEmpty
                     ? post.authorProfilePic
-                    : "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg",
+                    : (post.authorType.toLowerCase() == 'company'
+                        ? "lib/Resources/Images/Profile_Images/Company_Logo.jpg"
+                        : "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg"),
                 postTitle: post.title,
                 postText: post.content,
                 textSize: 13,

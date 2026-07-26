@@ -22,12 +22,10 @@ class CommunitySearch extends ConsumerStatefulWidget {
   const CommunitySearch({super.key});
 
   @override
-  ConsumerState<CommunitySearch> createState() =>
-      CommunitySearchState();
+  ConsumerState<CommunitySearch> createState() => CommunitySearchState();
 }
 
-class CommunitySearchState
-    extends ConsumerState<CommunitySearch> {
+class CommunitySearchState extends ConsumerState<CommunitySearch> {
   final firebaseService = FirebaseService();
   final searchController = TextEditingController();
 
@@ -55,7 +53,9 @@ class CommunitySearchState
       'subtitle': seeker.experienceLevel.isNotEmpty
           ? seeker.experienceLevel
           : 'Job Seeker',
-      'imageUrl': seeker.profilePic,
+      'imageUrl': seeker.profilePic.isNotEmpty
+          ? seeker.profilePic
+          : 'lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg',
       'type': 'JobSeeker',
     };
   }
@@ -65,7 +65,9 @@ class CommunitySearchState
       'id': company.companyID,
       'name': company.companyName,
       'subtitle': company.industry.isNotEmpty ? company.industry : 'Company',
-      'imageUrl': company.logo,
+      'imageUrl': company.logo.isNotEmpty
+          ? company.logo
+          : 'lib/Resources/Images/Profile_Images/Company_Logo.jpg',
       'type': 'Company',
     };
   }
@@ -262,9 +264,7 @@ class CommunitySearchState
                             key: ValueKey(member['id']),
                             padding: const EdgeInsets.only(bottom: 10),
                             child: WhiteBlackUser(
-                              imageURL: imageUrl.isNotEmpty
-                                  ? imageUrl
-                                  : "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg",
+                              imageURL: imageUrl,
                               name: member['name'] ?? '',
                               shortDescription: member['subtitle'] ?? '',
                               experience: member['type'] ?? '',

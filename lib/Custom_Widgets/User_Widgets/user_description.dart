@@ -47,8 +47,18 @@ class UserDescription extends StatelessWidget {
     this.followers = 0,
   });
 
+  ImageProvider? _getImageProvider(String path) {
+    if (path.isEmpty) return null;
+    if (path.startsWith("http://") || path.startsWith("https://")) {
+      return NetworkImage(path);
+    }
+    return AssetImage(path);
+  }
+
   @override
   Widget build(BuildContext context) {
+    final provider = _getImageProvider(imageURL);
+
     return Padding(
       padding: const EdgeInsets.only(left: 15.0),
       child: Row(
@@ -58,11 +68,23 @@ class UserDescription extends StatelessWidget {
             height: 110,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              image: DecorationImage(
-                image: NetworkImage(imageURL),
-                fit: BoxFit.cover,
-              ),
+              color: ElevateColor.lightgray,
+              image: provider != null
+                  ? DecorationImage(
+                      image: provider,
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
+            child: provider == null
+                ? const Center(
+                    child: Icon(
+                      Icons.person,
+                      size: 55,
+                      color: Colors.white,
+                    ),
+                  )
+                : null,
           ),
           SizedBox(width: 10),
           Column(

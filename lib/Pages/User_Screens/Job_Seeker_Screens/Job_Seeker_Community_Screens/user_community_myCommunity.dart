@@ -184,7 +184,9 @@ class UserCommunityMycommunityScreenState
                         child: WhiteBlackUser(
                           imageURL: imageUrl.isNotEmpty
                               ? imageUrl
-                              : "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg",
+                              : (member['type'] == 'Company'
+                                  ? "lib/Resources/Images/Profile_Images/Company_Logo.jpg"
+                                  : "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg"),
                           name: member['name'] ?? '',
                           shortDescription: member['subtitle'] ?? '',
                           experience: member['type'] ?? '',

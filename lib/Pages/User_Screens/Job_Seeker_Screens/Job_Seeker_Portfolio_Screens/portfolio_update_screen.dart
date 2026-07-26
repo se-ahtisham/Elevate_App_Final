@@ -1,20 +1,28 @@
-import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:elevate_app/Custom_Widgets/Buttons/text_button_gradient.dart';
+import 'package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
+import 'package:elevate_app/Custom_Widgets/Message_Box/messageBox.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/project_model.dart';
 import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
-import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Portfolio_Screens/porfolio_screen.dart';
-import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
+import 'package:elevate_app/Database/Online_Database/firebase_storage_service.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+const int maxFileSizeBytes = 1024 * 1024; // 1 MB
+const List<String> allowedImageExtensions = ['jpg', 'jpeg', 'png'];
+
+/// A tech file that's already uploaded — has a name and a download URL.
+class _ExistingTechFile {
+  final String name;
+  final String url;
+  _ExistingTechFile(this.name, this.url);
+}
 
 class PortfolioUpdateScreen extends ConsumerStatefulWidget {
   final ProjectModel? project;
-
   const PortfolioUpdateScreen({super.key, this.project});
 
   @override
@@ -22,19 +30,21 @@ class PortfolioUpdateScreen extends ConsumerStatefulWidget {
       _PortfolioUpdateScreenState();
 }
 
-class _PortfolioUpdateScreenState
-    extends ConsumerState<PortfolioUpdateScreen> {
+class _PortfolioUpdateScreenState extends ConsumerState<PortfolioUpdateScreen> {
   final firebaseService = FirebaseService();
-
-  final ValueNotifier<List<File>> imagesNotifier =
-      ValueNotifier<List<File>>([]);
-  final ValueNotifier<List<PlatformFile>> filesNotifier =
-      ValueNotifier<List<PlatformFile>>([]);
+  final storageService = FirebaseStorageService();
 
   late final TextEditingController descriptionController;
-  final ImagePicker picker = ImagePicker();
 
-  bool isSaving = false;
+  List<String> existingImageUrls = [];
+  List<PlatformFile> newImages = [];
+  List<String> removedImageUrls = [];
+  List<String> removedTechUrls = [];
+
+  List<_ExistingTechFile> existingTechFiles = [];
+  List<PlatformFile> newTechFiles = [];
+
+  bool isLoading = false;
 
   @override
   void initState() {
@@ -42,355 +52,517 @@ class _PortfolioUpdateScreenState
     descriptionController = TextEditingController(
       text: widget.project?.projectDescription ?? '',
     );
+    existingImageUrls = List<String>.from(widget.project?.mediaFiles ?? []);
+
+    final names = widget.project?.techStack ?? [];
+    final urls = widget.project?.techFileUrls ?? [];
+    existingTechFiles = List.generate(
+      names.length,
+      (i) => _ExistingTechFile(names[i], i < urls.length ? urls[i] : ''),
+    );
   }
 
   @override
   void dispose() {
     descriptionController.dispose();
-    imagesNotifier.dispose();
-    filesNotifier.dispose();
     super.dispose();
   }
 
-  Future<void> pickImage() async {
-    final XFile? pickedFile = await picker.pickImage(
-      source: ImageSource.gallery,
+  void _showMessage(String message) {
+    showDialog(
+      context: context,
+      builder: (_) => Messagebox(message: message),
     );
-
-    if (pickedFile != null) {
-      final currentImages = List<File>.from(imagesNotifier.value);
-      currentImages.add(File(pickedFile.path));
-      imagesNotifier.value = currentImages;
-    }
   }
 
-  void removeImage(int index) {
-    final currentImages = List<File>.from(imagesNotifier.value);
-    currentImages.removeAt(index);
-    imagesNotifier.value = currentImages;
-  }
-
-  Future<void> pickFiles() async {
-    final FilePickerResult? result = await FilePicker.platform.pickFiles(
+  // Same picker for both images and tech files. Images are restricted to JPEG/PNG.
+  // Every file must be under 1MB.
+  Future<void> pickFiles(
+    List<PlatformFile> target, {
+    bool isImage = false,
+  }) async {
+    final result = await FilePicker.platform.pickFiles(
       allowMultiple: true,
+      withData: true,
     );
+    if (result == null) return;
 
-    if (result != null) {
-      final currentFiles = List<PlatformFile>.from(filesNotifier.value);
-      currentFiles.addAll(result.files);
-      filesNotifier.value = currentFiles;
+    final tooBig = <String>[];
+    final badFormat = <String>[];
+    final accepted = <PlatformFile>[];
+
+    for (final f in result.files) {
+      final ext = f.name.contains('.')
+          ? f.name.split('.').last.toLowerCase()
+          : '';
+
+      if (isImage && !allowedImageExtensions.contains(ext)) {
+        badFormat.add(f.name);
+        continue;
+      }
+      if (f.size > maxFileSizeBytes) {
+        tooBig.add(f.name);
+        continue;
+      }
+      accepted.add(f);
+    }
+
+    if (badFormat.isNotEmpty) {
+      _showMessage(
+        "Only JPEG and PNG images are allowed: ${badFormat.join(', ')}",
+      );
+    } else if (tooBig.isNotEmpty) {
+      _showMessage(
+        "These files are over 1MB and were skipped: ${tooBig.join(', ')}",
+      );
+    }
+
+    setState(() => target.addAll(accepted));
+  }
+
+  Future<void> _downloadFile(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      _showMessage("Couldn't open this file.");
     }
   }
 
-  void removeFile(int index) {
-    final currentFiles = List<PlatformFile>.from(filesNotifier.value);
-    currentFiles.removeAt(index);
-    filesNotifier.value = currentFiles;
-  }
-
-  Future<void> onUpdate() async {
+  Future<void> updateProject() async {
     final project = widget.project;
     if (project == null) return;
 
-    setState(() => isSaving = true);
+    setState(() => isLoading = true);
 
     try {
-      final fileNames = filesNotifier.value.map((f) => f.name).toList();
+      final updatedMediaUrls = <String>[...existingImageUrls];
 
-      await firebaseService.updateProject(
-        project.projectID,
-        {
-          'projectDescription': descriptionController.text.trim(),
-          'techStack': fileNames.isNotEmpty ? fileNames : project.techStack,
-          'updatedAt': FieldValue.serverTimestamp(),
-        },
-      );
+      for (final img in newImages) {
+        if (img.bytes == null) continue;
+        final url = await storageService.uploadPortfolioImage(
+          userId: project.jobSeekerID,
+          projectId: project.projectID,
+          fileName: img.name,
+          bytes: img.bytes!,
+          context: context,
+        );
+        if (url != null) updatedMediaUrls.add(url);
+      }
+
+      final techNames = <String>[for (final t in existingTechFiles) t.name];
+      final techUrls = <String>[for (final t in existingTechFiles) t.url];
+
+      for (final f in newTechFiles) {
+        if (f.bytes == null) continue;
+        final url = await storageService.uploadTechFile(
+          userId: project.jobSeekerID,
+          projectId: project.projectID,
+          fileName: f.name,
+          bytes: f.bytes!,
+          context: context,
+        );
+        if (url != null) {
+          techNames.add(f.name);
+          techUrls.add(url);
+        }
+      }
+
+for (final url in removedImageUrls) {
+  await storageService.deleteFileFromStorage(url);
+}
+for (final url in removedTechUrls) {
+  await storageService.deleteFileFromStorage(url);
+}
+      await firebaseService.updateProject(project.projectID, {
+        'projectDescription': descriptionController.text.trim(),
+        'techStack': techNames,
+        'techFileUrls': techUrls,
+        'mediaFiles': updatedMediaUrls,
+      });
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Project updated successfully!")),
+        const SnackBar(content: Text("Portfolio updated successfully!")),
       );
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const PorfolioScreen()),
-      );
+      Navigator.pop(context, true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: ${e.toString()}")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Update failed: $e")));
     } finally {
-      if (mounted) setState(() => isSaving = false);
+      if (mounted) setState(() => isLoading = false);
     }
+  }
+
+Future<void> deleteProject() async {
+  final project = widget.project;
+  if (project == null) return;
+
+  setState(() => isLoading = true);
+
+  try {
+    for (final url in project.mediaFiles) {
+      await storageService.deleteFileFromStorage(url);
+    }
+    for (final url in project.techFileUrls) {
+      await storageService.deleteFileFromStorage(url);
+    }
+
+    await firebaseService.deleteProject(
+      project.projectID,
+      project.jobSeekerID,
+    );
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Project deleted successfully.")),
+    );
+    Navigator.pop(context, true);
+  } catch (e) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text("Delete failed: $e")));
+  } finally {
+    if (mounted) setState(() => isLoading = false);
+  }
+}
+
+  InputDecoration _fieldDecoration(String hint) => InputDecoration(
+    hintText: hint,
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: Colors.grey),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: Colors.black, width: 1.5),
+    ),
+  );
+
+  Widget _uploadButton(String label, IconData icon, VoidCallback onTap) {
+    return ElevatedButton.icon(
+      onPressed: onTap,
+      icon: Icon(icon, size: 18, color: Colors.white),
+      label: Text(
+        label,
+        style: const TextStyle(color: Colors.white, fontSize: 12),
+      ),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.black,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
+    );
+  }
+
+  Widget _techChip({
+    required String name,
+    VoidCallback? onDownload,
+    required VoidCallback onRemove,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0F0F0),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade400),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.insert_drive_file, size: 14, color: Colors.black),
+          const SizedBox(width: 6),
+          Text(name, style: const TextStyle(fontSize: 12, color: Colors.black)),
+          if (onDownload != null) ...[
+            const SizedBox(width: 6),
+            GestureDetector(
+              onTap: onDownload,
+              child: const Icon(
+                Icons.download_rounded,
+                size: 14,
+                color: Colors.black,
+              ),
+            ),
+          ],
+          const SizedBox(width: 6),
+          GestureDetector(
+            onTap: onRemove,
+            child: const Icon(Icons.close, size: 14, color: Colors.black),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final project = widget.project;
+
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 245, 245, 245),
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
-            ElevateHeader(
-              title: widget.project?.projectTitle ?? "Project",
-              subTitle: "Update",
-              titleSize: 22,
-              subtitleSize: 14,
+            const ElevateHeader(
+              title: "Edit Project",
+              subTitle: "Update your portfolio details",
+              titleSize: 26,
+              subtitleSize: 13,
               showBackButton: true,
             ),
             Expanded(
               child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 30),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const CustomText(
-                        text: "UPDATE IMAGES",
-                        fontSize: 13,
-                        textAlign: TextAlign.left,
-                        fontWeight: FontWeight.w700,
-                        color: ElevateColor.lightgray,
-                        lineHeight: 1.2,
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CustomText(
+                      text: project?.projectTitle ?? "Project",
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                    const SizedBox(height: 20),
+
+                    const CustomText(
+                      text: "Project Description",
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: descriptionController,
+                      maxLines: 4,
+                      cursorColor: Colors.black,
+                      decoration: _fieldDecoration(
+                        "Enter updated description...",
                       ),
+                    ),
 
-                      const SizedBox(height: 16),
+                    const SizedBox(height: 24),
 
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const CustomText(
+                          text: "Attached Images (JPEG/PNG, < 1MB)",
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black,
+                        ),
+                        _uploadButton(
+                          "Add Image",
+                          Icons.file_upload_outlined,
+                          () => pickFiles(newImages, isImage: true),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+
+                    if (existingImageUrls.isEmpty && newImages.isEmpty)
+                      const Text(
+                        "No images uploaded yet.",
+                        style: TextStyle(color: Colors.grey, fontSize: 12),
+                      )
+                    else
                       SizedBox(
-                        height: 110,
-                        child: ValueListenableBuilder<List<File>>(
-                          valueListenable: imagesNotifier,
-                          builder: (context, images, child) {
-                            return ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: images.length + 1,
-                              itemBuilder: (context, index) {
-                                if (index == images.length) {
-                                  return GestureDetector(
-                                    onTap: pickImage,
-                                    child: Container(
-                                      width: 100,
-                                      margin: const EdgeInsets.only(right: 12),
-                                      decoration: BoxDecoration(
-                                        color: Colors.grey.shade300,
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                      child: const Center(
-                                        child: Icon(
-                                          Icons.add,
-                                          size: 32,
-                                          color: Colors.grey,
+                        height: 95,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          children: [
+                            for (int i = 0; i < existingImageUrls.length; i++)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 10),
+                                child: Stack(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Image.network(
+                                        existingImageUrls[i],
+                                        width: 90,
+                                        height: 90,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => Container(
+                                          width: 90,
+                                          height: 90,
+                                          color: Colors.grey.shade300,
+                                          child: const Icon(Icons.broken_image),
                                         ),
                                       ),
                                     ),
-                                  );
-                                }
-
-                                return Stack(
-                                  children: [
-                                    Container(
-                                      width: 100,
-                                      margin: const EdgeInsets.only(right: 12),
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                      clipBehavior: Clip.antiAlias,
-                                      child: Image.file(
-                                        images[index],
-                                        fit: BoxFit.cover,
-                                        width: 100,
-                                        height: 110,
-                                      ),
-                                    ),
                                     Positioned(
-                                      top: 6,
-                                      right: 18,
+                                      top: 2,
+                                      right: 2,
                                       child: GestureDetector(
-                                        onTap: () => removeImage(index),
+                                        onTap: () => setState(() {
+                                          removedImageUrls.add(
+                                            existingImageUrls[i],
+                                          );
+                                          existingImageUrls.removeAt(i);
+                                        }),
                                         child: Container(
-                                          padding: const EdgeInsets.all(4),
+                                          padding: const EdgeInsets.all(2),
                                           decoration: const BoxDecoration(
-                                            color: Colors.red,
+                                            color: Colors.black,
                                             shape: BoxShape.circle,
                                           ),
                                           child: const Icon(
-                                            Icons.remove,
+                                            Icons.close,
+                                            size: 14,
                                             color: Colors.white,
-                                            size: 16,
                                           ),
                                         ),
                                       ),
                                     ),
                                   ],
-                                );
-                              },
-                            );
-                          },
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      TextField(
-                        controller: descriptionController,
-                        decoration: InputDecoration(
-                          hintText: "Description",
-                          hintStyle: TextStyle(color: Colors.grey.shade500),
-                          border: const UnderlineInputBorder(),
-                          enabledBorder: UnderlineInputBorder(
-                            borderSide: BorderSide(color: Colors.grey.shade300),
-                          ),
-                          focusedBorder: const UnderlineInputBorder(
-                            borderSide: BorderSide(
-                              color: ElevateColor.lightgray,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      const CustomText(
-                        text: "Files",
-                        fontSize: 13,
-                        textAlign: TextAlign.left,
-                        fontWeight: FontWeight.w700,
-                        color: ElevateColor.lightgray,
-                        lineHeight: 1.2,
-                      ),
-
-                      const SizedBox(height: 14),
-
-                      ValueListenableBuilder<List<PlatformFile>>(
-                        valueListenable: filesNotifier,
-                        builder: (context, files, child) {
-                          return Column(
-                            children: [
-                              ...List.generate(
-                                files.length,
-                                (index) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 12),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Container(
-                                          height: 48,
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 18,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: const Color.fromARGB(
-                                              255,
-                                              236,
-                                              236,
-                                              236,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              30,
-                                            ),
-                                          ),
-                                          alignment: Alignment.centerLeft,
-                                          child: Text(
-                                            files[index].name,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w500,
-                                              color: Color.fromARGB(
-                                                255,
-                                                110,
-                                                110,
-                                                110,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
+                                ),
+                              ),
+                            for (int j = 0; j < newImages.length; j++)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 10),
+                                child: Stack(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: Image.memory(
+                                        newImages[j].bytes!,
+                                        width: 90,
+                                        height: 90,
+                                        fit: BoxFit.cover,
                                       ),
-                                      const SizedBox(width: 12),
-                                      GestureDetector(
-                                        onTap: () => removeFile(index),
+                                    ),
+                                    Positioned(
+                                      top: 2,
+                                      right: 2,
+                                      child: GestureDetector(
+                                        onTap: () => setState(
+                                          () => newImages.removeAt(j),
+                                        ),
                                         child: Container(
-                                          width: 38,
-                                          height: 38,
+                                          padding: const EdgeInsets.all(2),
                                           decoration: const BoxDecoration(
-                                            color: Color.fromARGB(
-                                              255,
-                                              220,
-                                              220,
-                                              220,
-                                            ),
+                                            color: Colors.black,
                                             shape: BoxShape.circle,
                                           ),
                                           child: const Icon(
-                                            Icons.remove,
-                                            color: Colors.grey,
-                                            size: 20,
+                                            Icons.close,
+                                            size: 14,
+                                            color: Colors.white,
                                           ),
                                         ),
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
                               ),
+                          ],
+                        ),
+                      ),
 
-                              GestureDetector(
-                                onTap: pickFiles,
-                                child: Container(
-                                  width: double.infinity,
-                                  height: 48,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 18,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color.fromARGB(
-                                      255,
-                                      236,
-                                      236,
-                                      236,
-                                    ),
-                                    borderRadius: BorderRadius.circular(30),
-                                  ),
-                                  child: const Row(
-                                    children: [
-                                      Icon(
-                                        Icons.add_circle_outline,
-                                        color: Colors.grey,
-                                        size: 20,
-                                      ),
-                                      SizedBox(width: 10),
-                                      Text(
-                                        "Add More Files",
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                          color: Color.fromARGB(
-                                            255,
-                                            110,
-                                            110,
-                                            110,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                    const SizedBox(height: 24),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const CustomText(
+                          text: "Attach Tech Files / Specs (< 1MB)",
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black,
+                        ),
+                        _uploadButton(
+                          "Select File",
+                          Icons.attach_file,
+                          () => pickFiles(newTechFiles),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+
+                    if (existingTechFiles.isEmpty && newTechFiles.isEmpty)
+                      const Text(
+                        "No tech files attached.",
+                        style: TextStyle(color: Colors.grey, fontSize: 12),
+                      )
+                    else
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (int i = 0; i < existingTechFiles.length; i++)
+                            _techChip(
+                              name: existingTechFiles[i].name,
+                              onDownload: existingTechFiles[i].url.isEmpty
+                                  ? null
+                                  : () =>
+                                        _downloadFile(existingTechFiles[i].url),
+                          onRemove: () => setState(() {
+  if (existingTechFiles[i].url.isNotEmpty) {
+    removedTechUrls.add(existingTechFiles[i].url);
+  }
+  existingTechFiles.removeAt(i);
+}),
+                            ),
+                          for (int j = 0; j < newTechFiles.length; j++)
+                            _techChip(
+                              name: newTechFiles[j].name,
+                              onDownload:
+                                  null, // uploads only when you tap Update Project
+                              onRemove: () =>
+                                  setState(() => newTechFiles.removeAt(j)),
+                            ),
+                        ],
+                      ),
+
+                    const SizedBox(height: 35),
+
+                    isLoading
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                              color: Colors.black,
+                            ),
+                          )
+                        : Column(
+                            children: [
+                              TextButtonGradient(
+                                text: "UPDATE PROJECT",
+                                width: double.infinity,
+                                height: 50,
+                                textSize: 15,
+                                textWeight: FontWeight.bold,
+                                borderRadius: 30,
+                                onTap: updateProject,
+                              ),
+                              const SizedBox(height: 12),
+                              TexxtButton(
+                                text: "DELETE PROJECT",
+                                width: double.infinity,
+                                height: 50,
+                                textSize: 15,
+                                textWeight: FontWeight.bold,
+                                textColor: const Color.fromARGB(
+                                  255,
+                                  70,
+                                  70,
+                                  70,
                                 ),
+                                backgroundColor: Colors.transparent,
+                                borderRadius: 30,
+                                borderColor: const Color.fromARGB(
+                                  255,
+                                  65,
+                                  65,
+                                  65,
+                                ),
+                                onTap: deleteProject,
                               ),
                             ],
-                          );
-                        },
-                      ),
-
-                      const SizedBox(height: 24),
-                      TextButtonGradient(
-                        height: 40,
-                        text: isSaving ? "SAVING..." : "UPDATE",
-                        onTap: isSaving ? null : onUpdate,
-                      ),
-
-                      const SizedBox(height: 20),
-                    ],
-                  ),
+                          ),
+                    const SizedBox(height: 30),
+                  ],
                 ),
               ),
             ),

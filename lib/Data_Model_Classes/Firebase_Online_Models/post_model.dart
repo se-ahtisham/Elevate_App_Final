@@ -9,6 +9,7 @@ class PostModel {
   int likes; // <-- no longer final, so it can be updated optimistically
   final List<String> likedByUserIDs;
   final int totalCommentCount;
+  final List<String> mediaFiles;
   final DateTime createdAt;
 
   PostModel({
@@ -22,6 +23,7 @@ class PostModel {
     this.likes = 0,
     this.likedByUserIDs = const [],
     this.totalCommentCount = 0,
+    this.mediaFiles = const [],
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
@@ -37,6 +39,7 @@ class PostModel {
       'likes': likes,
       'likedByUserIDs': likedByUserIDs,
       'totalCommentCount': totalCommentCount,
+      'mediaFiles': mediaFiles,
       'createdAt': createdAt.toIso8601String(),
     };
   }
@@ -53,6 +56,7 @@ class PostModel {
       likes: map['likes'] ?? 0,
       likedByUserIDs: List<String>.from(map['likedByUserIDs'] ?? []),
       totalCommentCount: map['totalCommentCount'] ?? 0,
+      mediaFiles: List<String>.from(map['mediaFiles'] ?? []),
       createdAt: map['createdAt'] != null
           ? DateTime.tryParse(map['createdAt'])
           : DateTime.now(),

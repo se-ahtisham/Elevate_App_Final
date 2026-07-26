@@ -20,6 +20,7 @@ class UserCommunityMypost extends ConsumerStatefulWidget {
 class UserCommunityMypostState extends ConsumerState<UserCommunityMypost>
     with AutomaticKeepAliveClientMixin {
   final firebaseService = FirebaseService();
+
   final titleController = TextEditingController();
   final descriptionController = TextEditingController();
 
@@ -70,7 +71,6 @@ class UserCommunityMypostState extends ConsumerState<UserCommunityMypost>
       debugPrint("loadMyPosts failed: $e");
       if (!mounted) return;
       setState(() => isLoading = false);
-      // keep whatever was already loaded — don't wipe the screen
     }
   }
 
@@ -92,7 +92,9 @@ class UserCommunityMypostState extends ConsumerState<UserCommunityMypost>
         authorType: "JobSeeker",
         title: title,
         content: content,
+        mediaFiles: const [],
       );
+
       await firebaseService.createPost(createdPost);
       titleController.clear();
       descriptionController.clear();
@@ -131,8 +133,6 @@ class UserCommunityMypostState extends ConsumerState<UserCommunityMypost>
     }
   }
 
-  // Optimistic like — same approach as the Explore screen: flip local
-  // state immediately, revert only if the write fails. No full reload.
   Future<void> toggleLike(PostModel post) async {
     final uid = myID;
     if (uid == null) return;
@@ -250,7 +250,9 @@ class UserCommunityMypostState extends ConsumerState<UserCommunityMypost>
                       isLiked: uid != null && post.likedByUserIDs.contains(uid),
                       imageURL: post.authorProfilePic.isNotEmpty
                           ? post.authorProfilePic
-                          : "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg",
+                          : (post.authorType.toLowerCase() == 'company'
+                              ? "lib/Resources/Images/Profile_Images/Company_Logo.jpg"
+                              : "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg"),
                       name: post.authorName,
                       shortDescription: "Job Seeker",
                       onDeleteTap: () => deletePost(post),

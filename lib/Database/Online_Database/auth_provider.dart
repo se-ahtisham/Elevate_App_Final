@@ -342,6 +342,7 @@ class AuthNotifier extends ChangeNotifier {
     required String experienceLevel,
     required List<EducationModel> educations,
     required List<JobExperienceModel> experiences,
+    String? profilePic,
   }) async {
     isLoading = true;
     errorMessage = null;
@@ -356,14 +357,19 @@ class AuthNotifier extends ChangeNotifier {
         return false;
       }
 
-      await firebaseService.updateJobSeeker(uid, {
+      final updateMap = <String, dynamic>{
         'name': name,
         'location': location,
         'about': about,
         'experienceLevel': experienceLevel,
         'education': educations.map((e) => e.toMap()).toList(),
         'jobExperience': experiences.map((e) => e.toMap()).toList(),
-      });
+      };
+      if (profilePic != null && profilePic.isNotEmpty) {
+        updateMap['profilePic'] = profilePic;
+      }
+
+      await firebaseService.updateJobSeeker(uid, updateMap);
       jobSeeker = await firebaseService.getJobSeeker(uid);
 
       isLoading = false;
