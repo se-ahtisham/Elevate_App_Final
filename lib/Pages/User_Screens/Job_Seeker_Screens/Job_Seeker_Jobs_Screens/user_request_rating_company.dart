@@ -67,17 +67,16 @@ class _UserRequestRatingCompanyState extends ConsumerState<UserRequestRatingComp
           );
         }
       } else if (_followStatus == "None") {
-        await _firebaseService.followUser(myID, widget.company.companyID, toCollection: 'companies');
-        setState(() {
-          _followStatus = "Following";
-          _followersCount += 1;
-        });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Followed ${widget.company.companyName}")),
-          );
-        }
-      }
+  await _firebaseService.followUser(myID, widget.company.companyID, toCollection: 'companies');
+  setState(() {
+    _followStatus = "Pending";
+  });
+  if (mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Follow request sent to ${widget.company.companyName}")),
+    );
+  }
+}
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

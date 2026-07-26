@@ -6,6 +6,8 @@ class ApplicationModel {
   final String status; // Pending/Accepted/Rejected
   final DateTime appliedAt;
   final String coldEmail; // AI-generated (or manually written) cover/cold email
+  final String
+  resumeUrl; // Firebase Storage download URL, empty if none uploaded
 
   ApplicationModel({
     required this.applicationID,
@@ -15,6 +17,7 @@ class ApplicationModel {
     this.status = 'Pending',
     DateTime? appliedAt,
     this.coldEmail = '',
+    this.resumeUrl = '',
   }) : appliedAt = appliedAt ?? DateTime.now();
 
   Map<String, dynamic> toMap() {
@@ -26,6 +29,7 @@ class ApplicationModel {
       'status': status,
       'appliedAt': appliedAt.toIso8601String(),
       'coldEmail': coldEmail,
+      'resumeUrl': resumeUrl,
     };
   }
 
@@ -40,6 +44,7 @@ class ApplicationModel {
           ? DateTime.tryParse(map['appliedAt'])
           : DateTime.now(),
       coldEmail: map['coldEmail'] ?? '',
+      resumeUrl: map['resumeUrl'] ?? '',
     );
   }
 }

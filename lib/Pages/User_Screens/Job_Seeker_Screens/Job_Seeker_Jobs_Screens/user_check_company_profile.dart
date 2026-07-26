@@ -67,19 +67,17 @@ class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfil
             SnackBar(content: Text("Unfollowed ${widget.company.companyName}")),
           );
         }
-      } else if (_followStatus == "None") {
-        await _firebaseService.followUser(myID, widget.company.companyID, toCollection: 'companies');
-        // Accept immediately or set status
-        setState(() {
-          _followStatus = "Following"; // or pending based on followRequests flow
-          _followersCount += 1;
-        });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Followed ${widget.company.companyName}")),
-          );
-        }
-      }
+     } else if (_followStatus == "None") {
+  await _firebaseService.followUser(myID, widget.company.companyID, toCollection: 'companies');
+  setState(() {
+    _followStatus = "Pending";
+  });
+  if (mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Follow request sent to ${widget.company.companyName}")),
+    );
+  }
+}
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

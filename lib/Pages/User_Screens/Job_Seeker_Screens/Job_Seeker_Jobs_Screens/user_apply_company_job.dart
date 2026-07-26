@@ -105,8 +105,8 @@ class UserApplyCompanyJobState extends ConsumerState<UserApplyCompanyJob> {
         jobSeekerID: myID,
         jobID: widget.jobPost.jobID,
         coldEmail: controller.text,
+        resumeUrl: resumeUrl ?? '',
       );
-
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -204,7 +204,7 @@ class UserApplyCompanyJobState extends ConsumerState<UserApplyCompanyJob> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
-                          'Attach Resume / CV (< 100KB)',
+                          'Attach Resume / CV (< 1MB)',
                           style: TextStyle(
                             color: ElevateColor.gray,
                             fontSize: 15,

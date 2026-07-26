@@ -1095,14 +1095,13 @@ class FirebaseService {
     return results;
   }
 
-  // Job Applications
 
-  // applyJob — check for an existing application first
-  Future<ApplicationModel> applyJob({
-    required String jobSeekerID,
-    required String jobID,
-    String coldEmail = '',
-  }) async {
+ Future<ApplicationModel> applyJob({
+  required String jobSeekerID,
+  required String jobID,
+  String coldEmail = '',
+  String resumeUrl = '',
+}) async {
     final job = await getJobPost(jobID);
     final seeker = await getJobSeeker(jobSeekerID);
     if (job == null || seeker == null) {
@@ -1119,13 +1118,14 @@ class FirebaseService {
       throw Exception('You have already applied to this job.');
     }
 
-    final application = ApplicationModel(
-      applicationID: db.collection('applications').doc().id,
-      jobID: jobID,
-      jobSeekerID: jobSeekerID,
-      companyID: job.companyID,
-      coldEmail: coldEmail,
-    );
+  final application = ApplicationModel(
+  applicationID: db.collection('applications').doc().id,
+  jobID: jobID,
+  jobSeekerID: jobSeekerID,
+  companyID: job.companyID,
+  coldEmail: coldEmail,
+  resumeUrl: resumeUrl,
+);
 
     final batch = db.batch();
     batch.set(
