@@ -18,10 +18,12 @@ class JobSeekerUpdateProfile extends ConsumerStatefulWidget {
   const JobSeekerUpdateProfile({super.key});
 
   @override
-  ConsumerState<JobSeekerUpdateProfile> createState() => JobSeekerUpdateProfileState();
+  ConsumerState<JobSeekerUpdateProfile> createState() =>
+      JobSeekerUpdateProfileState();
 }
 
-class JobSeekerUpdateProfileState extends ConsumerState<JobSeekerUpdateProfile> {
+class JobSeekerUpdateProfileState
+    extends ConsumerState<JobSeekerUpdateProfile> {
   final storageService = FirebaseStorageService();
 
   bool isLoadingData = true;
@@ -158,9 +160,11 @@ class JobSeekerUpdateProfileState extends ConsumerState<JobSeekerUpdateProfile> 
                                   backgroundImage: selectedProfileImage != null
                                       ? FileImage(selectedProfileImage!)
                                       : (user?.profilePic.isNotEmpty == true
-                                          ? NetworkImage(user!.profilePic)
-                                          : null) as ImageProvider?,
-                                  child: selectedProfileImage == null &&
+                                                ? NetworkImage(user!.profilePic)
+                                                : null)
+                                            as ImageProvider?,
+                                  child:
+                                      selectedProfileImage == null &&
                                           (user?.profilePic.isEmpty ?? true)
                                       ? Text(
                                           user?.name.isNotEmpty == true
@@ -215,7 +219,7 @@ class JobSeekerUpdateProfileState extends ConsumerState<JobSeekerUpdateProfile> 
                                 ),
                                 const SizedBox(height: 2),
                                 const CustomText(
-                                  text: "Tap photo to change (< 100KB)",
+                                  text: "Tap photo to change (< 1MB)",
                                   fontSize: 12,
                                   fontWeight: FontWeight.w300,
                                   color: Colors.grey,
@@ -382,12 +386,14 @@ class JobSeekerUpdateProfileState extends ConsumerState<JobSeekerUpdateProfile> 
                                 final myID = user?.jobSeekerID;
 
                                 String? uploadedPhotoUrl;
-                                if (selectedProfileImage != null && myID != null) {
-                                  uploadedPhotoUrl = await storageService.uploadProfileImage(
-                                    userId: myID,
-                                    file: selectedProfileImage!,
-                                    context: context,
-                                  );
+                                if (selectedProfileImage != null &&
+                                    myID != null) {
+                                  uploadedPhotoUrl = await storageService
+                                      .uploadProfileImage(
+                                        userId: myID,
+                                        file: selectedProfileImage!,
+                                        context: context,
+                                      );
                                 }
 
                                 final success = await notifier
