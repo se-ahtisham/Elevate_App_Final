@@ -53,6 +53,7 @@ class _AdminAddCompanyState extends State<AdminAddCompany> {
         password: passwordController.text.trim(),
       );
 
+      if (!mounted) return;
       setState(() => isLoading = false);
 
       showDialog(
@@ -68,6 +69,7 @@ class _AdminAddCompanyState extends State<AdminAddCompany> {
         ),
       );
     } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
       setState(() => isLoading = false);
       showDialog(
         context: context,
@@ -81,6 +83,7 @@ class _AdminAddCompanyState extends State<AdminAddCompany> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       setState(() => isLoading = false);
       showDialog(
         context: context,

@@ -19,10 +19,11 @@ class JobRanker {
 
       if (job.postedAt != null) {
         final hours = DateTime.now().difference(job.postedAt!).inHours;
-        if (hours < 24)
+        if (hours < 24) {
           s += 3;
-        else if (hours < 72)
+        } else if (hours < 72) {
           s += 1;
+        }
       }
 
       return s;

@@ -3,7 +3,6 @@ import 'package:elevate_app/Custom_Widgets/Message_Box/deleteBox.dart';
 import 'package:elevate_app/Custom_Widgets/Message_Box/messageBox.dart';
 import 'package:elevate_app/Custom_Widgets/Search_Bar/custom_search_bar.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
-import 'package:elevate_app/Custom_Widgets/Text/icon_text.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/experience_white_black_full.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_seeker_model.dart';
 import 'package:elevate_app/Database/Online_Database/firebase_service.dart';

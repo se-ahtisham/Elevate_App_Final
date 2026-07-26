@@ -189,7 +189,7 @@ class AdminApiStatusScreenState extends State<AdminApiStatusScreen> {
         border: Border.all(color: Colors.grey.shade300, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -216,7 +216,7 @@ class AdminApiStatusScreenState extends State<AdminApiStatusScreen> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: badgeColor.withOpacity(0.1),
+                  color: badgeColor.withValues(alpha: 0.1),
                   border: Border.all(color: badgeColor, width: 1.5),
                   borderRadius: BorderRadius.circular(50),
                 ),

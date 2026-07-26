@@ -1,4 +1,3 @@
-import 'package:elevate_app/Custom_Widgets/Buttons/icon_text_button_gradient.dart';
 import 'package:elevate_app/Custom_Widgets/Buttons/text_button_gradient.dart';
 import 'package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
@@ -71,6 +70,7 @@ class _AdminUpdateCompanyProfileState extends State<AdminUpdateCompanyProfile> {
       final company = await firebaseService.getCompanyByEmail(email);
 
       setState(() => isSearching = false);
+      if (!mounted) return;
 
       if (company == null) {
         showDialog(
@@ -106,6 +106,7 @@ class _AdminUpdateCompanyProfileState extends State<AdminUpdateCompanyProfile> {
 
       setState(() {});
     } catch (e) {
+      if (!mounted) return;
       setState(() => isSearching = false);
       showDialog(
         context: context,
@@ -142,6 +143,7 @@ class _AdminUpdateCompanyProfileState extends State<AdminUpdateCompanyProfile> {
             .toList(),
       });
 
+      if (!mounted) return;
       setState(() => isUpdating = false);
 
       showDialog(
@@ -152,6 +154,7 @@ class _AdminUpdateCompanyProfileState extends State<AdminUpdateCompanyProfile> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       setState(() => isUpdating = false);
       showDialog(
         context: context,

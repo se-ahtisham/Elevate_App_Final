@@ -5,6 +5,7 @@ import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/project_mo
 import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AdminDeletePortfolio extends StatefulWidget {
   final ProjectModel project;
@@ -189,9 +190,13 @@ class AdminDeletePortfolioState extends State<AdminDeletePortfolio> {
                               padding: const EdgeInsets.only(bottom: 12),
                               child: FilePill(
                                 fileName: fileName,
-                                onDownload: () {
-                                  // TODO: launch fileUrl with url_launcher package
-                                  // e.g. launchUrl(Uri.parse(fileUrl));
+                                onDownload: () async {
+                                  if (fileUrl.isNotEmpty) {
+                                    final uri = Uri.parse(fileUrl);
+                                    if (await canLaunchUrl(uri)) {
+                                      await launchUrl(uri);
+                                    }
+                                  }
                                 },
                               ),
                             );

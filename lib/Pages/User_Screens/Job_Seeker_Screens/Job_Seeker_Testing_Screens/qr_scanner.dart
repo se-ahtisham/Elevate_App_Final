@@ -104,7 +104,7 @@ class QrScannerState extends State<QrScanner> {
             child: CustomText(
               text: "Align the QR code within the frame",
               fontSize: 13,
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -125,7 +125,7 @@ class _ViewfinderOverlay extends CustomPainter {
     );
     final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(24));
 
-    final overlayPaint = Paint()..color = Colors.black.withOpacity(0.55);
+    final overlayPaint = Paint()..color = Colors.black.withValues(alpha: 0.55);
     final path = Path()
       ..addRect(Rect.fromLTWH(0, 0, size.width, size.height))
       ..addRRect(rrect)

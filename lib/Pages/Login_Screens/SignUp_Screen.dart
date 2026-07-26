@@ -247,6 +247,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                             );
                             return;
                           }
+                          final messenger = ScaffoldMessenger.of(context);
                           final success = await ref
                               .read(authProvider.notifier)
                               .resendVerificationEmail(
@@ -254,7 +255,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                                 passwordController.text.trim(),
                               );
                           if (!mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          messenger.showSnackBar(
                             SnackBar(
                               content: Text(
                                 success
@@ -296,6 +297,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                                     ? "JobSeeker"
                                     : "Company";
 
+                                final messenger = ScaffoldMessenger.of(context);
                                 final success = await ref
                                     .read(authProvider.notifier)
                                     .signUp(
@@ -308,7 +310,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                                 if (!mounted) return;
 
                                 if (success) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
+                                  messenger.showSnackBar(
                                     const SnackBar(
                                       content: Text(
                                         "Verification email sent. Please check your inbox.",
@@ -317,7 +319,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                                   );
                                   pollVerification(userType);
                                 } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
+                                  messenger.showSnackBar(
                                     SnackBar(
                                       content: Text(
                                         ref.read(authProvider).errorMessage ??
