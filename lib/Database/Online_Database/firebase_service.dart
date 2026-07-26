@@ -1095,13 +1095,12 @@ class FirebaseService {
     return results;
   }
 
-
- Future<ApplicationModel> applyJob({
-  required String jobSeekerID,
-  required String jobID,
-  String coldEmail = '',
-  String resumeUrl = '',
-}) async {
+  Future<ApplicationModel> applyJob({
+    required String jobSeekerID,
+    required String jobID,
+    String coldEmail = '',
+    String resumeUrl = '',
+  }) async {
     final job = await getJobPost(jobID);
     final seeker = await getJobSeeker(jobSeekerID);
     if (job == null || seeker == null) {
@@ -1118,14 +1117,14 @@ class FirebaseService {
       throw Exception('You have already applied to this job.');
     }
 
-  final application = ApplicationModel(
-  applicationID: db.collection('applications').doc().id,
-  jobID: jobID,
-  jobSeekerID: jobSeekerID,
-  companyID: job.companyID,
-  coldEmail: coldEmail,
-  resumeUrl: resumeUrl,
-);
+    final application = ApplicationModel(
+      applicationID: db.collection('applications').doc().id,
+      jobID: jobID,
+      jobSeekerID: jobSeekerID,
+      companyID: job.companyID,
+      coldEmail: coldEmail,
+      resumeUrl: resumeUrl,
+    );
 
     final batch = db.batch();
     batch.set(
@@ -1395,5 +1394,25 @@ class FirebaseService {
         .get();
     if (snap.docs.isEmpty) return null;
     return ReviewModel.fromMap(snap.docs.first.data());
+  }
+
+  Future<void> updateAdmin(String adminID, Map<String, dynamic> newData) async {
+    await db.collection('admins').doc(adminID).update(newData);
+  }
+
+  // Every project across every job seeker — used by admin to browse portfolios
+  Future<List<ProjectModel>> listAllProjects() async {
+    final snap = await db.collection('projects').get();
+    return snap.docs.map((d) => ProjectModel.fromMap(d.data())).toList();
+  }
+
+  Future<List<ProjectModel>> searchAllProjectsByTitle(String titleQuery) async {
+    final all = await listAllProjects();
+    return all
+        .where(
+          (p) =>
+              p.projectTitle.toLowerCase().contains(titleQuery.toLowerCase()),
+        )
+        .toList();
   }
 }

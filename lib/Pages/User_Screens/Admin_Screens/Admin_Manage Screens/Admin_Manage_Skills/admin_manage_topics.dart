@@ -1,12 +1,3 @@
-// admin_manage_topics.dart
-//
-// Matches the black-card / white-text theme used elsewhere in the app.
-// Shows existing topics for this skill first, lets the admin add new
-// rows (like the education/experience pattern), and delete any row.
-//
-// Place this file in: lib/Pages/User_Screens/Admin_Screens/Admin_Manage Screens/Admin_Manage_Topics/
-// (same folder as admin_add_topic.dart), and update the import path below
-// to match wherever topic_service.dart and topic_model.dart end up.
 
 import 'package:elevate_app/topic_model.dart';
 import 'package:elevate_app/topic_service.dart';
@@ -16,25 +7,21 @@ import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Custom_Widgets/Test_Fields/custom_Text_Field.dart';
 
 class AdminManageTopics extends StatefulWidget {
-  final String skillName; // which skill these topics belong to
+  final String skillName;
 
   const AdminManageTopics({super.key, required this.skillName});
 
   @override
-  State<AdminManageTopics> createState() => _AdminManageTopicsState();
+  State<AdminManageTopics> createState() => AdminManageTopicsState();
 }
 
-class _AdminManageTopicsState extends State<AdminManageTopics> {
+class AdminManageTopicsState extends State<AdminManageTopics> {
   final TopicService topicService = TopicService();
 
   bool isLoading = true;
   bool isSaving = false;
 
-  // Existing topics already saved in Firestore for this skill.
   List<TopicModel> existingTopics = [];
-
-  // New rows the admin is currently adding (not saved yet).
-  // Each row: [levelOrExpController, modeController(hidden, default), topicController]
   final List<Map<String, dynamic>> newRows = [];
 
   final List<String> levelOptions = ['Beginner', 'Intermediate', 'Advanced'];
@@ -53,10 +40,18 @@ class _AdminManageTopicsState extends State<AdminManageTopics> {
     loadTopics();
   }
 
+  @override
+  void dispose() {
+    for (final row in newRows) {
+      row['topicController'].dispose();
+    }
+    super.dispose();
+  }
+
   Future<void> loadTopics() async {
     setState(() => isLoading = true);
     existingTopics = await topicService.getTopicsForSkill(widget.skillName);
-    setState(() => isLoading = false);
+    if (mounted) setState(() => isLoading = false);
   }
 
   void addNewRow() {
@@ -85,7 +80,7 @@ class _AdminManageTopicsState extends State<AdminManageTopics> {
     setState(() => isSaving = true);
 
     for (final row in newRows) {
-      final String topicText = row['topicController'].text.trim();
+      final topicText = row['topicController'].text.trim();
       if (topicText.isEmpty) continue;
 
       await topicService.addTopic(
@@ -101,8 +96,8 @@ class _AdminManageTopicsState extends State<AdminManageTopics> {
     }
     newRows.clear();
 
-    setState(() => isSaving = false);
-    loadTopics();
+    if (mounted) setState(() => isSaving = false);
+    await loadTopics();
 
     if (mounted) {
       ScaffoldMessenger.of(
@@ -111,7 +106,7 @@ class _AdminManageTopicsState extends State<AdminManageTopics> {
     }
   }
 
-  Widget _existingTopicRow(TopicModel topic) {
+  Widget existingTopicRow(TopicModel topic) {
     return Container(
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 10),
@@ -153,9 +148,9 @@ class _AdminManageTopicsState extends State<AdminManageTopics> {
     );
   }
 
-  Widget _newRowCard(int index) {
+  Widget newRowCard(int index) {
     final row = newRows[index];
-    final List<String> currentLevels = row['mode'] == 'experience'
+    final currentLevels = row['mode'] == 'experience'
         ? experienceLevelOptions
         : levelOptions;
 
@@ -277,7 +272,6 @@ class _AdminManageTopicsState extends State<AdminManageTopics> {
                           ],
                         ),
                         const SizedBox(height: 14),
-
                         if (existingTopics.isEmpty)
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 10),
@@ -290,8 +284,7 @@ class _AdminManageTopicsState extends State<AdminManageTopics> {
                             ),
                           )
                         else
-                          ...existingTopics.map(_existingTopicRow),
-
+                          ...existingTopics.map(existingTopicRow),
                         if (newRows.isNotEmpty) ...[
                           const SizedBox(height: 20),
                           const CustomText(
@@ -302,14 +295,9 @@ class _AdminManageTopicsState extends State<AdminManageTopics> {
                             textAlign: TextAlign.left,
                           ),
                           const SizedBox(height: 14),
-                          ...List.generate(
-                            newRows.length,
-                            (i) => _newRowCard(i),
-                          ),
+                          ...List.generate(newRows.length, newRowCard),
                         ],
-
                         const SizedBox(height: 20),
-
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
@@ -319,7 +307,9 @@ class _AdminManageTopicsState extends State<AdminManageTopics> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.black,
                               foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(50),
                               ),

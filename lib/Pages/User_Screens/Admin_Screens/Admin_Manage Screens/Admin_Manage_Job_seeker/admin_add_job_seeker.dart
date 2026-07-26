@@ -57,6 +57,7 @@ class _AdminAddJobSeekerState extends State<AdminAddJobSeeker> {
         password: password,
       );
 
+      if (!mounted) return;
       setState(() {
         isLoading = false;
       });
@@ -71,6 +72,7 @@ class _AdminAddJobSeekerState extends State<AdminAddJobSeeker> {
         ),
       );
     } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
       setState(() {
         isLoading = false;
       });
@@ -90,11 +92,13 @@ class _AdminAddJobSeekerState extends State<AdminAddJobSeeker> {
           error = e.message ?? "Something went wrong.";
       }
 
+      if (!mounted) return;
       showDialog(
         context: context,
         builder: (_) => Messagebox(message: error),
       );
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         isLoading = false;
       });

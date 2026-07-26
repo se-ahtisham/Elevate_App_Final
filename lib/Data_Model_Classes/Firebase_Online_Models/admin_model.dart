@@ -4,6 +4,9 @@ class AdminModel {
   final String email;
   final String password;
   final String userType;
+  final String about;
+  final String location;
+  final String profilePic;
 
   AdminModel({
     required this.adminID,
@@ -11,6 +14,9 @@ class AdminModel {
     this.email = '',
     this.password = '',
     this.userType = 'Admin',
+    this.about = '',
+    this.location = '',
+    this.profilePic = '',
   });
 
   Map<String, dynamic> toMap() {
@@ -20,6 +26,9 @@ class AdminModel {
       'email': email,
       'password': password,
       'userType': userType,
+      'about': about,
+      'location': location,
+      'profilePic': profilePic,
     };
   }
 
@@ -30,6 +39,9 @@ class AdminModel {
       email: map['email'] ?? '',
       password: map['password'] ?? '',
       userType: map['userType'] ?? 'Admin',
+      about: map['about'] ?? '',
+      location: map['location'] ?? '',
+      profilePic: map['profilePic'] ?? '',
     );
   }
 }

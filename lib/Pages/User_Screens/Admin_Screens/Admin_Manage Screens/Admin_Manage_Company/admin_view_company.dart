@@ -1,7 +1,6 @@
 import "package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart";
 import "package:elevate_app/Custom_Widgets/Header/elevate_header.dart";
 import "package:elevate_app/Custom_Widgets/Text/custom_text.dart";
-import "package:elevate_app/Custom_Widgets/Text/icon_text.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_description.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_socialMedia.dart";
 import "package:elevate_app/Data_Model_Classes/Firebase_Online_Models/company_model.dart";

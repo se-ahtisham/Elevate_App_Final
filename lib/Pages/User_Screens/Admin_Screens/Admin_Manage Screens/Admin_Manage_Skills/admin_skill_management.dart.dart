@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Search_Bar/custom_search_bar.dart';
@@ -6,10 +7,12 @@ import 'package:elevate_app/Custom_Widgets/Tiles/manage_white_black_full.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/newsSkill_card.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/skill_model.dart';
 import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
+import 'package:elevate_app/Database/Online_Database/firebase_storage_service.dart';
 import 'package:elevate_app/Pages/User_Screens/Admin_Screens/Admin_Manage%20Screens/Admin_Manage_Skills/admin_edit_skill.dart.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AdminSkillManagement extends StatefulWidget {
   const AdminSkillManagement({super.key});
@@ -20,6 +23,7 @@ class AdminSkillManagement extends StatefulWidget {
 
 class AdminSkillManagementState extends State<AdminSkillManagement> {
   final FirebaseService firebaseService = FirebaseService();
+  final FirebaseStorageService storageService = FirebaseStorageService();
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
   final TextEditingController searchController = TextEditingController();
@@ -27,8 +31,10 @@ class AdminSkillManagementState extends State<AdminSkillManagement> {
   List<SkillModel> allSkills = [];
   List<SkillModel> visibleSkills = [];
 
-  String? newSkillImagePath;
+  String? newSkillImageUrl;
   bool isLoading = true;
+  bool isUploadingImage = false;
+  bool isCreating = false;
 
   @override
   void initState() {
@@ -46,9 +52,7 @@ class AdminSkillManagementState extends State<AdminSkillManagement> {
 
   Future<void> loadAllSkills() async {
     setState(() => isLoading = true);
-
     allSkills = await firebaseService.listAllSkills();
-
     setState(() {
       visibleSkills = allSkills;
       isLoading = false;
@@ -57,50 +61,35 @@ class AdminSkillManagementState extends State<AdminSkillManagement> {
 
   void onSearchChanged(String query) {
     query = query.toLowerCase();
-
     setState(() {
-      visibleSkills = allSkills.where((skill) {
-        return skill.skillName.toLowerCase().contains(query);
-      }).toList();
+      visibleSkills = allSkills
+          .where((skill) => skill.skillName.toLowerCase().contains(query))
+          .toList();
     });
   }
 
-  // TODO: replace this placeholder filename list with the real ones once
-  // confirmed from lib/Resources/Images/Skills/.
   Future<void> pickNewSkillImage() async {
-    final images = ["sharp.png", "java.png", "python.png"];
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      builder: (_) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: GridView.builder(
-            shrinkWrap: true,
-            itemCount: images.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 20,
-              mainAxisSpacing: 20,
-            ),
-            itemBuilder: (_, index) {
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    newSkillImagePath = images[index];
-                  });
-                  Navigator.pop(context);
-                },
-                child: Image.asset(
-                  "lib/Resources/Images/Skills/${images[index]}",
-                ),
-              );
-            },
-          ),
-        );
-      },
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
     );
+    if (picked == null) return;
+    if (!mounted) return;
+
+    setState(() => isUploadingImage = true);
+    try {
+      final tempId = firebaseService.db.collection('skills').doc().id;
+      final url = await storageService.uploadSkillImage(
+        skillId: tempId,
+        file: File(picked.path),
+        context: context,
+      );
+      if (url != null && mounted) {
+        setState(() => newSkillImageUrl = url);
+      }
+    } finally {
+      if (mounted) setState(() => isUploadingImage = false);
+    }
   }
 
   Future<void> onCreateNow() async {
@@ -113,23 +102,28 @@ class AdminSkillManagementState extends State<AdminSkillManagement> {
       return;
     }
 
+    setState(() => isCreating = true);
     final skill = SkillModel(
       skillID: firebaseService.db.collection('skills').doc().id,
       skillName: title,
       skillDescription: description,
-      skillImage: newSkillImagePath ?? '',
+      skillImage: newSkillImageUrl ?? '',
     );
 
     try {
       await firebaseService.createNewSkill(skill);
       titleController.clear();
       descriptionController.clear();
-      setState(() => newSkillImagePath = null);
-      loadAllSkills();
+      setState(() => newSkillImageUrl = null);
+      await loadAllSkills();
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Failed to create skill.")));
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Failed to create skill: $e")));
+      }
+    } finally {
+      if (mounted) setState(() => isCreating = false);
     }
   }
 
@@ -202,11 +196,11 @@ class AdminSkillManagementState extends State<AdminSkillManagement> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     NewSkillCard(
-                      imagePath: newSkillImagePath,
-                      onPickImage: pickNewSkillImage,
+                      imagePath: newSkillImageUrl,
+                      onPickImage: isUploadingImage ? null : pickNewSkillImage,
                       titleController: titleController,
                       descriptionController: descriptionController,
-                      onCreateTap: onCreateNow,
+                      onCreateTap: isCreating ? null : onCreateNow,
                     ),
                     const SizedBox(height: 34),
                     const IconText(
@@ -229,7 +223,6 @@ class AdminSkillManagementState extends State<AdminSkillManagement> {
                       onChanged: onSearchChanged,
                     ),
                     const SizedBox(height: 16),
-
                     if (isLoading)
                       const Center(
                         child: Padding(

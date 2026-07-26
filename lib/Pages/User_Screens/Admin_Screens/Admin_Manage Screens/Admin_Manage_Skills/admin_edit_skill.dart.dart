@@ -1,11 +1,14 @@
+import 'dart:io';
 import 'package:elevate_app/Custom_Widgets/Buttons/text_button_gradient.dart';
 import 'package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Test_Fields/custom_Text_Field.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
+import 'package:elevate_app/Database/Online_Database/firebase_storage_service.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AdminEditSkill extends StatefulWidget {
   final String skillID;
@@ -28,17 +31,18 @@ class AdminEditSkill extends StatefulWidget {
 }
 
 class AdminEditSkillState extends State<AdminEditSkill> {
+  final FirebaseStorageService storageService = FirebaseStorageService();
+
   late final TextEditingController titleController = TextEditingController(
     text: widget.initialTitle,
   );
   late final TextEditingController descriptionController =
       TextEditingController(text: widget.initialDescription);
 
-  late String? skillImagePath = widget.initialImage.isEmpty
-      ? null
-      : widget.initialImage;
+  late String skillImageUrl = widget.initialImage;
 
   bool isUpdating = false;
+  bool isUploadingImage = false;
 
   @override
   void dispose() {
@@ -48,37 +52,26 @@ class AdminEditSkillState extends State<AdminEditSkill> {
   }
 
   Future<void> pickSkillImage() async {
-    final images = ["sharp.png", "java.png", "python.png"];
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      builder: (_) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: GridView.builder(
-            shrinkWrap: true,
-            itemCount: images.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 20,
-              mainAxisSpacing: 20,
-            ),
-            itemBuilder: (_, index) {
-              return GestureDetector(
-                onTap: () {
-                  setState(() => skillImagePath = images[index]);
-                  Navigator.pop(context);
-                },
-                child: Image.asset(
-                  "lib/Resources/Images/Skills/${images[index]}",
-                ),
-              );
-            },
-          ),
-        );
-      },
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
     );
+    if (picked == null) return;
+    if (!mounted) return;
+
+    setState(() => isUploadingImage = true);
+    try {
+      final url = await storageService.uploadSkillImage(
+        skillId: widget.skillID,
+        file: File(picked.path),
+        context: context,
+      );
+      if (url != null && mounted) {
+        setState(() => skillImageUrl = url);
+      }
+    } finally {
+      if (mounted) setState(() => isUploadingImage = false);
+    }
   }
 
   Future<void> onUpdateSkill() async {
@@ -88,7 +81,7 @@ class AdminEditSkillState extends State<AdminEditSkill> {
         () => widget.onSubmit(
           titleController.text.trim(),
           descriptionController.text.trim(),
-          skillImagePath ?? '',
+          skillImageUrl,
         ),
       );
     } finally {
@@ -96,9 +89,7 @@ class AdminEditSkillState extends State<AdminEditSkill> {
     }
   }
 
-  // Same label + bordered-container + CustomTextField pattern as your
-  // LoginScreen (Email/Password fields).
-  Widget _labeledField({
+  Widget labeledField({
     required String label,
     required TextEditingController controller,
     bool obscureText = false,
@@ -156,51 +147,48 @@ class AdminEditSkillState extends State<AdminEditSkill> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 20),
-
-                    // The single image placeholder for this screen.
                     Center(
                       child: GestureDetector(
-                        onTap: pickSkillImage,
-                        child: CircleAvatar(
-                          radius: 80,
-                          backgroundColor: Color.fromARGB(255, 199, 199, 199),
-
-                          backgroundImage:
-                              skillImagePath != null &&
-                                  skillImagePath!.isNotEmpty
-                              ? AssetImage(
-                                      "lib/Resources/Images/Skills/$skillImagePath",
+                        onTap: isUploadingImage ? null : pickSkillImage,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            CircleAvatar(
+                              radius: 80,
+                              backgroundColor: const Color.fromARGB(
+                                255,
+                                199,
+                                199,
+                                199,
+                              ),
+                              backgroundImage: skillImageUrl.isNotEmpty
+                                  ? NetworkImage(skillImageUrl)
+                                  : null,
+                              child: skillImageUrl.isEmpty
+                                  ? const Icon(
+                                      Icons.add,
+                                      color: Colors.black,
+                                      size: 30,
                                     )
-                                    as ImageProvider
-                              : null,
-                          child:
-                              skillImagePath == null || skillImagePath!.isEmpty
-                              ? const Icon(
-                                  Icons.add,
-                                  color: Colors.black,
-                                  size: 30,
-                                )
-                              : null,
+                                  : null,
+                            ),
+                            if (isUploadingImage)
+                              const CircularProgressIndicator(),
+                          ],
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 30),
-
-                    _labeledField(
+                    labeledField(
                       label: "Skill Name",
                       controller: titleController,
                     ),
-
                     const SizedBox(height: 30),
-
-                    _labeledField(
+                    labeledField(
                       label: "Description",
                       controller: descriptionController,
                     ),
-
                     const SizedBox(height: 30),
-
                     TextButtonGradient(
                       text: isUpdating ? "Updating..." : "Update Skill",
                       height: 50,
@@ -209,9 +197,7 @@ class AdminEditSkillState extends State<AdminEditSkill> {
                       borderRadius: 30,
                       onTap: isUpdating ? null : onUpdateSkill,
                     ),
-
                     const SizedBox(height: 15),
-
                     TexxtButton(
                       text: "Cancel",
                       textSize: 13,
@@ -225,7 +211,6 @@ class AdminEditSkillState extends State<AdminEditSkill> {
                       height: 50,
                       onTap: () => Navigator.pop(context),
                     ),
-
                     const SizedBox(height: 20),
                   ],
                 ),

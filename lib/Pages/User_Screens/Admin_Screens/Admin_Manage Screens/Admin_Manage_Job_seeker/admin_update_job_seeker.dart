@@ -72,6 +72,7 @@ class _AdminUpdateJobSeekerState extends State<AdminUpdateJobSeeker> {
     try {
       final jobSeeker = await firebaseService.getJobSeekerByEmail(email);
 
+      if (!mounted) return;
       setState(() {
         isSearching = false;
       });
@@ -110,8 +111,10 @@ class _AdminUpdateJobSeekerState extends State<AdminUpdateJobSeeker> {
         ]);
       }
 
+      if (!mounted) return;
       setState(() {});
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         isSearching = false;
       });
@@ -156,6 +159,7 @@ class _AdminUpdateJobSeekerState extends State<AdminUpdateJobSeeker> {
             .toList(),
       });
 
+      if (!mounted) return;
       setState(() {
         isUpdating = false;
       });
@@ -168,6 +172,7 @@ class _AdminUpdateJobSeekerState extends State<AdminUpdateJobSeeker> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         isUpdating = false;
       });

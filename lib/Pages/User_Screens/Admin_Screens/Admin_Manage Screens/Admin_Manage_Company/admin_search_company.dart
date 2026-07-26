@@ -40,14 +40,23 @@ class _AdminSearchCompanyState extends State<AdminSearchCompany> {
   }
 
   Future<void> loadAllCompanies() async {
+    if (!mounted) return;
     setState(() => isLoading = true);
 
-    allCompanies = await firebaseService.listAllCompanies();
-
-    setState(() {
-      visibleCompanies = allCompanies;
-      isLoading = false;
-    });
+    try {
+      allCompanies = await firebaseService.listAllCompanies();
+      if (!mounted) return;
+      setState(() {
+        visibleCompanies = allCompanies;
+        isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Couldn't load companies. Try again.")),
+      );
+    }
   }
 
   void onSearchChanged(String query) {
@@ -139,7 +148,7 @@ class _AdminSearchCompanyState extends State<AdminSearchCompany> {
                       const Center(
                         child: Padding(
                           padding: EdgeInsets.symmetric(vertical: 40),
-                          child: CircularProgressIndicator(color: Colors.black,),
+                          child: CircularProgressIndicator(color: Colors.black),
                         ),
                       )
                     else if (visibleCompanies.isEmpty)

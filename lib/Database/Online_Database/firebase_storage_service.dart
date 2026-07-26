@@ -159,6 +159,23 @@ class FirebaseStorageService {
     }
   }
 
+  Future<String?> uploadSkillImage({
+    required String skillId,
+    required File file,
+    required BuildContext context,
+  }) async {
+    if (!validateFileSize(file, context)) return null;
+    try {
+      final ext = file.path.split('.').last.toLowerCase();
+      final ref = storage.ref().child('skill_images').child('$skillId.$ext');
+      final uploadTask = await ref.putFile(file);
+      return await uploadTask.ref.getDownloadURL();
+    } catch (e) {
+      _showMessage(context, "Failed to upload skill image: ${e.toString()}");
+      return null;
+    }
+  }
+
   Future<String?> uploadResumeFile({
     required String userId,
     required File file,

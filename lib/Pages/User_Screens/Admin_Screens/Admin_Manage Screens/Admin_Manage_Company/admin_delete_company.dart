@@ -40,14 +40,23 @@ class _AdminDeleteCompanyState extends State<AdminDeleteCompany> {
   }
 
   Future<void> loadAllCompanies() async {
+    if (!mounted) return;
     setState(() => isLoading = true);
 
-    allCompanies = await firebaseService.listAllCompanies();
-
-    setState(() {
-      visibleCompanies = allCompanies;
-      isLoading = false;
-    });
+    try {
+      allCompanies = await firebaseService.listAllCompanies();
+      if (!mounted) return;
+      setState(() {
+        visibleCompanies = allCompanies;
+        isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Couldn't load companies. Try again.")),
+      );
+    }
   }
 
   void onSearchChanged(String query) {
@@ -74,23 +83,25 @@ class _AdminDeleteCompanyState extends State<AdminDeleteCompany> {
     try {
       await firebaseService.deleteCompany(company.companyID);
 
+      if (!mounted) return;
       setState(() {
         allCompanies.removeWhere((item) => item.companyID == company.companyID);
-
         visibleCompanies.removeWhere(
           (item) => item.companyID == company.companyID,
         );
       });
 
+      if (!mounted) return;
       showDialog(
         context: context,
         builder: (_) =>
             Messagebox(message: "${company.companyName} deleted successfully."),
       );
     } catch (e) {
+      if (!mounted) return;
       showDialog(
         context: context,
-        builder: (_) => Messagebox(message: "Failed to delete company."),
+        builder: (_) => const Messagebox(message: "Failed to delete company."),
       );
     }
   }

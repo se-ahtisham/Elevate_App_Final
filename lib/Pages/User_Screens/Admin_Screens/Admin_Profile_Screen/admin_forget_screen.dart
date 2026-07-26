@@ -15,10 +15,10 @@ class AdminForgetScreen extends ConsumerStatefulWidget {
   const AdminForgetScreen({super.key});
 
   @override
-  ConsumerState<AdminForgetScreen> createState() => _AdminForgetScreenState();
+  ConsumerState<AdminForgetScreen> createState() => AdminForgetScreenState();
 }
 
-class _AdminForgetScreenState extends ConsumerState<AdminForgetScreen> {
+class AdminForgetScreenState extends ConsumerState<AdminForgetScreen> {
   final emailController = TextEditingController();
 
   @override
@@ -59,8 +59,6 @@ class _AdminForgetScreenState extends ConsumerState<AdminForgetScreen> {
     if (Navigator.canPop(context)) {
       Navigator.pop(context);
     } else {
-      // No screen underneath to pop back to — go to Login instead
-      // of leaving a blank screen.
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const LoginScreen()),

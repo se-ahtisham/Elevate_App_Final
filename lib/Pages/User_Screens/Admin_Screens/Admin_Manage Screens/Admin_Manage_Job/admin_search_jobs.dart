@@ -41,15 +41,25 @@ class _AdminSearchJobsState extends State<AdminSearchJobs> {
     super.dispose();
   }
 
-  Future<void> loadAllJobs() async {
+ Future<void> loadAllJobs() async {
+    if (!mounted) return;
     setState(() => isLoading = true);
 
-    allJobs = await firebaseService.viewAllJobs();
-
-    setState(() {
-      visibleJobs = allJobs;
-      isLoading = false;
-    });
+    try {
+      final fetched = await firebaseService.viewAllJobs();
+      if (!mounted) return;
+      setState(() {
+        allJobs = fetched;
+        visibleJobs = allJobs;
+        isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Couldn't load jobs. Try again.")),
+      );
+    }
   }
 
   void onSearchChanged(String query) {

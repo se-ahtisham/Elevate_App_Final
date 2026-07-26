@@ -39,15 +39,25 @@ class _AdminDeleteJobSeekersState extends State<AdminDeleteJobSeekers> {
     super.dispose();
   }
 
-  Future<void> loadAllJobSeekers() async {
+ Future<void> loadAllJobSeekers() async {
+    if (!mounted) return;
     setState(() => isLoading = true);
 
-    allJobSeekers = await firebaseService.listAllJobSeekers();
-
-    setState(() {
-      visibleJobSeekers = allJobSeekers;
-      isLoading = false;
-    });
+    try {
+      final fetched = await firebaseService.listAllJobSeekers();
+      if (!mounted) return;
+      setState(() {
+        allJobSeekers = fetched;
+        visibleJobSeekers = allJobSeekers;
+        isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Couldn't load job seekers. Try again.")),
+      );
+    }
   }
 
   void onSearchChanged(String query) {
@@ -68,10 +78,11 @@ class _AdminDeleteJobSeekersState extends State<AdminDeleteJobSeekers> {
     );
   }
 
-  Future<void> deleteJobSeeker(JobSeekerModel seeker) async {
+Future<void> deleteJobSeeker(JobSeekerModel seeker) async {
     try {
       await firebaseService.deleteJobSeeker(seeker.jobSeekerID);
 
+      if (!mounted) return;
       setState(() {
         allJobSeekers.removeWhere(
           (item) => item.jobSeekerID == seeker.jobSeekerID,
@@ -82,19 +93,20 @@ class _AdminDeleteJobSeekersState extends State<AdminDeleteJobSeekers> {
         );
       });
 
+      if (!mounted) return;
       showDialog(
         context: context,
         builder: (_) =>
             Messagebox(message: "${seeker.name} deleted successfully."),
       );
     } catch (e) {
+      if (!mounted) return;
       showDialog(
         context: context,
-        builder: (_) => Messagebox(message: "Failed to delete job seeker."),
+        builder: (_) => const Messagebox(message: "Failed to delete job seeker."),
       );
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

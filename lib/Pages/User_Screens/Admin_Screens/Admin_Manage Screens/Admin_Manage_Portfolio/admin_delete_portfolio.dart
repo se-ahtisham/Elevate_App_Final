@@ -1,62 +1,113 @@
 import 'package:elevate_app/Custom_Widgets/Buttons/circle_icon_button.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/project_model.dart';
+import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 
-class AdminDeletePortfolio extends StatelessWidget {
-  static const List<String> previewImages = [
-    "lib/Resources/Images/mock.png",
-    "lib/Resources/Images/mock2.png",
-    "lib/Resources/Images/mock.png",
-    "lib/Resources/Images/mock2.png",
-  ];
-  const AdminDeletePortfolio({super.key});
+class AdminDeletePortfolio extends StatefulWidget {
+  final ProjectModel project;
+
+  const AdminDeletePortfolio({super.key, required this.project});
+
+  @override
+  State<AdminDeletePortfolio> createState() => AdminDeletePortfolioState();
+}
+
+class AdminDeletePortfolioState extends State<AdminDeletePortfolio> {
+  final FirebaseService service = FirebaseService();
+  bool isDeleting = false;
+
+  Future<void> deleteProject() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Delete Project"),
+        content: const Text("This cannot be undone. Delete this project?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => isDeleting = true);
+    try {
+      await service.deleteProject(
+        widget.project.projectID,
+        widget.project.jobSeekerID,
+      );
+      if (!mounted) return;
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Failed to delete project: $e")));
+    } finally {
+      if (mounted) setState(() => isDeleting = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final project = widget.project;
+    final images = project.mediaFiles;
+
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 245, 245, 245),
       body: Stack(
         children: [
           Column(
             children: [
-              // ✅ Header wrapped in Stack for Delete Project button
               Stack(
                 children: [
-                  ElevateHeader(),
+                  const ElevateHeader(),
                   Positioned(
                     top: 60,
                     right: 20,
-
                     child: GestureDetector(
-                      onTap: () {
-                        // TODO: Delete project action
-                      },
+                      onTap: isDeleting ? null : deleteProject,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 14,
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color.fromARGB(255, 255, 255, 255),
+                          color: Colors.white,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(color: Colors.white, width: 1.5),
                         ),
-                        child: const Text(
-                          "Delete Project",
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                        child: isDeleting
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                "Delete Project",
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
                       ),
                     ),
                   ),
                 ],
               ),
-
               Expanded(
                 child: SingleChildScrollView(
                   child: Padding(
@@ -74,24 +125,24 @@ class AdminDeletePortfolio extends StatelessWidget {
                           lineHeight: 1.2,
                         ),
                         const SizedBox(height: 12),
-
                         SizedBox(
                           height: 92,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
-                            itemCount: previewImages.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(width: 14),
-                            itemBuilder: (context, i) {
-                              return _PreviewCard(
-                                imagePath: previewImages[i],
-                                heroTag: "preview_$i",
-                              );
-                            },
-                          ),
+                          child: images.isEmpty
+                              ? const Center(child: Text("No images"))
+                              : ListView.separated(
+                                  scrollDirection: Axis.horizontal,
+                                  physics: const BouncingScrollPhysics(),
+                                  itemCount: images.length,
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(width: 14),
+                                  itemBuilder: (context, i) {
+                                    return PreviewCard(
+                                      imageUrl: images[i],
+                                      heroTag: "preview_$i",
+                                    );
+                                  },
+                                ),
                         ),
-
                         const SizedBox(height: 20),
                         const CustomText(
                           text: "Description",
@@ -101,19 +152,16 @@ class AdminDeletePortfolio extends StatelessWidget {
                           lineHeight: 1.2,
                         ),
                         const SizedBox(height: 10),
-                        const CustomText(
-                          text:
-                              "We are seeking a talented UI/UX Designer to join "
-                              "our team and craft engaging, user-friendly digital "
-                              "experiences. You will be responsible for designing",
+                        CustomText(
+                          text: project.projectDescription.isNotEmpty
+                              ? project.projectDescription
+                              : "No description provided.",
                           fontSize: 13.5,
                           fontWeight: FontWeight.w400,
                           color: ElevateColor.whitegray,
                           lineHeight: 1.45,
                         ),
-
                         const SizedBox(height: 18),
-
                         const CustomText(
                           text: "Files",
                           fontSize: 16,
@@ -122,10 +170,32 @@ class AdminDeletePortfolio extends StatelessWidget {
                           lineHeight: 1.2,
                         ),
                         const SizedBox(height: 12),
-
-                        _FilePill(fileName: "index.html", onDownload: () {}),
-                        const SizedBox(height: 12),
-                        _FilePill(fileName: "java.zip", onDownload: () {}),
+                        if (project.techStack.isEmpty)
+                          const CustomText(
+                            text: "No files uploaded.",
+                            fontSize: 13,
+                            fontWeight: FontWeight.w400,
+                            color: ElevateColor.whitegray,
+                            lineHeight: 1.2,
+                          )
+                        else
+                          ...List.generate(project.techStack.length, (i) {
+                            final fileName = project.techStack[i];
+                            // techFileUrls is in the same order as techStack
+                            final fileUrl = i < project.techFileUrls.length
+                                ? project.techFileUrls[i]
+                                : '';
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: FilePill(
+                                fileName: fileName,
+                                onDownload: () {
+                                  // TODO: launch fileUrl with url_launcher package
+                                  // e.g. launchUrl(Uri.parse(fileUrl));
+                                },
+                              ),
+                            );
+                          }),
                       ],
                     ),
                   ),
@@ -133,10 +203,8 @@ class AdminDeletePortfolio extends StatelessWidget {
               ),
             ],
           ),
-
-          // Floating header card
           Padding(
-            padding: EdgeInsets.only(left: 18, right: 18, top: 150),
+            padding: const EdgeInsets.only(left: 18, right: 18, top: 150),
             child: Container(
               width: double.infinity,
               height: 140,
@@ -152,24 +220,29 @@ class AdminDeletePortfolio extends StatelessWidget {
                   ),
                 ],
               ),
-              child: const Column(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   CustomText(
-                    text: "E-Commerce\nMobile Application",
+                    text: project.projectTitle.isNotEmpty
+                        ? project.projectTitle
+                        : "Untitled Project",
                     textAlign: TextAlign.center,
                     fontSize: 26,
                     fontWeight: FontWeight.w700,
                     color: ElevateColor.lightgray,
                     lineHeight: 1.15,
                   ),
-                  SizedBox(height: 10),
-                  CustomText(
-                    text: "Lead Developer",
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w500,
-                    color: ElevateColor.whitegray,
-                    lineHeight: 1.2,
-                  ),
+                  if (project.projectURL.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    CustomText(
+                      text: project.projectURL,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w500,
+                      color: ElevateColor.whitegray,
+                      lineHeight: 1.2,
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -180,12 +253,11 @@ class AdminDeletePortfolio extends StatelessWidget {
   }
 }
 
-// Preview Card (TAP -> FULL SCREEN)
-class _PreviewCard extends StatelessWidget {
-  final String imagePath;
+class PreviewCard extends StatelessWidget {
+  final String imageUrl;
   final String heroTag;
 
-  const _PreviewCard({required this.imagePath, required this.heroTag});
+  const PreviewCard({super.key, required this.imageUrl, required this.heroTag});
 
   @override
   Widget build(BuildContext context) {
@@ -196,7 +268,7 @@ class _PreviewCard extends StatelessWidget {
           context,
           MaterialPageRoute(
             builder: (_) =>
-                _FullScreenImage(imagePath: imagePath, heroTag: heroTag),
+                FullScreenImage(imageUrl: imageUrl, heroTag: heroTag),
           ),
         );
       },
@@ -216,9 +288,19 @@ class _PreviewCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: Hero(
           tag: heroTag,
-          child: Image.asset(
-            imagePath,
+          child: Image.network(
+            imageUrl,
             fit: BoxFit.cover,
+            loadingBuilder: (context, child, progress) {
+              if (progress == null) return child;
+              return const Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              );
+            },
             errorBuilder: (_, __, ___) => Container(
               color: const Color(0xFFF2F2F2),
               alignment: Alignment.center,
@@ -235,11 +317,15 @@ class _PreviewCard extends StatelessWidget {
   }
 }
 
-class _FullScreenImage extends StatelessWidget {
-  final String imagePath;
+class FullScreenImage extends StatelessWidget {
+  final String imageUrl;
   final String heroTag;
 
-  const _FullScreenImage({required this.imagePath, required this.heroTag});
+  const FullScreenImage({
+    super.key,
+    required this.imageUrl,
+    required this.heroTag,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -253,7 +339,7 @@ class _FullScreenImage extends StatelessWidget {
               child: InteractiveViewer(
                 minScale: 0.8,
                 maxScale: 4.0,
-                child: Image.asset(imagePath),
+                child: Image.network(imageUrl),
               ),
             ),
           ),
@@ -276,17 +362,15 @@ class _FullScreenImage extends StatelessWidget {
   }
 }
 
-// Files Pill container with download button
-class _FilePill extends StatelessWidget {
+class FilePill extends StatelessWidget {
   final String fileName;
   final VoidCallback onDownload;
 
-  const _FilePill({required this.fileName, required this.onDownload});
+  const FilePill({super.key, required this.fileName, required this.onDownload});
 
   @override
   Widget build(BuildContext context) {
     const border = Color(0xFFE0E0E0);
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
@@ -297,14 +381,15 @@ class _FilePill extends StatelessWidget {
       child: Row(
         children: [
           const SizedBox(width: 4),
-          CustomText(
-            text: fileName,
-            fontSize: 13.5,
-            fontWeight: FontWeight.w600,
-            color: ElevateColor.lightgray,
-            lineHeight: 1.2,
+          Expanded(
+            child: CustomText(
+              text: fileName,
+              fontSize: 13.5,
+              fontWeight: FontWeight.w600,
+              color: ElevateColor.lightgray,
+              lineHeight: 1.2,
+            ),
           ),
-          const Spacer(),
           InkWell(
             borderRadius: BorderRadius.circular(10),
             onTap: onDownload,

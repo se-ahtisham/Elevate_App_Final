@@ -4,11 +4,11 @@ import 'package:elevate_app/Pages/User_Screens/Admin_Screens/Admin_Manage%20Scre
 import 'package:flutter/material.dart';
 
 class NewSkillCard extends StatelessWidget {
-  final String? imagePath; // bare asset filename, e.g. "flutter.png"
-  final VoidCallback onPickImage;
+  final String? imagePath;
+  final VoidCallback? onPickImage;
   final TextEditingController titleController;
   final TextEditingController descriptionController;
-  final VoidCallback onCreateTap;
+  final VoidCallback? onCreateTap;
 
   const NewSkillCard({
     super.key,
@@ -19,7 +19,7 @@ class NewSkillCard extends StatelessWidget {
     required this.onCreateTap,
   });
 
-  Widget _labeledField({
+  Widget labeledField({
     required String label,
     required String hint,
     required TextEditingController controller,
@@ -67,43 +67,32 @@ class NewSkillCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // The single image placeholder for this card.
           GestureDetector(
             onTap: onPickImage,
             child: CircleAvatar(
               radius: 60,
               backgroundColor: Colors.white,
               backgroundImage: imagePath != null && imagePath!.isNotEmpty
-                  ? AssetImage("lib/Resources/Images/Skills/$imagePath")
-                        as ImageProvider
+                  ? NetworkImage(imagePath!)
                   : null,
               child: imagePath == null || imagePath!.isEmpty
                   ? const Icon(Icons.add, color: Colors.black, size: 30)
                   : null,
             ),
           ),
-
           const SizedBox(height: 25),
-
-          _labeledField(
+          labeledField(
             label: "Skill Name",
             hint: "Flutter Development",
             controller: titleController,
           ),
-
           const SizedBox(height: 20),
-
-          _labeledField(
+          labeledField(
             label: "Description",
             hint: "Short description of this skill",
             controller: descriptionController,
           ),
-
           const SizedBox(height: 25),
-
-          // NEW: Manage Topics button — lets admin set up the topic pool
-          // using whatever skill name is currently typed above, before
-          // or after actually creating the skill.
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
@@ -139,9 +128,7 @@ class NewSkillCard extends StatelessWidget {
               ),
             ),
           ),
-
           const SizedBox(height: 15),
-
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
