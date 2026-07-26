@@ -1,7 +1,6 @@
 import 'package:elevate_app/Custom_Widgets/Buttons/text_button_gradient.dart';
 import 'package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
-import 'package:elevate_app/Custom_Widgets/User_Widgets/user_description_short.dart';
 import 'package:flutter/material.dart';
 
 class AdminPostTile extends StatelessWidget {
@@ -32,6 +31,9 @@ class AdminPostTile extends StatelessWidget {
     this.viewCommentonTap,
   });
 
+  String get _initial =>
+      name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : "?";
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -47,11 +49,44 @@ class AdminPostTile extends StatelessWidget {
         children: [
           Row(
             children: [
+              // Black circle avatar with the person's first initial
+              Container(
+                width: 44,
+                height: 44,
+                decoration: const BoxDecoration(
+                  color: Colors.black,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  _initial,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
               Expanded(
-                child: UserDescriptionShort(
-                  imageURL: imageURL,
-                  name: name,
-                  shortDescription: shortDescription,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CustomText(
+                      text: name,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
+                      maxLines: 1,
+                    ),
+                    const SizedBox(height: 2),
+                    CustomText(
+                      text: shortDescription,
+                      fontSize: 12,
+                      color: Colors.black54,
+                      maxLines: 1,
+                    ),
+                  ],
                 ),
               ),
               CustomText(text: timed, fontSize: 10.5, color: Colors.grey),
@@ -88,7 +123,7 @@ class AdminPostTile extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: 20),
+          const SizedBox(height: 20),
           TextButtonGradient(
             text: "Delete Post",
             height: 50,

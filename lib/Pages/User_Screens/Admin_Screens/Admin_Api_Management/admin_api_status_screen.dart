@@ -113,7 +113,7 @@ class AdminApiStatusScreenState extends State<AdminApiStatusScreen> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         border: Border.all(color: color, width: 1.5),
         borderRadius: BorderRadius.circular(16),
       ),

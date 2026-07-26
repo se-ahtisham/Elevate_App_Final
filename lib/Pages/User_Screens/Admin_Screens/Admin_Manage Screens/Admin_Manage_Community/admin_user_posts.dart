@@ -1,5 +1,6 @@
 import 'package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
+import 'package:elevate_app/Custom_Widgets/Search_Bar/custom_search_bar.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/admin_post_tile.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_seeker_model.dart';
@@ -21,8 +22,10 @@ class AdminUserPosts extends StatefulWidget {
 
 class _AdminUserPostsState extends State<AdminUserPosts> {
   final FirebaseService firebaseService = FirebaseService();
+  final TextEditingController searchController = TextEditingController();
 
-  List<PostModel> posts = [];
+  List<PostModel> allPosts = [];
+  List<PostModel> visiblePosts = [];
   bool isLoading = true;
 
   @override
@@ -31,30 +34,64 @@ class _AdminUserPostsState extends State<AdminUserPosts> {
     loadPosts();
   }
 
-  // NOTE: firebase_service.dart has no getPostsByAuthor(authorID) helper,
-  // so this queries Firestore directly via firebaseService.db.
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> loadPosts() async {
+    if (!mounted) return;
     setState(() => isLoading = true);
 
-    final snap = await firebaseService.db
-        .collection('posts')
-        .where('authorID', isEqualTo: widget.jobSeeker.jobSeekerID)
-        .orderBy('createdAt', descending: true)
-        .get();
+    try {
+      final snap = await firebaseService.db
+          .collection('posts')
+          .where('authorID', isEqualTo: widget.jobSeeker.jobSeekerID)
+          .get();
 
-    setState(() {
-      posts = snap.docs.map((d) => PostModel.fromMap(d.data())).toList();
-      isLoading = false;
-    });
+      final fetched = snap.docs
+          .map((d) => PostModel.fromMap(d.data()))
+          .toList();
+      fetched.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+      if (!mounted) return;
+      setState(() {
+        allPosts = fetched;
+        visiblePosts = applySearch();
+        isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Couldn't load posts. Try again.")),
+      );
+    }
+  }
+
+  List<PostModel> applySearch() {
+    final query = searchController.text.trim().toLowerCase();
+    if (query.isEmpty) return allPosts;
+    return allPosts
+        .where((p) => p.title.toLowerCase().contains(query))
+        .toList();
+  }
+
+  void onSearchChanged(String query) {
+    setState(() => visiblePosts = applySearch());
   }
 
   Future<void> deletePost(PostModel post) async {
     try {
       await firebaseService.deletePost(post.postID);
+      if (!mounted) return;
       setState(() {
-        posts.removeWhere((p) => p.postID == post.postID);
+        allPosts.removeWhere((p) => p.postID == post.postID);
+        visiblePosts.removeWhere((p) => p.postID == post.postID);
       });
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Failed to delete post.")));
@@ -89,6 +126,7 @@ class _AdminUserPostsState extends State<AdminUserPosts> {
                   subTitle: "Posts",
                   titleSize: 32,
                   subtitleSize: 20,
+                  showBackButton: true,
                 ),
                 Positioned(
                   top: 170,
@@ -109,43 +147,65 @@ class _AdminUserPostsState extends State<AdminUserPosts> {
                 ),
               ],
             ),
+
+            Padding(
+              padding: const EdgeInsets.fromLTRB(30, 20, 30, 0),
+              child: CustomSearchBar(
+                hintText: "Search by post title",
+                backgroundColor: ElevateColor.white,
+                width: 380,
+                height: 60,
+                textSize: 15,
+                iconSize: 30,
+                controller: searchController,
+                onChanged: onSearchChanged,
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
             Expanded(
               child: isLoading
                   ? const Center(
                       child: CircularProgressIndicator(color: Colors.black),
                     )
-                  : posts.isEmpty
-                  ? const Center(
+                  : visiblePosts.isEmpty
+                  ? Center(
                       child: CustomText(
-                        text: "This user hasn't posted anything yet.",
+                        text: allPosts.isEmpty
+                            ? "This user hasn't posted anything yet."
+                            : "No posts match your search.",
                         fontSize: 15,
                         color: ElevateColor.gray,
                         fontWeight: FontWeight.w500,
                       ),
                     )
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      child: Column(
-                        children: posts.map((post) {
-                          return AdminPostTile(
-                            title: post.title,
-                            text: post.content,
-                            commentCount: post.totalCommentCount,
-                            comments: const [],
-                            imageURL: post.authorProfilePic.isNotEmpty
-                                ? post.authorProfilePic
-                                : "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg",
-                            name: post.authorName.isNotEmpty
-                                ? post.authorName
-                                : widget.jobSeeker.name,
-                            shortDescription:
-                                widget.jobSeeker.experienceLevel.isNotEmpty
-                                ? widget.jobSeeker.experienceLevel
-                                : "Job Seeker",
-                            deleteonTap: () => deletePost(post),
-                            viewCommentonTap: () => openComments(post),
-                          );
-                        }).toList(),
+                  : RefreshIndicator(
+                      onRefresh: loadPosts,
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: Column(
+                          children: visiblePosts.map((post) {
+                            return AdminPostTile(
+                              key: ValueKey(post.postID),
+                              title: post.title,
+                              text: post.content,
+                              commentCount: post.totalCommentCount,
+                              comments: const [],
+                              imageURL: post.authorProfilePic,
+                              name: post.authorName.isNotEmpty
+                                  ? post.authorName
+                                  : widget.jobSeeker.name,
+                              shortDescription:
+                                  widget.jobSeeker.experienceLevel.isNotEmpty
+                                  ? widget.jobSeeker.experienceLevel
+                                  : "Job Seeker",
+                              deleteonTap: () => deletePost(post),
+                              viewCommentonTap: () => openComments(post),
+                            );
+                          }).toList(),
+                        ),
                       ),
                     ),
             ),

@@ -35,20 +35,34 @@ class _AdminUserCommentsState extends State<AdminUserComments> {
   }
 
   Future<void> loadComments() async {
+    if (!mounted) return;
     setState(() => isLoading = true);
 
-    comments = await firebaseService.getComments(widget.postID);
-
-    setState(() => isLoading = false);
+    try {
+      final fetched = await firebaseService.getComments(widget.postID);
+      if (!mounted) return;
+      setState(() {
+        comments = fetched;
+        isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Couldn't load comments. Try again.")),
+      );
+    }
   }
 
   Future<void> deleteComment(CommentModel comment) async {
     try {
       await firebaseService.deleteComment(comment.commentID, widget.postID);
+      if (!mounted) return;
       setState(() {
         comments.removeWhere((c) => c.commentID == comment.commentID);
       });
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Failed to delete comment.")),
       );
@@ -97,30 +111,30 @@ class _AdminUserCommentsState extends State<AdminUserComments> {
                       child: CircularProgressIndicator(color: Colors.black),
                     )
                   : comments.isEmpty
-                      ? const Center(
-                          child: CustomText(
-                            text: "No comments on this post yet.",
-                            fontSize: 15,
-                            color: ElevateColor.gray,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        )
-                      : SingleChildScrollView(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          child: Column(
-                            children: comments.map((comment) {
-                              return AdminCommentTile(
-                                title: "",
-                                text: comment.commentText,
-                                imageURL:
-                                    "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg",
-                                name: comment.authorName,
-                                shortDescription: "Commenter",
-                                onTap: () => deleteComment(comment),
-                              );
-                            }).toList(),
-                          ),
-                        ),
+                  ? const Center(
+                      child: CustomText(
+                        text: "No comments on this post yet.",
+                        fontSize: 15,
+                        color: ElevateColor.gray,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    )
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Column(
+                        children: comments.map((comment) {
+                          return AdminCommentTile(
+                            title: "",
+                            text: comment.commentText,
+                            imageURL:
+                                "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg",
+                            name: comment.authorName,
+                            shortDescription: "Commenter",
+                            onTap: () => deleteComment(comment),
+                          );
+                        }).toList(),
+                      ),
+                    ),
             ),
           ],
         ),

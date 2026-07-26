@@ -40,15 +40,24 @@ class _AdminCommunityManagementState extends State<AdminCommunityManagement> {
     super.dispose();
   }
 
-  Future<void> loadAllJobSeekers() async {
+ Future<void> loadAllJobSeekers() async {
+    if (!mounted) return;
     setState(() => isLoading = true);
 
-    allJobSeekers = await firebaseService.listAllJobSeekers();
-
-    setState(() {
-      visibleJobSeekers = allJobSeekers;
-      isLoading = false;
-    });
+    try {
+      allJobSeekers = await firebaseService.listAllJobSeekers();
+      if (!mounted) return;
+      setState(() {
+        visibleJobSeekers = allJobSeekers;
+        isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Couldn't load job seekers. Try again.")),
+      );
+    }
   }
 
   void onSearchChanged(String query) {

@@ -49,14 +49,23 @@ class _AdminBadgesManagementState extends State<AdminBadgesManagement> {
   }
 
   Future<void> loadAllBadges() async {
+    if (!mounted) return;
     setState(() => isLoading = true);
 
-    allBadges = await firebaseService.listAllBadges();
-
-    setState(() {
-      visibleBadges = allBadges;
-      isLoading = false;
-    });
+    try {
+      allBadges = await firebaseService.listAllBadges();
+      if (!mounted) return;
+      setState(() {
+        visibleBadges = allBadges;
+        isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Couldn't load badges. Try again.")),
+      );
+    }
   }
 
   void onSearchChanged(String query) {
@@ -122,15 +131,23 @@ class _AdminBadgesManagementState extends State<AdminBadgesManagement> {
       badgeImage: newBadgeImagePath ?? "",
     );
 
-    await firebaseService.createNewBadge(badge);
+    try {
+      await firebaseService.createNewBadge(badge);
 
-    setState(() {
-      selectedBadgeLevel = "Bronze";
-      selectedScoreRange = null;
-      newBadgeImagePath = null;
-    });
+      if (!mounted) return;
+      setState(() {
+        selectedBadgeLevel = "Bronze";
+        selectedScoreRange = null;
+        newBadgeImagePath = null;
+      });
 
-    loadAllBadges();
+      loadAllBadges();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Failed to create badge. Try again.")),
+      );
+    }
   }
 
   void openUpdateScreen(BadgeModel badge) async {

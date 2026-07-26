@@ -29,23 +29,34 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 
   Future<void> loadCounts() async {
+    if (!mounted) return;
     setState(() => isLoading = true);
 
-    // Run all four independently so a slow one doesn't block the rest.
-    final results = await Future.wait([
-      firebaseService.listAllJobSeekers(),
-      firebaseService.listAllCompanies(),
-      firebaseService.listAllSkills(),
-      firebaseService.viewAllJobs(),
-    ]);
+    try {
+      final results = await Future.wait([
+        firebaseService.listAllJobSeekers(),
+        firebaseService.listAllCompanies(),
+        firebaseService.listAllSkills(),
+        firebaseService.viewAllJobs(),
+      ]);
 
-    setState(() {
-      jobSeekerCount = results[0].length;
-      companyCount = results[1].length;
-      skillCount = results[2].length;
-      jobCount = results[3].length;
-      isLoading = false;
-    });
+      if (!mounted) return;
+      setState(() {
+        jobSeekerCount = results[0].length;
+        companyCount = results[1].length;
+        skillCount = results[2].length;
+        jobCount = results[3].length;
+        isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Couldn't load dashboard stats. Pull to retry."),
+        ),
+      );
+    }
   }
 
   @override
