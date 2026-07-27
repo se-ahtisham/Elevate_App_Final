@@ -27,7 +27,7 @@ class MemberCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: ElevateColor.gray.withOpacity(0.08),
+            color: ElevateColor.gray.withValues(alpha: 0.08),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),

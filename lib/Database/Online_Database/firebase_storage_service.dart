@@ -68,10 +68,12 @@ class FirebaseStorageService {
       final uploadTask = await ref.putFile(file);
       return await uploadTask.ref.getDownloadURL();
     } catch (e) {
-      _showMessage(
-        context,
-        "Failed to upload profile picture: ${e.toString()}",
-      );
+      if (context.mounted) {
+        _showMessage(
+          context,
+          "Failed to upload profile picture: ${e.toString()}",
+        );
+      }
       return null;
     }
   }
@@ -103,10 +105,12 @@ class FirebaseStorageService {
       );
       return await uploadTask.ref.getDownloadURL();
     } catch (e) {
-      _showMessage(
-        context,
-        "Failed to upload portfolio image: ${e.toString()}",
-      );
+      if (context.mounted) {
+        _showMessage(
+          context,
+          "Failed to upload portfolio image: ${e.toString()}",
+        );
+      }
       return null;
     }
   }
@@ -133,7 +137,9 @@ class FirebaseStorageService {
       final uploadTask = await ref.putData(bytes);
       return await uploadTask.ref.getDownloadURL();
     } catch (e) {
-      _showMessage(context, "Failed to upload tech file: ${e.toString()}");
+      if (context.mounted) {
+        _showMessage(context, "Failed to upload tech file: ${e.toString()}");
+      }
       return null;
     }
   }
@@ -154,7 +160,9 @@ class FirebaseStorageService {
       final uploadTask = await ref.putFile(file);
       return await uploadTask.ref.getDownloadURL();
     } catch (e) {
-      _showMessage(context, "Failed to upload post image: ${e.toString()}");
+      if (context.mounted) {
+        _showMessage(context, "Failed to upload post image: ${e.toString()}");
+      }
       return null;
     }
   }
@@ -171,7 +179,9 @@ class FirebaseStorageService {
       final uploadTask = await ref.putFile(file);
       return await uploadTask.ref.getDownloadURL();
     } catch (e) {
-      _showMessage(context, "Failed to upload skill image: ${e.toString()}");
+      if (context.mounted) {
+        _showMessage(context, "Failed to upload skill image: ${e.toString()}");
+      }
       return null;
     }
   }
@@ -193,7 +203,9 @@ class FirebaseStorageService {
       final uploadTask = await ref.putFile(file);
       return await uploadTask.ref.getDownloadURL();
     } catch (e) {
-      _showMessage(context, "Failed to upload resume file: ${e.toString()}");
+      if (context.mounted) {
+        _showMessage(context, "Failed to upload resume file: ${e.toString()}");
+      }
       return null;
     }
   }

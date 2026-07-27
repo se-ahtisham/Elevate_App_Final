@@ -113,6 +113,7 @@ class _NewPortfolioScreenState extends ConsumerState<NewPortfolioScreen> {
       final imageUrls = <String>[];
 
       for (final img in images) {
+        if (!context.mounted) return;
         if (img.bytes == null) continue;
         final url = await storageService.uploadPortfolioImage(
           userId: userId,
@@ -128,6 +129,7 @@ class _NewPortfolioScreenState extends ConsumerState<NewPortfolioScreen> {
       final techUrls = <String>[];
 
       for (final f in techFiles) {
+        if (!context.mounted) return;
         if (f.bytes == null) continue;
         final url = await storageService.uploadTechFile(
           userId: userId,

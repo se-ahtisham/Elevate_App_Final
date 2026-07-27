@@ -154,6 +154,7 @@ class _PortfolioUpdateScreenState extends ConsumerState<PortfolioUpdateScreen> {
       final techUrls = <String>[for (final t in existingTechFiles) t.url];
 
       for (final f in newTechFiles) {
+        if (!context.mounted) return;
         if (f.bytes == null) continue;
         final url = await storageService.uploadTechFile(
           userId: project.jobSeekerID,
@@ -168,12 +169,12 @@ class _PortfolioUpdateScreenState extends ConsumerState<PortfolioUpdateScreen> {
         }
       }
 
-for (final url in removedImageUrls) {
-  await storageService.deleteFileFromStorage(url);
-}
-for (final url in removedTechUrls) {
-  await storageService.deleteFileFromStorage(url);
-}
+      for (final url in removedImageUrls) {
+        await storageService.deleteFileFromStorage(url);
+      }
+      for (final url in removedTechUrls) {
+        await storageService.deleteFileFromStorage(url);
+      }
       await firebaseService.updateProject(project.projectID, {
         'projectDescription': descriptionController.text.trim(),
         'techStack': techNames,
@@ -196,39 +197,39 @@ for (final url in removedTechUrls) {
     }
   }
 
-Future<void> deleteProject() async {
-  final project = widget.project;
-  if (project == null) return;
+  Future<void> deleteProject() async {
+    final project = widget.project;
+    if (project == null) return;
 
-  setState(() => isLoading = true);
+    setState(() => isLoading = true);
 
-  try {
-    for (final url in project.mediaFiles) {
-      await storageService.deleteFileFromStorage(url);
+    try {
+      for (final url in project.mediaFiles) {
+        await storageService.deleteFileFromStorage(url);
+      }
+      for (final url in project.techFileUrls) {
+        await storageService.deleteFileFromStorage(url);
+      }
+
+      await firebaseService.deleteProject(
+        project.projectID,
+        project.jobSeekerID,
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Project deleted successfully.")),
+      );
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Delete failed: $e")));
+    } finally {
+      if (mounted) setState(() => isLoading = false);
     }
-    for (final url in project.techFileUrls) {
-      await storageService.deleteFileFromStorage(url);
-    }
-
-    await firebaseService.deleteProject(
-      project.projectID,
-      project.jobSeekerID,
-    );
-
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Project deleted successfully.")),
-    );
-    Navigator.pop(context, true);
-  } catch (e) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text("Delete failed: $e")));
-  } finally {
-    if (mounted) setState(() => isLoading = false);
   }
-}
 
   InputDecoration _fieldDecoration(String hint) => InputDecoration(
     hintText: hint,
@@ -499,12 +500,12 @@ Future<void> deleteProject() async {
                                   ? null
                                   : () =>
                                         _downloadFile(existingTechFiles[i].url),
-                          onRemove: () => setState(() {
-  if (existingTechFiles[i].url.isNotEmpty) {
-    removedTechUrls.add(existingTechFiles[i].url);
-  }
-  existingTechFiles.removeAt(i);
-}),
+                              onRemove: () => setState(() {
+                                if (existingTechFiles[i].url.isNotEmpty) {
+                                  removedTechUrls.add(existingTechFiles[i].url);
+                                }
+                                existingTechFiles.removeAt(i);
+                              }),
                             ),
                           for (int j = 0; j < newTechFiles.length; j++)
                             _techChip(

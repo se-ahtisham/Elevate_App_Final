@@ -168,16 +168,17 @@ class JobSeekerPortfolioDescriptionScreen extends StatelessWidget {
                       borderWidth: 1,
                       height: 50,
                       width: double.infinity,
-                      onTap: () {
-                        Navigator.push(
+                      onTap: () async {
+                        final changed = await Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) =>
                                 PortfolioUpdateScreen(project: p),
                           ),
-                        ).then((changed) {
-                          if (changed == true) Navigator.pop(context);
-                        });
+                        );
+                        if (changed == true && context.mounted) {
+                          Navigator.pop(context);
+                        }
                       },
                     ),
 

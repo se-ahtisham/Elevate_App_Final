@@ -75,7 +75,7 @@ class SkillCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: CustomText(
-                      text: "$startingSalary - $endingSalary" + " Yearly",
+                      text: "$startingSalary - $endingSalary Yearly",
                       fontSize: 12,
                       color: Colors.black54,
                     ),

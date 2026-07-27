@@ -48,9 +48,15 @@ class _AdminUpdateCompanyProfileState extends State<AdminUpdateCompanyProfile> {
     descriptionController.dispose();
     locationController.dispose();
     companySizeController.dispose();
-    for (final c in strengthList) c.dispose();
-    for (final c in weaknessList) c.dispose();
-    for (final c in achievementList) c.dispose();
+    for (final c in strengthList) {
+      c.dispose();
+    }
+    for (final c in weaknessList) {
+      c.dispose();
+    }
+    for (final c in achievementList) {
+      c.dispose();
+    }
     super.dispose();
   }
 

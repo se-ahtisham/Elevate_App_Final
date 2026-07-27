@@ -170,7 +170,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     .forgotPassword(
                                       emailController.text.trim(),
                                     );
-                                if (!mounted) return;
+                                if (!context.mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
@@ -213,7 +213,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       emailController.text.trim(),
                                       passwordController.text.trim(),
                                     );
-                                if (!mounted) return;
+                                if (!context.mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
@@ -271,7 +271,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                        passwordController.text.trim(),
                                      );
 
-                                 if (!mounted) return;
+                                 if (!context.mounted) return;
 
                                 if (!success) {
                                   ScaffoldMessenger.of(context).showSnackBar(

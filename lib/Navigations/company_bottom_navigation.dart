@@ -12,7 +12,7 @@ class CompanyBottomNavigation extends StatefulWidget {
   const CompanyBottomNavigation({super.key});
 
   @override
-  _CompanyBottomNavigationState createState() =>
+  State<CompanyBottomNavigation> createState() =>
       _CompanyBottomNavigationState();
 }
 
