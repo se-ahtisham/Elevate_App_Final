@@ -1,21 +1,19 @@
 import 'package:elevate_app/Custom_Widgets/Buttons/circle_icon_button.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/project_model.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 
-
 class CompanyPortfolioCheckDes extends StatelessWidget {
-  static const List<String> previewImages = [
-    "lib/Resources/Images/mock.png",
-    "lib/Resources/Images/mock2.png",
-    "lib/Resources/Images/mock.png",
-    "lib/Resources/Images/mock2.png",
-  ];
-  const CompanyPortfolioCheckDes({super.key});
+  final ProjectModel project;
+
+  const CompanyPortfolioCheckDes({super.key, required this.project});
 
   @override
   Widget build(BuildContext context) {
+    final previewImages = project.mediaFiles.isNotEmpty ? project.mediaFiles : ["lib/Resources/Images/mock.png"];
+    
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 245, 245, 245),
       body: Stack(
@@ -52,7 +50,7 @@ class CompanyPortfolioCheckDes extends StatelessWidget {
                             itemBuilder: (context, i) {
                               return _PreviewCard(
                                 imagePath: previewImages[i],
-                                heroTag: "preview_$i", // unique hero tag
+                                heroTag: "preview_$i",
                               );
                             },
                           ),
@@ -67,11 +65,8 @@ class CompanyPortfolioCheckDes extends StatelessWidget {
                           lineHeight: 1.2,
                         ),
                         const SizedBox(height: 10),
-                        const CustomText(
-                          text:
-                              "We are seeking a talented UI/UX Designer to join "
-                              "our team and craft engaging, user-friendly digital "
-                              "experiences. You will be responsible for designing",
+                        CustomText(
+                          text: project.projectDescription.isNotEmpty ? project.projectDescription : "No description provided.",
                           fontSize: 13.5,
                           fontWeight: FontWeight.w400,
                           color: ElevateColor.whitegray,
@@ -80,18 +75,31 @@ class CompanyPortfolioCheckDes extends StatelessWidget {
 
                         const SizedBox(height: 18),
 
-                        const CustomText(
-                          text: "Files",
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: ElevateColor.lightgray,
-                          lineHeight: 1.2,
-                        ),
-                        const SizedBox(height: 12),
+                        if (project.techStack.isNotEmpty) ...[
+                          const CustomText(
+                            text: "Files",
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: ElevateColor.lightgray,
+                            lineHeight: 1.2,
+                          ),
+                          const SizedBox(height: 12),
 
-                        _FilePill(fileName: "index.html", onDownload: () {}),
-                        const SizedBox(height: 12),
-                        _FilePill(fileName: "java.zip", onDownload: () {}),
+                          ...List.generate(project.techStack.length, (index) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12.0),
+                              child: _FilePill(
+                                fileName: project.techStack[index], 
+                                onDownload: () async {
+                                  if (project.techFileUrls.length > index) {
+                                    final url = project.techFileUrls[index];
+                                    debugPrint('Downloading: $url');
+                                  }
+                                }
+                              ),
+                            );
+                          }),
+                        ],
                       ],
                     ),
                   ),
@@ -102,7 +110,7 @@ class CompanyPortfolioCheckDes extends StatelessWidget {
 
           // floating header
           Padding(
-            padding: EdgeInsets.only(left: 18, right: 18, top: 150),
+            padding: const EdgeInsets.only(left: 18, right: 18, top: 150),
             child: Container(
               width: double.infinity,
               height: 140,
@@ -118,19 +126,20 @@ class CompanyPortfolioCheckDes extends StatelessWidget {
                   ),
                 ],
               ),
-              child: const Column(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   CustomText(
-                    text: "E-Commerce\nMobile Application",
+                    text: project.projectTitle.isNotEmpty ? project.projectTitle : "Untitled Project",
                     textAlign: TextAlign.center,
                     fontSize: 26,
                     fontWeight: FontWeight.w700,
                     color: ElevateColor.lightgray,
                     lineHeight: 1.15,
                   ),
-                  SizedBox(height: 10),
-                  CustomText(
-                    text: "Lead Developer",
+                  const SizedBox(height: 10),
+                  const CustomText(
+                    text: "Developer",
                     fontSize: 12.5,
                     fontWeight: FontWeight.w500,
                     color: ElevateColor.whitegray,
@@ -183,20 +192,30 @@ class _PreviewCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: Hero(
           tag: heroTag,
-          child: Image.asset(
-            imagePath,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
-              color: const Color(0xFFF2F2F2),
-              alignment: Alignment.center,
-              child: const Icon(
-                Icons.image_outlined,
-                size: 28,
-                color: Color(0xFF9B9B9B),
-              ),
-            ),
-          ),
+          child: imagePath.startsWith('http') 
+              ? Image.network(
+                  imagePath,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _errorIcon(),
+                )
+              : Image.asset(
+                  imagePath,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _errorIcon(),
+                ),
         ),
+      ),
+    );
+  }
+  
+  Widget _errorIcon() {
+    return Container(
+      color: const Color(0xFFF2F2F2),
+      alignment: Alignment.center,
+      child: const Icon(
+        Icons.image_outlined,
+        size: 28,
+        color: Color(0xFF9B9B9B),
       ),
     );
   }
@@ -220,7 +239,9 @@ class _FullScreenImage extends StatelessWidget {
               child: InteractiveViewer(
                 minScale: 0.8,
                 maxScale: 4.0,
-                child: Image.asset(imagePath),
+                child: imagePath.startsWith('http')
+                    ? Image.network(imagePath)
+                    : Image.asset(imagePath),
               ),
             ),
           ),

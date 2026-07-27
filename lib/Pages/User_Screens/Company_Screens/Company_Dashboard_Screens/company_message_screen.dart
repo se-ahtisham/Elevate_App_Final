@@ -1,11 +1,22 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:elevate_app/Custom_Widgets/Buttons/circle_icon_button.dart';
 import 'package:elevate_app/Custom_Widgets/User_Widgets/message.dart';
 import 'package:elevate_app/Custom_Widgets/User_Widgets/user_description_short.dart';
 import 'package:elevate_app/Custom_Widgets/Test_Fields/custom_Text_Field.dart';
 import 'package:flutter/material.dart';
+import 'package:elevate_app/Database/Online_Database/auth_service.dart';
 
 class CompanyMessageScreen extends StatefulWidget {
-  const CompanyMessageScreen({super.key});
+  final String? receiverId;
+  final String? receiverName;
+  final String? receiverImage;
+  
+  const CompanyMessageScreen({
+    super.key, 
+    this.receiverId, 
+    this.receiverName, 
+    this.receiverImage,
+  });
 
   @override
   State<CompanyMessageScreen> createState() => _CompanyMessageScreenState();
@@ -13,6 +24,39 @@ class CompanyMessageScreen extends StatefulWidget {
 
 class _CompanyMessageScreenState extends State<CompanyMessageScreen> {
   final TextEditingController messageController = TextEditingController();
+  final AuthService _authService = AuthService();
+  
+  late String currentUserId;
+  late String chatId;
+
+  @override
+  void initState() {
+    super.initState();
+    currentUserId = _authService.currentUser?.uid ?? '';
+    final String rId = widget.receiverId ?? 'unknown';
+    // Ensure consistent chat ID regardless of who started it
+    chatId = currentUserId.compareTo(rId) > 0 
+        ? '${currentUserId}_$rId' 
+        : '${rId}_$currentUserId';
+  }
+
+  void _sendMessage() async {
+    final text = messageController.text.trim();
+    if (text.isEmpty) return;
+
+    messageController.clear();
+
+    await FirebaseFirestore.instance
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .add({
+      'senderId': currentUserId,
+      'receiverId': widget.receiverId,
+      'text': text,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+  }
 
   @override
   void dispose() {
@@ -52,13 +96,14 @@ class _CompanyMessageScreenState extends State<CompanyMessageScreen> {
                           bottomLeft: Radius.circular(30),
                         ),
                       ),
-                      child: const Padding(
-                        padding: EdgeInsets.only(left: 20.0),
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 20.0),
                         child: UserDescriptionShort(
-                          imageURL:
-                              "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg",
-                          name: "AHTISHAM ARSHAD",
-                          shortDescription: "Software Engineer",
+                          imageURL: widget.receiverImage != null && widget.receiverImage!.isNotEmpty
+                              ? widget.receiverImage!
+                              : "lib/Resources/Images/Profile_Images/default_profile.png",
+                          name: widget.receiverName ?? "User",
+                          shortDescription: "Chat",
                         ),
                       ),
                     ),
@@ -67,23 +112,39 @@ class _CompanyMessageScreenState extends State<CompanyMessageScreen> {
               ),
             ),
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(12),
-                children: const [
-                  Message(
-                    text: "Let's get lunch. How about pizza?",
-                    isMe: true,
-                  ),
-                  Message(
-                    text: "Let's do it! I'm in a meeting until noon.",
-                    isMe: false,
-                  ),
-                  Message(
-                    text: "That's perfect. There's a new place on Main St.",
-                    isMe: true,
-                  ),
-                  Message(text: "I kind of like pineapple pizza.", isMe: false),
-                ],
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('chats')
+                    .doc(chatId)
+                    .collection('messages')
+                    .orderBy('timestamp', descending: false)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Center(child: Text("Error: ${snapshot.error}"));
+                  }
+
+                  final docs = snapshot.data?.docs ?? [];
+                  if (docs.isEmpty) {
+                    return const Center(child: Text("No messages yet."));
+                  }
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: docs.length,
+                    itemBuilder: (context, index) {
+                      final data = docs[index].data() as Map<String, dynamic>;
+                      final bool isMe = data['senderId'] == currentUserId;
+                      return Message(
+                        text: data['text'] ?? '',
+                        isMe: isMe,
+                      );
+                    },
+                  );
+                },
               ),
             ),
             Padding(
@@ -114,7 +175,7 @@ class _CompanyMessageScreenState extends State<CompanyMessageScreen> {
                     circleSize: 45,
                     circleColor: Colors.black,
                     iconColor: Colors.white,
-                    onTap: () {},
+                    onTap: _sendMessage,
                   ),
                 ],
               ),

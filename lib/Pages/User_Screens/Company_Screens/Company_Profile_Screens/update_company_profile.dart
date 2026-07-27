@@ -1,26 +1,39 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:elevate_app/Custom_Widgets/Buttons/text_button_gradient.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Custom_Widgets/Test_Fields/custom_Text_Field.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/company_model.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class UpdateCompanyProfile extends StatefulWidget {
-  const UpdateCompanyProfile({super.key});
+  final CompanyModel company;
+  const UpdateCompanyProfile({super.key, required this.company});
 
   @override
   State<UpdateCompanyProfile> createState() => _UpdateCompanyProfileState();
 }
 
 class _UpdateCompanyProfileState extends State<UpdateCompanyProfile> {
-  final TextEditingController aboutController = TextEditingController();
-  final TextEditingController locationController = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController websiteController = TextEditingController();
+  late final TextEditingController aboutController;
+  late final TextEditingController locationController;
+  late final TextEditingController emailController;
+  late final TextEditingController websiteController;
 
   static const _hintColor = Color(0xFF8E8E8E);
   static const _underlineColor = Color(0xFFE1E1E1);
+  bool isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    aboutController = TextEditingController(text: widget.company.description);
+    locationController = TextEditingController(text: widget.company.location);
+    emailController = TextEditingController(text: widget.company.email);
+    websiteController = TextEditingController(text: widget.company.website);
+  }
 
   @override
   void dispose() {
@@ -29,6 +42,30 @@ class _UpdateCompanyProfileState extends State<UpdateCompanyProfile> {
     emailController.dispose();
     websiteController.dispose();
     super.dispose();
+  }
+
+  Future<void> _saveProfile() async {
+    setState(() => isSaving = true);
+    try {
+      await FirebaseFirestore.instance
+          .collection('companies')
+          .doc(widget.company.companyID)
+          .update({
+        'description': aboutController.text.trim(),
+        'location': locationController.text.trim(),
+        'email': emailController.text.trim(),
+        'website': websiteController.text.trim(),
+      });
+      if (mounted) Navigator.pop(context);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving profile: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => isSaving = false);
+    }
   }
 
   @override
@@ -64,9 +101,7 @@ class _UpdateCompanyProfileState extends State<UpdateCompanyProfile> {
                         controller: aboutController,
                         cursorColor: ElevateColor.gray,
                         underlineColor: _underlineColor,
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 10,
-                        ),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 10),
                       ),
 
                       const SizedBox(height: 30),
@@ -78,9 +113,7 @@ class _UpdateCompanyProfileState extends State<UpdateCompanyProfile> {
                         controller: locationController,
                         cursorColor: ElevateColor.gray,
                         underlineColor: _underlineColor,
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 10,
-                        ),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 10),
                       ),
 
                       const SizedBox(height: 30),
@@ -92,9 +125,7 @@ class _UpdateCompanyProfileState extends State<UpdateCompanyProfile> {
                         controller: emailController,
                         cursorColor: ElevateColor.gray,
                         underlineColor: _underlineColor,
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 10,
-                        ),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 10),
                       ),
 
                       const SizedBox(height: 30),
@@ -106,9 +137,7 @@ class _UpdateCompanyProfileState extends State<UpdateCompanyProfile> {
                         controller: websiteController,
                         cursorColor: ElevateColor.gray,
                         underlineColor: _underlineColor,
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 10,
-                        ),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 10),
                       ),
 
                       const SizedBox(height: 30),
@@ -124,96 +153,46 @@ class _UpdateCompanyProfileState extends State<UpdateCompanyProfile> {
 
                       const SizedBox(height: 12),
 
-                      Container(
-                        width: double.infinity,
-                        height: 40,
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        decoration: BoxDecoration(
-                          color: const Color.fromARGB(255, 232, 232, 232),
-                          borderRadius: BorderRadius.circular(50),
-                          border: Border.all(
-                            color: const Color.fromARGB(255, 210, 210, 210),
-                            width: 1,
+                      if (widget.company.achievementList.isNotEmpty)
+                        Container(
+                          width: double.infinity,
+                          height: 40,
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          decoration: BoxDecoration(
+                            color: const Color.fromARGB(255, 232, 232, 232),
+                            borderRadius: BorderRadius.circular(50),
+                            border: Border.all(
+                              color: const Color.fromARGB(255, 210, 210, 210),
+                              width: 1,
+                            ),
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.emoji_events_outlined,
-                              size: 18,
-                              color: ElevateColor.lightgray,
-                            ),
-
-                            const SizedBox(width: 10),
-
-                            Expanded(
-                              child: CustomText(
-                                text:
-                                    "Best FinTech Startup 2024, ISO 27001 Certified",
-                                fontSize: 11,
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.emoji_events_outlined,
+                                size: 18,
                                 color: ElevateColor.lightgray,
-                                fontWeight: FontWeight.w400,
-                                lineHeight: 1.2,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 10),
-
-                      Container(
-                        width: double.infinity,
-                        height: 38,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        decoration: BoxDecoration(
-                          color: const Color.fromARGB(255, 240, 240, 240),
-                          borderRadius: BorderRadius.circular(50),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 22,
-                              height: 22,
-                              decoration: BoxDecoration(
-                                color: const Color.fromARGB(255, 230, 230, 230),
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: const Color.fromARGB(
-                                    255,
-                                    210,
-                                    210,
-                                    210,
-                                  ),
-                                  width: 1,
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: CustomText(
+                                  text: widget.company.achievementList.join(", "),
+                                  fontSize: 11,
+                                  color: ElevateColor.lightgray,
+                                  fontWeight: FontWeight.w400,
+                                  lineHeight: 1.2,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              child: const Icon(
-                                Icons.add,
-                                size: 14,
-                                color: ElevateColor.lightgray,
-                              ),
-                            ),
-
-                            const SizedBox(width: 10),
-
-                            CustomText(
-                              text: "Add More Achievements",
-                              fontSize: 11,
-                              color: _hintColor,
-                              fontWeight: FontWeight.w500,
-                              lineHeight: 1.0,
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
 
                       const SizedBox(height: 18),
 
                       TextButtonGradient(
-                        text: "UPDATE NOW",
+                        text: isSaving ? "SAVING..." : "UPDATE NOW",
                         height: 50,
                         textSize: 12,
                         textWeight: FontWeight.w600,
@@ -221,9 +200,7 @@ class _UpdateCompanyProfileState extends State<UpdateCompanyProfile> {
                         borderColor: Colors.transparent,
                         borderWidth: 0,
                         width: double.infinity,
-                        onTap: () {
-                          Navigator.pop(context);
-                        },
+                        onTap: isSaving ? null : _saveProfile,
                       ),
 
                       const SizedBox(height: 20),

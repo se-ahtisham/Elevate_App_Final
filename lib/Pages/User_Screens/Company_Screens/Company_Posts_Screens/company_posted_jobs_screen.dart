@@ -1,3 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:elevate_app/Database/Online_Database/auth_service.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_post_model.dart';
 import 'package:elevate_app/Pages/User_Screens/Company_Screens/Company_Posts_Screens/company_upload_job_screen.dart';
 import 'package:elevate_app/Pages/User_Screens/Company_Screens/Company_Posts_Screens/show_applied_candidates_screen.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
@@ -13,84 +16,37 @@ class CompanyPostedJobsScreen extends StatefulWidget {
 
 class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
   final TextEditingController _searchCtrl = TextEditingController();
-
   String _query = '';
+  final AuthService _authService = AuthService();
 
-  final List<Map<String, dynamic>> _allJobs = const [
-    {
-      'initials': 'MS',
-      'title': 'UI/UX Designer',
-      'company': 'Microsoft',
-      'location': 'USA',
-      'tags': ['Remote', 'Full Time', '600/mon'],
-    },
-    {
-      'initials': 'GG',
-      'title': 'Product Designer',
-      'company': 'Google',
-      'location': 'USA',
-      'tags': ['Hybrid', 'Full Time', '800/mon'],
-    },
-    {
-      'initials': 'AP',
-      'title': 'Mobile Engineer',
-      'company': 'Apple',
-      'location': 'USA',
-      'tags': ['Remote', 'Contract', '900/mon'],
-    },
-    {
-      'initials': 'MS',
-      'title': 'UI/UX Designer',
-      'company': 'Microsoft',
-      'location': 'USA',
-      'tags': ['Remote', 'Full Time', '600/mon'],
-    },
-    {
-      'initials': 'AD',
-      'title': 'Visual Designer',
-      'company': 'Adobe',
-      'location': 'USA',
-      'tags': ['Onsite', 'Full Time', '700/mon'],
-    },
-  ];
-
-  List<Map<String, dynamic>> get _filteredJobs {
+  List<JobPostModel> _getFilteredJobs(List<JobPostModel> jobs) {
     final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return jobs;
 
-    if (q.isEmpty) return _allJobs;
+    return jobs.where((j) {
+      final title = j.title.toLowerCase();
+      final location = j.location.toLowerCase();
+      final tags = [j.jobType, j.salary].join(' ').toLowerCase();
 
-    return _allJobs.where((j) {
-      final title = (j['title'] as String).toLowerCase();
-      final company = (j['company'] as String).toLowerCase();
-      final location = (j['location'] as String).toLowerCase();
-      final tags = (j['tags'] as List).join(' ').toLowerCase();
-
-      return title.contains(q) ||
-          company.contains(q) ||
-          location.contains(q) ||
-          tags.contains(q);
+      return title.contains(q) || location.contains(q) || tags.contains(q);
     }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
+    final String currentUserId = _authService.currentUser?.uid ?? '';
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4F4F4),
-
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
-
           child: Column(
             children: [
               _topHeader(),
-
               const SizedBox(height: 18),
-
               _searchBar(),
-
               const SizedBox(height: 20),
-
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
@@ -102,21 +58,37 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 16),
-
               Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.only(bottom: 30),
-
-                  itemCount: _filteredJobs.length,
-
-                  separatorBuilder: (_, _) => const SizedBox(height: 14),
-
-                  itemBuilder: (_, index) {
-                    final job = _filteredJobs[index];
-
-                    return _jobCard(job);
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('jobs')
+                      .where('companyID', isEqualTo: currentUserId)
+                      .orderBy('postedAt', descending: true)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      // Attempt without orderBy to bypass indexing requirement initially
+                      return StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('jobs')
+                            .where('companyID', isEqualTo: currentUserId)
+                            .snapshots(),
+                        builder: (context, snap2) {
+                          if (snap2.connectionState == ConnectionState.waiting) {
+                            return const Center(child: CircularProgressIndicator());
+                          }
+                          if (snap2.hasError) {
+                            return Center(child: Text("Error: ${snap2.error}"));
+                          }
+                          return _buildJobList(snap2.data?.docs ?? []);
+                        },
+                      );
+                    }
+                    return _buildJobList(snapshot.data?.docs ?? []);
                   },
                 ),
               ),
@@ -127,22 +99,41 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
     );
   }
 
+  Widget _buildJobList(List<QueryDocumentSnapshot> docs) {
+    if (docs.isEmpty) {
+      return const Center(child: Text("No jobs posted yet."));
+    }
+
+    final jobs = docs.map((d) => JobPostModel.fromMap(d.data() as Map<String, dynamic>)).toList();
+    final filteredJobs = _getFilteredJobs(jobs);
+
+    if (filteredJobs.isEmpty) {
+      return const Center(child: Text("No jobs match your search."));
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.only(bottom: 30),
+      itemCount: filteredJobs.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 14),
+      itemBuilder: (_, index) {
+        return _jobCard(filteredJobs[index]);
+      },
+    );
+  }
+
   Widget _topHeader() {
     return Row(
       children: [
         Container(
           width: 52,
           height: 52,
-
           decoration: const BoxDecoration(
             shape: BoxShape.circle,
             color: Color(0xFFE7E7E7),
           ),
-
           alignment: Alignment.center,
-
           child: Text(
-            'A',
+            'C',
             style: TextStyle(
               color: ElevateColor.gray,
               fontWeight: FontWeight.w700,
@@ -150,31 +141,23 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
             ),
           ),
         ),
-
         const SizedBox(width: 12),
-
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-
             children: [
               const Text(
                 "Let's Upload Opportunity",
-
                 style: TextStyle(
                   fontSize: 12,
                   color: Color(0xFF9A9A9A),
                   fontWeight: FontWeight.w500,
                 ),
               ),
-
               const SizedBox(height: 2),
-
               Text(
-                'TechNova Inc.',
-
+                'Company Portal',
                 overflow: TextOverflow.ellipsis,
-
                 style: TextStyle(
                   fontSize: 22,
                   color: ElevateColor.gray,
@@ -184,21 +167,17 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
             ],
           ),
         ),
-
         InkWell(
           child: Container(
             width: 46,
             height: 46,
-
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-
               gradient: const LinearGradient(
                 colors: [Color(0xFF555555), Color(0xFF111111)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.12),
@@ -207,7 +186,6 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
                 ),
               ],
             ),
-
             child: const Icon(
               Icons.ios_share_rounded,
               size: 18,
@@ -217,7 +195,7 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => CompanyUploadJobScreen()),
+              MaterialPageRoute(builder: (context) => const CompanyUploadJobScreen()),
             );
           },
         ),
@@ -228,61 +206,45 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
   Widget _searchBar() {
     return Container(
       height: 50,
-
       padding: const EdgeInsets.symmetric(horizontal: 14),
-
       decoration: BoxDecoration(
         color: const Color(0xFFF0F0F0),
-
         borderRadius: BorderRadius.circular(30),
-
         border: Border.all(color: const Color(0xFFE5E5E5)),
       ),
-
       child: Row(
         children: [
           const Icon(Icons.search_rounded, size: 21, color: Color(0xFF4D4D4D)),
-
           const SizedBox(width: 10),
-
           Expanded(
             child: TextField(
               controller: _searchCtrl,
-
               onChanged: (v) {
                 setState(() {
                   _query = v;
                 });
               },
-
               cursorColor: ElevateColor.gray,
-
               decoration: const InputDecoration(
                 border: InputBorder.none,
-
                 hintText: 'Search Post',
-
                 hintStyle: TextStyle(
                   fontSize: 14,
                   color: Color(0xFF9A9A9A),
                   fontWeight: FontWeight.w500,
                 ),
               ),
-
               style: const TextStyle(fontSize: 14, color: Color(0xFF4D4D4D)),
             ),
           ),
-
           if (_query.isNotEmpty)
             GestureDetector(
               onTap: () {
                 _searchCtrl.clear();
-
                 setState(() {
                   _query = '';
                 });
               },
-
               child: const Icon(
                 Icons.close_rounded,
                 size: 18,
@@ -294,18 +256,18 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
     );
   }
 
-  Widget _jobCard(Map<String, dynamic> job) {
+  Widget _jobCard(JobPostModel job) {
+    final initials = job.title.isNotEmpty ? job.title.substring(0, 1).toUpperCase() : 'J';
+    final tags = [job.jobType, job.location, job.salary].where((e) => e.isNotEmpty).toList();
+
     return Row(
       children: [
         Expanded(
           child: Container(
             padding: const EdgeInsets.all(14),
-
             decoration: BoxDecoration(
               color: Colors.white,
-
               borderRadius: BorderRadius.circular(24),
-
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.04),
@@ -314,25 +276,19 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
                 ),
               ],
             ),
-
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
-
               children: [
                 Container(
                   width: 40,
                   height: 40,
-
                   decoration: const BoxDecoration(
                     color: Color(0xFF4A4A4A),
                     shape: BoxShape.circle,
                   ),
-
                   alignment: Alignment.center,
-
                   child: Text(
-                    job['initials'],
-
+                    initials,
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
@@ -340,63 +296,47 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(width: 12),
-
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-
                     children: [
                       Text(
-                        job['title'],
-
+                        job.title.isNotEmpty ? job.title : "Untitled",
                         overflow: TextOverflow.ellipsis,
-
                         style: const TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 17,
                           color: Color(0xFF2B2B2B),
                         ),
                       ),
-
                       const SizedBox(height: 3),
-
                       Text(
-                        '${job['company']}  •  ${job['location']}',
-
+                        job.location.isNotEmpty ? job.location : 'Remote',
                         overflow: TextOverflow.ellipsis,
-
                         style: const TextStyle(
                           fontSize: 11.5,
                           color: Color(0xFF8B8B8B),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-
                       const SizedBox(height: 12),
-
                       Wrap(
                         spacing: 7,
                         runSpacing: 7,
-
-                        children: (job['tags'] as List<String>)
+                        children: tags
                             .map(
                               (tag) => Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 10,
                                   vertical: 5,
                                 ),
-
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFF3F3F3),
-
                                   borderRadius: BorderRadius.circular(30),
                                 ),
-
                                 child: Text(
                                   tag,
-
                                   style: const TextStyle(
                                     fontSize: 11,
                                     color: Color(0xFF777777),
@@ -414,22 +354,17 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
             ),
           ),
         ),
-
         const SizedBox(width: 12),
-
         Container(
           width: 58,
           height: 108,
-
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
-
             gradient: const LinearGradient(
               colors: [Color(0xFF5B5B5B), Colors.black],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
-
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.12),
@@ -438,22 +373,18 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
               ),
             ],
           ),
-
           child: Material(
             color: Colors.transparent,
-
             child: InkWell(
               borderRadius: BorderRadius.circular(24),
-
               onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ShowAppliedCandidatesScreen(),
+                    builder: (context) => ShowAppliedCandidatesScreen(job: job),
                   ),
                 );
               },
-
               child: const Center(
                 child: Icon(
                   Icons.arrow_outward_rounded,

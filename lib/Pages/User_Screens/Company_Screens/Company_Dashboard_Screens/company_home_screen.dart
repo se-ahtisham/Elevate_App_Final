@@ -9,32 +9,48 @@ import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/*CompanyHomeScreen
-└── Scaffold (extendBodyBehindAppBar: true, backgroundColor: #F1F1F1)
-    └── AnnotatedRegion<SystemUiOverlayStyle.light>
-        └── Column
-            ├── ElevateHeader
-            │   ├── title: "Dashboard"
-            │   └── subTitle: "Manage Employees in one place"
-            └── Expanded
-                └── Padding (horizontal: 30, vertical: 10)
-                    └── Column (crossAxisAlignment: start)
-                        ├── Row
-                        │   ├── CustomSearchBar ("Search Employee")
-                        │   └── CircleIconButton (person_add)
-                        ├── SizedBox (height: 20)
-                        ├── CustomText ("WORKING EMPLOYEE")
-                        ├── SizedBox (height: 20)
-                        └── Expanded
-                            └── SingleChildScrollView
-                                └── Column
-                                    ├── Shortdescriptionroundcircleicontiletile (Ahtisham)
-                                    ├── Shortdescriptionroundcircleicontiletile (Ahtisham)
-                                    ├── Shortdescriptionroundcircleicontiletile (Ahtisham)
-                                    └── Shortdescriptionroundcircleicontiletiletile (Ahtisham) */
+import 'package:elevate_app/Database/Online_Database/auth_service.dart';
+import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_seeker_model.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/company_employee_model.dart';
 
-class CompanyHomeScreen extends StatelessWidget {
+class CompanyHomeScreen extends StatefulWidget {
   const CompanyHomeScreen({super.key});
+
+  @override
+  State<CompanyHomeScreen> createState() => _CompanyHomeScreenState();
+}
+
+class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
+  final FirebaseService _firebaseService = FirebaseService();
+  final AuthService _authService = AuthService();
+  String _searchQuery = '';
+
+  Future<List<Map<String, dynamic>>> _fetchActiveEmployees() async {
+    final String companyId = _authService.currentUser?.uid ?? '';
+    if (companyId.isEmpty) return [];
+
+    final List<CompanyEmployeeModel> allEmployees = 
+        await _firebaseService.getEmployeesByCompany(companyId);
+
+    final List<CompanyEmployeeModel> activeEmployees = allEmployees
+        .where((emp) => emp.employeeStatus == 'Active')
+        .toList();
+
+    List<Map<String, dynamic>> employeeData = [];
+    for (var emp in activeEmployees) {
+      final JobSeekerModel? seeker = await _firebaseService.getJobSeeker(emp.jobSeekerID);
+      if (seeker != null) {
+        if (_searchQuery.isEmpty || seeker.name.toLowerCase().contains(_searchQuery.toLowerCase())) {
+          employeeData.add({
+            'employeeModel': emp,
+            'jobSeeker': seeker,
+          });
+        }
+      }
+    }
+    return employeeData;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,8 +82,12 @@ class CompanyHomeScreen extends StatelessWidget {
                           width: 270,
                           height: 50,
                           textSize: 15,
+                          onChanged: (val) {
+                            setState(() {
+                              _searchQuery = val;
+                            });
+                          },
                         ),
-
                         Expanded(
                           child: CircleIconButton(
                             iconData: Icons.person_add,
@@ -97,119 +117,62 @@ class CompanyHomeScreen extends StatelessWidget {
                     ),
                     SizedBox(height: 20),
                     Expanded(
-                      child: SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            ShortDescriptionRoundCircleIconTile(
-                              height: 80,
-                              width: 350,
-                              backgroundColor: ElevateColor.white,
-                              borderRadius: 12,
-                              imageURL:
-                                  'lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg',
-                              name: 'Ahtisham',
-                              shortDescription: 'Software Engineer',
-                              iconData: Icons.arrow_forward,
-                              iconSize: 24,
-                              iconColor: Colors.white,
-                              circleSize: 50,
-                              circleColor: ElevateColor.lightgray,
-                              borderWidth: 2,
-                              borderColor: ElevateColor.lightgray,
+                      child: FutureBuilder<List<Map<String, dynamic>>>(
+                        future: _fetchActiveEmployees(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(child: CircularProgressIndicator());
+                          } else if (snapshot.hasError) {
+                            return Center(child: Text("Error: ${snapshot.error}"));
+                          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                            return const Center(child: Text("No active employees found"));
+                          }
 
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        CompanyViewEmployeeProfile(),
-                                  ),
-                                );
-                              },
-                            ),
-                            ShortDescriptionRoundCircleIconTile(
-                              height: 80,
-                              width: 350,
-                              backgroundColor: ElevateColor.white,
-                              borderRadius: 12,
-                              imageURL:
-                                  'lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg',
-                              name: 'Ahtisham',
-                              shortDescription: 'Software Engineer',
-                              iconData: Icons.arrow_forward,
-                              iconSize: 24,
-                              iconColor: Colors.white,
-                              circleSize: 50,
-                              circleColor: ElevateColor.lightgray,
-                              borderWidth: 2,
-                              borderColor: ElevateColor.lightgray,
+                          final employees = snapshot.data!;
+                          return ListView.builder(
+                            padding: EdgeInsets.zero,
+                            itemCount: employees.length,
+                            itemBuilder: (context, index) {
+                              final data = employees[index];
+                              final JobSeekerModel jobSeeker = data['jobSeeker'];
+                              final CompanyEmployeeModel employee = data['employeeModel'];
 
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        CompanyViewEmployeeProfile(),
-                                  ),
-                                );
-                              },
-                            ),
-                            ShortDescriptionRoundCircleIconTile(
-                              height: 80,
-                              width: 350,
-                              backgroundColor: ElevateColor.white,
-                              borderRadius: 12,
-                              imageURL:
-                                  'lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg',
-                              name: 'Ahtisham',
-                              shortDescription: 'Software Engineer',
-                              iconData: Icons.arrow_forward,
-                              iconSize: 24,
-                              iconColor: Colors.white,
-                              circleSize: 50,
-                              circleColor: ElevateColor.lightgray,
-                              borderWidth: 2,
-                              borderColor: ElevateColor.lightgray,
-
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        CompanyViewEmployeeProfile(),
-                                  ),
-                                );
-                              },
-                            ),
-                            ShortDescriptionRoundCircleIconTile(
-                              height: 80,
-                              width: 350,
-                              backgroundColor: ElevateColor.white,
-                              borderRadius: 12,
-                              imageURL:
-                                  'lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg',
-                              name: 'Ahtisham',
-                              shortDescription: 'Software Engineer',
-                              iconData: Icons.arrow_forward,
-                              iconSize: 24,
-                              iconColor: Colors.white,
-                              circleSize: 50,
-                              circleColor: ElevateColor.lightgray,
-                              borderWidth: 2,
-                              borderColor: ElevateColor.lightgray,
-
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        CompanyViewEmployeeProfile(),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 10.0),
+                                child: ShortDescriptionRoundCircleIconTile(
+                                  height: 80,
+                                  width: 350,
+                                  backgroundColor: ElevateColor.white,
+                                  borderRadius: 12,
+                                  imageURL: jobSeeker.profilePic.isNotEmpty
+                                      ? jobSeeker.profilePic
+                                      : 'lib/Resources/Images/Profile_Images/default_profile.png',
+                                  name: jobSeeker.name.isNotEmpty ? jobSeeker.name : 'Unknown User',
+                                  shortDescription: employee.position,
+                                  iconData: Icons.arrow_forward,
+                                  iconSize: 24,
+                                  iconColor: Colors.white,
+                                  circleSize: 50,
+                                  circleColor: ElevateColor.lightgray,
+                                  borderWidth: 2,
+                                  borderColor: ElevateColor.lightgray,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            CompanyViewEmployeeProfile(
+                                              jobSeekerID: jobSeeker.jobSeekerID,
+                                              employeeID: employee.employeeID,
+                                            ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                          );
+                        },
                       ),
                     ),
                   ],

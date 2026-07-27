@@ -1,55 +1,15 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:elevate_app/Custom_Widgets/Buttons/text_button_gradient.dart';
 import 'package:elevate_app/Custom_Widgets/Drop_Down_Menu/custom_drop_down.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Test_Fields/custom_Text_Field.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
+import 'package:elevate_app/Database/Online_Database/auth_service.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_post_model.dart';
 import 'package:elevate_app/Pages/User_Screens/Company_Screens/Company_Posts_Screens/company_posted_jobs_screen.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
-/*CompanyUploadJobScreen
-└── Scaffold
-    └── AnnotatedRegion
-        └── Column
-            ├── ElevateHeader
-            └── Expanded
-                └── Padding
-                    └── SingleChildScrollView
-                        └── Column
-                            ├── CustomTextField (Job Title)
-                            ├── SizedBox
-                            ├── CustomTextField (Job Description)
-                            ├── SizedBox
-                            ├── CustomTextField (Required Skill)
-                            ├── SizedBox
-                            ├── CustomTextField (Experience Level)
-                            ├── SizedBox
-                            ├── CustomTextField (Salary Per Month)
-                            ├── SizedBox
-                            ├── CustomTextField (Benefits)
-                            ├── SizedBox
-                            ├── Row
-                            │   ├── CustomText (JOB TYPE)
-                            │   ├── SizedBox
-                            │   └── CustomDropDown
-                            ├── SizedBox
-                            ├── Row
-                            │   ├── CustomText (Work Mode)
-                            │   ├── SizedBox
-                            │   └── CustomDropDown
-                            ├── SizedBox
-                            ├── Row
-                            │   ├── CustomText (Required Test)
-                            │   ├── SizedBox
-                            │   └── CustomDropDown
-                            ├── SizedBox
-                            ├── Row
-                            │   ├── CustomText (Skill Badge)
-                            │   ├── SizedBox
-                            │   └── CustomDropDown
-                            ├── SizedBox
-                            └── TextButtonGradient (POST NOW) */
 
 class CompanyUploadJobScreen extends StatefulWidget {
   const CompanyUploadJobScreen({super.key});
@@ -65,16 +25,20 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
   late TextEditingController experienceLevelController;
   late TextEditingController benefitsController;
   late TextEditingController salaryController;
+  late TextEditingController locationController;
 
   // For Drop down
-  String? jobTypeselectedValue;
-  List<String> jobTypeoptions = ["Full Time", "Part-Time", "Intership"];
-  String? workModeselectedValue;
+  String? jobTypeselectedValue = "Full Time";
+  List<String> jobTypeoptions = ["Full Time", "Part-Time", "Internship"];
+  String? workModeselectedValue = "Remote";
   List<String> workModeoptions = ["Remote", "On-Site", "Hybrid"];
-  String? testRequiredselectedValue;
+  String? testRequiredselectedValue = "Pure";
   List<String> testRequiredoptions = ["Pure", "Vibe", "Experienced"];
-  String? skillBadgeselectedValue;
+  String? skillBadgeselectedValue = "Level-1";
   List<String> skillBadgeoptions = ["Level-1", "Level-2", "Level-3"];
+
+  final AuthService _authService = AuthService();
+  bool isPosting = false;
 
   @override
   void initState() {
@@ -85,6 +49,7 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
     requiredSkillsController = TextEditingController();
     experienceLevelController = TextEditingController();
     benefitsController = TextEditingController();
+    locationController = TextEditingController();
   }
 
   @override
@@ -94,7 +59,69 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
     requiredSkillsController.dispose();
     experienceLevelController.dispose();
     benefitsController.dispose();
+    salaryController.dispose();
+    locationController.dispose();
     super.dispose();
+  }
+
+  Future<void> _postJob() async {
+    final isInvalid = jobTitleController.text.trim().isEmpty ||
+        jobDescriptionController.text.trim().isEmpty ||
+        locationController.text.trim().isEmpty ||
+        salaryController.text.trim().isEmpty;
+
+    if (isInvalid) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please fill all required fields (title, description, location, salary).')),
+        );
+      }
+      return;
+    }
+
+    setState(() {
+      isPosting = true;
+    });
+
+    try {
+      final String companyId = _authService.currentUser?.uid ?? '';
+      final docRef = FirebaseFirestore.instance.collection('jobs').doc();
+
+      final jobPost = JobPostModel(
+        jobID: docRef.id,
+        companyID: companyId,
+        title: jobTitleController.text.trim(),
+        description: jobDescriptionController.text.trim(),
+        requiredSkills: requiredSkillsController.text.trim().split(',').map((e) => e.trim()).toList(),
+        requiredBadges: [skillBadgeselectedValue ?? ''],
+        salary: salaryController.text.trim(),
+        jobType: jobTypeselectedValue ?? 'Full Time',
+        location: locationController.text.trim(),
+        experienceLevel: experienceLevelController.text.trim(),
+        postedAt: DateTime.now(),
+      );
+
+      await docRef.set(jobPost.toMap());
+
+      if (mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const CompanyPostedJobsScreen(),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isPosting = false;
+        });
+      }
+    }
   }
 
   @override
@@ -108,7 +135,7 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
           children: [
             ElevateHeader(
               title: "CREATING BEST",
-              subTitle: "Oppoptunity For Others",
+              subTitle: "Opportunity For Others",
             ),
             Expanded(
               child: Padding(
@@ -138,7 +165,16 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
                       SizedBox(height: 30),
 
                       CustomTextField(
-                        hintText: "Required Skill",
+                        hintText: "Location",
+                        hintWeight: FontWeight.bold,
+                        controller: locationController,
+                        cursorColor: ElevateColor.black,
+                        underlineColor: ElevateColor.black,
+                      ),
+                      SizedBox(height: 30),
+
+                      CustomTextField(
+                        hintText: "Required Skill (comma separated)",
                         hintWeight: FontWeight.bold,
                         controller: requiredSkillsController,
                         cursorColor: ElevateColor.black,
@@ -296,21 +332,16 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
                       ),
 
                       SizedBox(height: 30),
-                      TextButtonGradient(
-                        text: "POST NOW",
-                        height: 50,
-                        textSize: 14,
-                        textWeight: FontWeight.w400,
-                        borderRadius: 50,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => CompanyPostedJobsScreen(),
+                      isPosting
+                          ? const CircularProgressIndicator()
+                          : TextButtonGradient(
+                              text: "POST NOW",
+                              height: 50,
+                              textSize: 14,
+                              textWeight: FontWeight.w400,
+                              borderRadius: 50,
+                              onTap: _postJob,
                             ),
-                          );
-                        },
-                      ),
                     ],
                   ),
                 ),

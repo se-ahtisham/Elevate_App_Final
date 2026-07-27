@@ -62,7 +62,7 @@ class EmployeeRequestTile extends StatelessWidget {
                     borderRadius: 50,
                     backgroundColor: const Color.fromARGB(255, 230, 230, 230),
                     borderWidth: 0,
-                    onTap: null,
+                    onTap: rejectonTap,
                   ),
                   SizedBox(width: 10),
                   TextButtonGradient(
@@ -72,7 +72,7 @@ class EmployeeRequestTile extends StatelessWidget {
                     textSize: 11,
                     textWeight: FontWeight.bold,
                     borderRadius: 50,
-                    onTap: null,
+                    onTap: acceptonTap,
                   ),
                 ],
               ),

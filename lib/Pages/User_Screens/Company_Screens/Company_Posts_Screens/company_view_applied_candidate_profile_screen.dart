@@ -4,68 +4,26 @@ import "package:elevate_app/Custom_Widgets/Header/elevate_header.dart";
 import "package:elevate_app/Custom_Widgets/Text/custom_text.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_description.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_education.dart";
-import "package:elevate_app/Custom_Widgets/User_Widgets/user_skill.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_socialMedia.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_work.dart";
-import "package:elevate_app/Pages/User_Screens/Company_Screens/Company_Posts_Screens/Company_view_user_community_post.dart";
-import "package:elevate_app/Pages/User_Screens/Company_Screens/Company_Posts_Screens/company_check_user_portfolio.dart";
-import "package:elevate_app/Pages/User_Screens/Company_Screens/Company_Posts_Screens/company_post_message.dart";
+import "package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_post_model.dart";
+import "package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_seeker_model.dart";
+import "package:elevate_app/Pages/User_Screens/Company_Screens/Company_Dashboard_Screens/company_message_screen.dart";
+import "package:elevate_app/Pages/User_Screens/Company_Screens/Company_Dashboard_Screens/company_portfolio_check.dart";
+import "package:elevate_app/Pages/User_Screens/Company_Screens/Company_Dashboard_Screens/company_view_user_post.dart";
 import "package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart";
 import "package:flutter/material.dart";
 import 'package:flutter/services.dart';
 
-/*StatelessWidget: UserProfileScreen
-└── Scaffold (extendBodyBehindAppBar: true)
-    └── AnnotatedRegion<SystemUiOverlayStyle>
-        └── Container (height: infinity, color: white)
-            └── SingleChildScrollView
-                └── Column
-                    ├── ElevateHeader (title, subTitle)
-                    ├── Padding
-                    │   └── UserDescription (imageURL, name, shortDescription, stats)
-                    └── Padding
-                        └── Column (crossAxisAlignment: start)
-                            ├── Row (ABOUT ME + Update Button)
-                            │   ├── CustomText ("ABOUT ME")
-                            │   ├── SizedBox (width: 75)
-                            │   └── IconTextButton ("Update Profile")
-                            ├── SizedBox (height: 12)
-                            ├── CustomText (About Description)
-                            ├── SizedBox (height: 22)
-                            ├── UserSocialmedia (city, country, email, phone)
-                            ├── SizedBox (height: 22)
-                            ├── Container (Experience Level Card)
-                            │   └── Center
-                            │       └── Column
-                            │           ├── CustomText ("EXPERIENCE LEVEL")
-                            │           ├── SizedBox (height: 8)
-                            │           └── CustomText ("3-5 Year Experience")
-                            ├── SizedBox (height: 22)
-                            ├── CustomText ("EDUCATION")
-                            ├── SizedBox (height: 15)
-                            ├── Column
-                            │   ├── UserEducation
-                            │   ├── SizedBox (height: 15)
-                            │   ├── UserEducation
-                            │   ├── SizedBox (height: 15)
-                            │   └── UserEducation
-                            ├── SizedBox (height: 22)
-                            ├── CustomText ("SKILL")
-                            ├── SizedBox (height: 15)
-                            ├── Column
-                            │   ├── UserSkill
-                            │   ├── SizedBox (height: 15)
-                            │   └── UserSkill
-                            ├── SizedBox (height: 22)
-                            ├── CustomText ("WORK")
-                            ├── SizedBox (height: 15)
-                            └── Column
-                                ├── UserWork
-                                ├── SizedBox (height: 15)
-                                └── UserWork */
-
 class CompanyViewAppliedCandidateProfileScreen extends StatelessWidget {
-  const CompanyViewAppliedCandidateProfileScreen({super.key});
+  final JobSeekerModel candidate;
+  final JobPostModel job;
+
+  const CompanyViewAppliedCandidateProfileScreen({
+    super.key,
+    required this.candidate,
+    required this.job,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -79,20 +37,21 @@ class CompanyViewAppliedCandidateProfileScreen extends StatelessWidget {
           child: SingleChildScrollView(
             child: Column(
               children: [
-                ElevateHeader(
+                const ElevateHeader(
                   title: "User Digital Identity",
                   subTitle: "Account Control Center",
                 ),
                 Padding(
                   padding: const EdgeInsets.only(left: 10.0, right: 20),
                   child: UserDescription(
-                    imageURL:
-                        'https://avatars.githubusercontent.com/u/159082885?v=4',
-                    name: "Muhammad Ahtisham",
-                    shortDescription: "Backend Developer",
-                    skills: 10,
-                    followers: 238,
-                    followings: 101,
+                    imageURL: candidate.profilePic.isNotEmpty
+                        ? candidate.profilePic
+                        : 'https://avatars.githubusercontent.com/u/159082885?v=4',
+                    name: candidate.name,
+                    shortDescription: candidate.shortDescription,
+                    skills: candidate.skillCount,
+                    followers: candidate.followers.length,
+                    followings: candidate.following.length,
                   ),
                 ),
 
@@ -106,16 +65,6 @@ class CompanyViewAppliedCandidateProfileScreen extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          TextButtonGradient(
-                            text: "Follow",
-                            height: 40,
-                            width: 160,
-                            textSize: 14,
-                            textWeight: FontWeight.w400,
-                            borderRadius: 50,
-                            onTap: null,
-                          ),
-                          SizedBox(width: 20),
                           Expanded(
                             child: TexxtButton(
                               text: "Message",
@@ -132,7 +81,11 @@ class CompanyViewAppliedCandidateProfileScreen extends StatelessWidget {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => CompanyPostMessage(),
+                                    builder: (context) => CompanyMessageScreen(
+                                      receiverId: candidate.jobSeekerID,
+                                      receiverName: candidate.name,
+                                      receiverImage: candidate.profilePic,
+                                    ),
                                   ),
                                 );
                               },
@@ -140,7 +93,7 @@ class CompanyViewAppliedCandidateProfileScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      SizedBox(height: 30),
+                      const SizedBox(height: 30),
                       CustomText(
                         text: "ABOUT USER",
                         fontSize: 20,
@@ -149,25 +102,26 @@ class CompanyViewAppliedCandidateProfileScreen extends StatelessWidget {
                         textAlign: TextAlign.left,
                         lineHeight: 1.0,
                       ),
-                      SizedBox(height: 12),
+                      const SizedBox(height: 12),
                       CustomText(
-                        text:
-                            "I’m web designer, I work in programs like figma, adobe photoshop, adobe illustratoI’m web designer, I work in programs like figma, adobe photoshop, adobe illustrator",
+                        text: candidate.about.isNotEmpty
+                            ? candidate.about
+                            : "No bio available.",
                         fontSize: 13,
                         color: ElevateColor.whitegray,
                         fontWeight: FontWeight.w400,
                         textAlign: TextAlign.justify,
                         lineHeight: 1.3,
                       ),
-                      SizedBox(height: 22),
+                      const SizedBox(height: 22),
                       UserSocialmedia(
-                        city: "Lahore",
-                        country: "Pakistan",
-                        email: "se.ahtisham@gmail.com",
-                        phone: "03000000000",
+                        city: candidate.location,
+                        country: "",
+                        email: candidate.email,
+                        phone: "",
                       ),
 
-                      SizedBox(height: 22),
+                      const SizedBox(height: 22),
                       Container(
                         height: 80,
                         decoration: BoxDecoration(
@@ -187,9 +141,11 @@ class CompanyViewAppliedCandidateProfileScreen extends StatelessWidget {
                                 textAlign: TextAlign.left,
                                 lineHeight: 1.0,
                               ),
-                              SizedBox(height: 8),
+                              const SizedBox(height: 8),
                               CustomText(
-                                text: "3-5 Year Experience",
+                                text: candidate.experienceLevel.isNotEmpty
+                                    ? candidate.experienceLevel
+                                    : "No experience listed",
                                 fontSize: 12,
                                 color: ElevateColor.lightgray,
                                 fontWeight: FontWeight.w300,
@@ -201,7 +157,7 @@ class CompanyViewAppliedCandidateProfileScreen extends StatelessWidget {
                         ),
                       ),
 
-                      SizedBox(height: 22),
+                      const SizedBox(height: 22),
                       CustomText(
                         text: "EDUCATION",
                         fontSize: 20,
@@ -211,63 +167,24 @@ class CompanyViewAppliedCandidateProfileScreen extends StatelessWidget {
                         lineHeight: 1.0,
                       ),
 
-                      SizedBox(height: 15),
+                      const SizedBox(height: 15),
                       Column(
-                        children: [
-                          UserEducation(
-                            text: 'Matriculation in Computer Science',
-                            subText: 'Milli Foundation High School, lahore',
-                            iconData: Icons.backpack_outlined,
-                            iconSize: 25,
-                          ),
-                          SizedBox(height: 15),
-                          UserEducation(
-                            text: 'Intermediate of Computer Science',
-                            subText: 'Govt. Shalimar college, lahore',
-                            iconData: Icons.book_outlined,
-                            iconSize: 25,
-                          ),
-                          SizedBox(height: 15),
-                          UserEducation(
-                            text: 'Bachelor of Software Engineering',
-                            subText: 'University of Management and Technology ',
-                            iconData: Icons.school_outlined,
-                            iconSize: 25,
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 22),
-                      CustomText(
-                        text: "SKILL",
-                        fontSize: 20,
-                        color: ElevateColor.lightgray,
-                        fontWeight: FontWeight.bold,
-                        textAlign: TextAlign.left,
-                        lineHeight: 1.0,
+                        children: candidate.education.isEmpty
+                            ? [const Text("No education listed.")]
+                            : candidate.education
+                                .map((edu) => Padding(
+                                      padding: const EdgeInsets.only(bottom: 15.0),
+                                      child: UserEducation(
+                                        text: edu.title,
+                                        subText: edu.school,
+                                        iconData: Icons.school_outlined,
+                                        iconSize: 25,
+                                      ),
+                                    ))
+                                .toList(),
                       ),
 
-                      SizedBox(height: 15),
-                      Column(
-                        children: [
-                          UserSkill(
-                            title: 'Java Development',
-                            subtitle: 'Experienced Coding',
-                            imagePath:
-                                'lib/Resources/Images/Coding_Badges/Pure/pure_hard.png',
-                            year: '2025',
-                          ),
-
-                          SizedBox(height: 15),
-                          UserSkill(
-                            title: 'Python',
-                            subtitle: 'Experienced Coding',
-                            imagePath:
-                                'lib/Resources/Images/Coding_Badges/Vibe/vibe_hard.png',
-                            year: '2025',
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 22),
+                      const SizedBox(height: 22),
                       CustomText(
                         text: "WORK",
                         fontSize: 20,
@@ -277,28 +194,25 @@ class CompanyViewAppliedCandidateProfileScreen extends StatelessWidget {
                         lineHeight: 1.0,
                       ),
 
-                      SizedBox(height: 15),
+                      const SizedBox(height: 15),
                       Column(
-                        children: [
-                          UserWork(
-                            title: 'Junior Software Engineer',
-                            subtitle: 'Devsinc, Lahore Pakistan',
-                            iconData: Icons.person_outline,
-                            startDate: "2022",
-                            endDate: null, // Current Job
-                          ),
-
-                          SizedBox(height: 15),
-                          UserWork(
-                            title: 'Junior Software Engineer',
-                            subtitle: 'Devsinc, Lahore Pakistan',
-                            iconData: Icons.person_outline,
-                            startDate: "2022",
-                            endDate: "2026",
-                          ),
-                        ],
+                        children: candidate.jobExperience.isEmpty
+                            ? [const Text("No work experience listed.")]
+                            : candidate.jobExperience
+                                .map((exp) => Padding(
+                                      padding: const EdgeInsets.only(bottom: 15.0),
+                                      child: UserWork(
+                                        title: exp.jobTitle,
+                                        subtitle: exp.company,
+                                        iconData: Icons.work_outline,
+                                        startDate: exp.from,
+                                        endDate: exp.to.isNotEmpty ? exp.to : "Present",
+                                      ),
+                                    ))
+                                .toList(),
                       ),
-                      SizedBox(height: 40),
+
+                      const SizedBox(height: 40),
                       TextButtonGradient(
                         text: "View Portfolio",
                         height: 50,
@@ -309,12 +223,14 @@ class CompanyViewAppliedCandidateProfileScreen extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => CompanyCheckUserPortfolio(),
+                              builder: (context) => CompanyPortfolioCheck(
+                                jobSeekerID: candidate.jobSeekerID,
+                              ),
                             ),
                           );
                         },
                       ),
-                      SizedBox(height: 15),
+                      const SizedBox(height: 15),
                       TexxtButton(
                         text: "View Posts",
                         height: 50,
@@ -329,8 +245,9 @@ class CompanyViewAppliedCandidateProfileScreen extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  CompanyViewUserCommunityPost(),
+                              builder: (context) => CompanyViewUserPost(
+                                authorID: candidate.jobSeekerID,
+                              ),
                             ),
                           );
                         },

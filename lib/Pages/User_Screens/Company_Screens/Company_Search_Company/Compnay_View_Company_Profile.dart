@@ -3,12 +3,14 @@ import "package:elevate_app/Custom_Widgets/Text/custom_text.dart";
 import "package:elevate_app/Custom_Widgets/Text/icon_text.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_description.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_socialMedia.dart";
+import "package:elevate_app/Data_Model_Classes/Firebase_Online_Models/company_model.dart";
 import "package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart";
 import "package:flutter/material.dart";
 import 'package:flutter/services.dart';
 
 class CompnayViewCompanyProfile extends StatelessWidget {
-  const CompnayViewCompanyProfile({super.key});
+  final CompanyModel company;
+  const CompnayViewCompanyProfile({super.key, required this.company});
 
   @override
   Widget build(BuildContext context) {
@@ -23,27 +25,25 @@ class CompnayViewCompanyProfile extends StatelessWidget {
             child: Column(
               children: [
                 ElevateHeader(
-                  title: "Your Digital Identity",
+                  title: "Company Profile",
                   subTitle: "Account Control Center",
                 ),
                 Padding(
                   padding: const EdgeInsets.only(left: 10.0, right: 20),
                   child: UserDescription(
-                    imageURL:
-                        'https://mir-s3-cdn-cf.behance.net/projects/404/e87f90243740647.Y3JvcCwxNTM0LDEyMDAsMzQsMA.jpg',
-                    name: "TechNova Inc.",
-                    shortDescription: "FinTech",
-                    skills: 10,
-                    followers: 238,
-                    followings: 101,
+                    imageURL: company.logo.isNotEmpty
+                        ? company.logo
+                        : 'https://mir-s3-cdn-cf.behance.net/projects/404/e87f90243740647.Y3JvcCwxNTM0LDEyMDAsMzQsMA.jpg',
+                    name: company.companyName,
+                    shortDescription: company.industry,
+                    skills: company.activeJobs,
+                    followers: company.followersCount,
+                    followings: 0,
                   ),
                 ),
 
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 30,
-                    horizontal: 40,
-                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 40),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -57,25 +57,26 @@ class CompnayViewCompanyProfile extends StatelessWidget {
                         textAlign: TextAlign.left,
                         lineHeight: 1.0,
                       ),
-                      SizedBox(height: 12),
+                      const SizedBox(height: 12),
                       CustomText(
-                        text:
-                            "TechNova Inc. is dedicated to building secure and user-friendly financial platforms. We foster a culture of collaboration, innovation, and continuous learning.",
+                        text: company.description.isNotEmpty
+                            ? company.description
+                            : "No description available.",
                         fontSize: 13,
                         color: ElevateColor.whitegray,
                         fontWeight: FontWeight.w400,
                         textAlign: TextAlign.justify,
                         lineHeight: 1.3,
                       ),
-                      SizedBox(height: 22),
+                      const SizedBox(height: 22),
                       UserSocialmedia(
-                        city: "Lahore",
-                        country: "Pakistan",
-                        email: "technova@gmail.com",
-                        web: "www.technova.com",
+                        city: company.location,
+                        country: "",
+                        email: company.email,
+                        web: company.website,
                       ),
 
-                      SizedBox(height: 30),
+                      const SizedBox(height: 30),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -87,20 +88,33 @@ class CompnayViewCompanyProfile extends StatelessWidget {
                             textAlign: TextAlign.left,
                             lineHeight: 1.0,
                           ),
-                          SizedBox(height: 15),
-                          IconText(
-                            text:
-                                "Best FinTech Startup 2024, ISO 27001 Certified",
-                            iconData: Icons.emoji_events_outlined,
-                            iconColor: ElevateColor.lightgray,
-                            iconSize: 30,
-                            iconTextSpacing: 8,
-                            textSize: 12,
-                            textColor: ElevateColor.lightgray,
-                            textWeight: FontWeight.w400,
-                            lineHeight: 1.2,
-                          ),
-                          SizedBox(height: 30),
+                          const SizedBox(height: 15),
+                          if (company.achievementList.isEmpty)
+                            CustomText(
+                              text: "No achievements listed.",
+                              fontSize: 12,
+                              color: ElevateColor.whitegray,
+                              fontWeight: FontWeight.w400,
+                              textAlign: TextAlign.left,
+                              lineHeight: 1.2,
+                            )
+                          else
+                            ...company.achievementList.map((a) => Padding(
+                              padding: const EdgeInsets.only(bottom: 8.0),
+                              child: IconText(
+                                text: a,
+                                iconData: Icons.emoji_events_outlined,
+                                iconColor: ElevateColor.lightgray,
+                                iconSize: 30,
+                                iconTextSpacing: 8,
+                                textSize: 12,
+                                textColor: ElevateColor.lightgray,
+                                textWeight: FontWeight.w400,
+                                lineHeight: 1.2,
+                              ),
+                            )),
+
+                          const SizedBox(height: 30),
                           CustomText(
                             text: "Company Strengths",
                             fontSize: 20,
@@ -109,10 +123,11 @@ class CompnayViewCompanyProfile extends StatelessWidget {
                             textAlign: TextAlign.left,
                             lineHeight: 1.0,
                           ),
-                          SizedBox(height: 8),
+                          const SizedBox(height: 8),
                           CustomText(
-                            text:
-                                "Innovation • Collaboration • Supportive Management • Career Growth • Learning Opportunities",
+                            text: company.companyStrengthList.isNotEmpty
+                                ? company.companyStrengthList.join(" • ")
+                                : "No strengths listed.",
                             fontSize: 12,
                             color: ElevateColor.lightgray,
                             fontWeight: FontWeight.w400,
@@ -120,7 +135,7 @@ class CompnayViewCompanyProfile extends StatelessWidget {
                             lineHeight: 1.2,
                           ),
 
-                          SizedBox(height: 30),
+                          const SizedBox(height: 30),
                           CustomText(
                             text: "Company Weaknesses",
                             fontSize: 20,
@@ -129,10 +144,11 @@ class CompnayViewCompanyProfile extends StatelessWidget {
                             textAlign: TextAlign.left,
                             lineHeight: 1.0,
                           ),
-                          SizedBox(height: 8),
+                          const SizedBox(height: 8),
                           CustomText(
-                            text:
-                                "High Workload • Tight Deadlines • Bureaucracy • Limited Benefits • Poor Documentation",
+                            text: company.companyWeaknessList.isNotEmpty
+                                ? company.companyWeaknessList.join(" • ")
+                                : "No weaknesses listed.",
                             fontSize: 12,
                             color: ElevateColor.lightgray,
                             fontWeight: FontWeight.w400,
