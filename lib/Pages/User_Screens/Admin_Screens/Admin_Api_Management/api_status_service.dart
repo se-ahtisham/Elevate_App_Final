@@ -25,11 +25,6 @@ class ApiStatusChecker {
   static const String liveBaseUrl = 'https://elevate-backend-rtdg.onrender.com';
   static const Duration requestTimeout = Duration(seconds: 15);
 
-  // Payloads below match what Swagger actually confirmed each endpoint
-  // expects — verified by hand, one endpoint at a time.
-  // NOTE: question_type must be "MCQ" / "Theory" / "Coding" (capitalized) —
-  // the backend doesn't normalize case, so lowercase values were silently
-  // producing worse results before.
   static const Map<String, dynamic> generateQuestionPayload = {
     'user_id': 'admin_test',
     'skill': 'Flutter',
@@ -74,10 +69,6 @@ class ApiStatusChecker {
     'skill': 'Flutter',
     'mode': 'pure',
   };
-
-  // ---------------------------------------------------------------------
-  // Low-level request helpers
-  // ---------------------------------------------------------------------
 
   static Future<http.Response> _rawRequest(
     String url,
@@ -140,12 +131,6 @@ class ApiStatusChecker {
     if (singleLine.length <= maxLength) return singleLine;
     return '${singleLine.substring(0, maxLength)}…';
   }
-
-  // ---------------------------------------------------------------------
-  // Chained /test/* flow — these four depend on each other, so they can't
-  // just be pinged independently like the rest. start -> next-question ->
-  // submit-answer -> result, passing the session_id along each step.
-  // ---------------------------------------------------------------------
 
   static List<ApiEndpointStatus> _skippedTestFlowRemainder(String reason) {
     return [
@@ -267,8 +252,6 @@ class ApiStatusChecker {
       _statusFromResponse('Test Next Question', nextUrl, 'POST', nextResponse),
     );
 
-    // Step 3: /test/submit-answer — build an answer that matches whatever
-    // question_type came back (MCQ / Theory / Coding).
     final submitPayload = <String, dynamic>{'session_id': sessionId};
     if (nextResponse.statusCode >= 200 && nextResponse.statusCode < 300) {
       try {
@@ -324,8 +307,6 @@ class ApiStatusChecker {
       );
     }
 
-    // Step 4: /test/result/{session_id} — always check this, regardless of
-    // how submit-answer went, since the session exists either way.
     results.add(
       await pingEndpoint(
         'Test Result',
