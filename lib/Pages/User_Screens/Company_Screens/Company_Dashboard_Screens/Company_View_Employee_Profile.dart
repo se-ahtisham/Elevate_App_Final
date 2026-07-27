@@ -79,7 +79,7 @@ class _CompanyViewEmployeeProfileState extends State<CompanyViewEmployeeProfile>
                       child: UserDescription(
                         imageURL: seeker.profilePic.isNotEmpty 
                             ? seeker.profilePic 
-                            : 'https://avatars.githubusercontent.com/u/159082885?v=4',
+                            : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(seeker.name.isNotEmpty ? seeker.name : "User")}&background=random&color=fff&size=128',
                         name: seeker.name,
                         shortDescription: seeker.shortDescription,
                         skills: seeker.skillCount,

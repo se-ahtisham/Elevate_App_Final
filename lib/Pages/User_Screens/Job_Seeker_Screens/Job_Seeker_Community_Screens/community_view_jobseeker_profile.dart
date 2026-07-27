@@ -8,7 +8,9 @@ import 'package:elevate_app/Custom_Widgets/User_Widgets/user_socialMedia.dart';
 import 'package:elevate_app/Custom_Widgets/User_Widgets/user_work.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_seeker_model.dart';
 import 'package:elevate_app/Database/Online_Database/auth_provider.dart';
+import 'package:elevate_app/Database/Online_Database/chat_service.dart';
 import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
+import 'package:elevate_app/Pages/Shared_Screens/chat_room_screen.dart';
 import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Portfolio_Screens/porfolio_screen.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
@@ -81,101 +83,44 @@ class CommunityViewJobseekerProfileState
     }
   }
 
-  void onMessageTap() {
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        final TextEditingController controller = TextEditingController();
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              gradient: const LinearGradient(
-                colors: [
-                  Color.fromARGB(255, 31, 31, 31),
-                  Color.fromARGB(255, 65, 65, 65),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CustomText(
-                  text: "Send Message",
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: controller,
-                  maxLines: 3,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                  decoration: InputDecoration(
-                    hintText: "Write a message...",
-                    hintStyle: const TextStyle(color: Colors.white54),
-                    filled: true,
-                    fillColor: Colors.black26,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 28),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TexxtButton(
-                        onTap: () => Navigator.pop(ctx),
-                        text: "Cancel",
-                        textSize: 14,
-                        textColor: Colors.white,
-                        textWeight: FontWeight.w400,
-                        backgroundColor: Colors.transparent,
-                        borderRadius: 50,
-                        borderColor: Colors.white,
-                        borderWidth: 1,
-                      ),
-                    ),
-                    const SizedBox(width: 15),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Message sent successfully"),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        child: const CustomText(
-                          text: "Send",
-                          color: Colors.black,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+  Future<void> onMessageTap() async {
+    final authState = ref.read(authProvider);
+    final myID = authState.jobSeeker?.jobSeekerID ?? '';
+    final myName = authState.jobSeeker?.name ?? 'User';
+    final myAvatar = authState.jobSeeker?.profilePic ?? '';
+
+    if (myID.isEmpty || seeker == null) return;
+
+    final otherAvatar = seeker!.profilePic.isNotEmpty
+        ? seeker!.profilePic
+        : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(seeker!.name)}&background=random&color=fff&size=128';
+
+    try {
+      final chatID = await ChatService().getOrCreateChat(
+        myID: myID,
+        myName: myName,
+        myAvatar: myAvatar,
+        otherID: seeker!.jobSeekerID,
+        otherName: seeker!.name,
+        otherAvatar: otherAvatar,
+      );
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ChatRoomScreen(
+            chatID: chatID,
+            otherUserName: seeker!.name,
+            otherUserAvatar: otherAvatar,
           ),
-        );
-      },
-    );
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open chat. Try again.')),
+      );
+    }
   }
 
   void onPortfolioTap() {
@@ -237,7 +182,7 @@ class CommunityViewJobseekerProfileState
                 child: UserDescription(
                   imageURL: jobSeeker.profilePic.isNotEmpty
                       ? jobSeeker.profilePic
-                      : 'https://avatars.githubusercontent.com/u/159082885?v=4',
+                      : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(jobSeeker.name.isNotEmpty ? jobSeeker.name : "User")}&background=random&color=fff&size=128',
                   name: jobSeeker.name,
                   shortDescription: jobSeeker.about.isNotEmpty
                       ? jobSeeker.about

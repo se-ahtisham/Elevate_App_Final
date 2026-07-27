@@ -8,6 +8,8 @@ import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/company_mo
 import 'package:elevate_app/Database/Online_Database/auth_provider.dart';
 import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
+import 'package:elevate_app/Database/Online_Database/chat_service.dart';
+import 'package:elevate_app/Pages/Shared_Screens/chat_room_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -93,101 +95,44 @@ class CommunityViewCompanyProfileState
     }
   }
 
-  void onMessageTap() {
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        final TextEditingController controller = TextEditingController();
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
-              gradient: const LinearGradient(
-                colors: [
-                  Color.fromARGB(255, 31, 31, 31),
-                  Color.fromARGB(255, 65, 65, 65),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CustomText(
-                  text: "Send Message",
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: controller,
-                  maxLines: 3,
-                  style: const TextStyle(color: Colors.white, fontSize: 14),
-                  decoration: InputDecoration(
-                    hintText: "Write a message...",
-                    hintStyle: const TextStyle(color: Colors.white54),
-                    filled: true,
-                    fillColor: Colors.black26,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 28),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TexxtButton(
-                        onTap: () => Navigator.pop(ctx),
-                        text: "Cancel",
-                        textSize: 14,
-                        textColor: Colors.white,
-                        textWeight: FontWeight.w400,
-                        backgroundColor: Colors.transparent,
-                        borderRadius: 50,
-                        borderColor: Colors.white,
-                        borderWidth: 1,
-                      ),
-                    ),
-                    const SizedBox(width: 15),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Message sent successfully"),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
-                        child: const CustomText(
-                          text: "Send",
-                          color: Colors.black,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+  Future<void> onMessageTap() async {
+    final authState = ref.read(authProvider);
+    final myID = authState.jobSeeker?.jobSeekerID ?? '';
+    final myName = authState.jobSeeker?.name ?? 'User';
+    final myAvatar = authState.jobSeeker?.profilePic ?? '';
+
+    if (myID.isEmpty || company == null) return;
+
+    final otherAvatar = company!.logo.isNotEmpty
+        ? company!.logo
+        : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(company!.companyName)}&background=random&color=fff&size=128&bold=true';
+
+    try {
+      final chatID = await ChatService().getOrCreateChat(
+        myID: myID,
+        myName: myName,
+        myAvatar: myAvatar,
+        otherID: company!.companyID,
+        otherName: company!.companyName,
+        otherAvatar: otherAvatar,
+      );
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ChatRoomScreen(
+            chatID: chatID,
+            otherUserName: company!.companyName,
+            otherUserAvatar: otherAvatar,
           ),
-        );
-      },
-    );
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open chat. Try again.')),
+      );
+    }
   }
 
   String get followButtonLabel {
@@ -239,7 +184,7 @@ class CommunityViewCompanyProfileState
                 child: UserDescription(
                   imageURL: c.logo.isNotEmpty
                       ? c.logo
-                      : 'https://mir-s3-cdn-cf.behance.net/projects/404/e87f90243740647.Y3JvcCwxNTM0LDEyMDAsMzQsMA.jpg',
+                      : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(c.companyName.isNotEmpty ? c.companyName : "Company")}&background=random&color=fff&size=128&bold=true',
                   name: c.companyName,
                   shortDescription: c.industry.isNotEmpty
                       ? c.industry
@@ -247,6 +192,7 @@ class CommunityViewCompanyProfileState
                   skills: 0,
                   followers: c.followers.length,
                   followings: 0,
+                  showSkills: false,
                 ),
               ),
 

@@ -44,7 +44,7 @@ class _UserColdEmailState extends State<UserColdEmail> {
 
     if (_apiKey.isEmpty) {
       setState(() {
-        errorMessage = "API key not configured.";
+        errorMessage = "API key not configured. Add GROQ_API_KEY=your_key_here to your .env file. Get a free key at console.groq.com";
         isLoading = false;
       });
       return;
@@ -81,7 +81,9 @@ class _UserColdEmailState extends State<UserColdEmail> {
       );
 
       if (response.statusCode != 200) {
-        throw Exception("API error: ${response.statusCode}");
+        final errorBody = jsonDecode(response.body);
+        final errorMsg = errorBody['error']?['message'] ?? 'Unknown error';
+        throw Exception("API error ${response.statusCode}: $errorMsg");
       }
 
       final data = jsonDecode(response.body);

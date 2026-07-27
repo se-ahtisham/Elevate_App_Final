@@ -9,6 +9,7 @@ import "package:elevate_app/Custom_Widgets/User_Widgets/user_socialMedia.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_work.dart";
 import "package:elevate_app/Database/Online_Database/auth_provider.dart";
 import "package:elevate_app/Pages/Login_Screens/Login_Screen.dart";
+import "package:elevate_app/Pages/Shared_Screens/chat_list_screen.dart";
 import "package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Profile_Screens/job_seeker_follow_requests.dart";
 import "package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Profile_Screens/job_seeker_update_profile.dart";
 import "package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Profile_Screens/job_seeker_working_companies.dart";
@@ -86,7 +87,7 @@ class _JobSeekerProfileScreenState
                 child: UserDescription(
                   imageURL: jobSeeker.profilePic.isNotEmpty
                       ? jobSeeker.profilePic
-                      : 'https://avatars.githubusercontent.com/u/159082885?v=4',
+                      : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(jobSeeker.name.isNotEmpty ? jobSeeker.name : "User")}&background=random&color=fff&size=128',
                   name: jobSeeker.name,
                   shortDescription: jobSeeker.about.isNotEmpty
                       ? jobSeeker.about
@@ -189,6 +190,29 @@ class _JobSeekerProfileScreenState
                               jobSeekerID: jobSeeker.jobSeekerID,
                             ),
                           ),
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    // ── Row 3: Messages (full width) ─
+                    IconTextButton(
+                      text: "Messages",
+                      iconData: Icons.chat_bubble_outline_rounded,
+                      backgroundColor: ElevateColor.white,
+                      iconColor: ElevateColor.lightgray,
+                      textColor: ElevateColor.gray,
+                      textWeight: FontWeight.bold,
+                      borderColor: ElevateColor.gray,
+                      borderRadius: 50,
+                      textSize: 12,
+                      height: 40,
+                      width: double.infinity,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          SlideLeftRoute(page: const ChatListScreen()),
                         );
                       },
                     ),

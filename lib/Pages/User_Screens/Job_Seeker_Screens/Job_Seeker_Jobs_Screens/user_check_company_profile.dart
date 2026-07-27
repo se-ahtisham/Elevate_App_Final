@@ -10,6 +10,8 @@ import 'package:elevate_app/Database/Online_Database/auth_provider.dart';
 import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
 import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Jobs_Screens/user_request_rating_company.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
+import 'package:elevate_app/Database/Online_Database/chat_service.dart';
+import 'package:elevate_app/Pages/Shared_Screens/chat_room_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -137,7 +139,7 @@ class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfil
   Widget build(BuildContext context) {
     final logoUrl = widget.company.logo.isNotEmpty
         ? widget.company.logo
-        : 'https://mir-s3-cdn-cf.behance.net/projects/404/e87f90243740647.Y3JvcCwxNTM0LDEyMDAsMzQsMA.jpg';
+        : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(widget.company.companyName.isNotEmpty ? widget.company.companyName : "Company")}&background=random&color=fff&size=128&bold=true';
 
     final achievements = widget.company.achievementList.isNotEmpty
         ? widget.company.achievementList.join(", ")
@@ -176,6 +178,7 @@ class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfil
                     skills: widget.company.activeJobs,
                     followers: _followersCount,
                     followings: widget.company.employeeList.length,
+                    showSkills: false,
                   ),
                 ),
 
@@ -241,6 +244,57 @@ class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfil
                                   textSize: 9,
                                   onTap: _joinAsEmployee,
                                 ),
+                          const SizedBox(width: 8),
+                          IconTextButton(
+                            text: "MESSAGE",
+                            iconData: Icons.message,
+                            backgroundColor: ElevateColor.white,
+                            iconColor: ElevateColor.lightgray,
+                            textColor: ElevateColor.gray,
+                            textWeight: FontWeight.bold,
+                            borderColor: ElevateColor.gray,
+                            borderRadius: 50,
+                            textSize: 9,
+                            onTap: () async {
+                              final authState = ref.read(authProvider);
+                              final myID = authState.jobSeeker?.jobSeekerID ?? '';
+                              final myName = authState.jobSeeker?.name ?? 'User';
+                              final myAvatar = authState.jobSeeker?.profilePic ?? '';
+
+                              if (myID.isEmpty) return;
+
+                              final otherAvatar = widget.company.logo.isNotEmpty
+                                  ? widget.company.logo
+                                  : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(widget.company.companyName)}&background=random&color=fff&size=128&bold=true';
+
+                              try {
+                                final chatID = await ChatService().getOrCreateChat(
+                                  myID: myID,
+                                  myName: myName,
+                                  myAvatar: myAvatar,
+                                  otherID: widget.company.companyID,
+                                  otherName: widget.company.companyName,
+                                  otherAvatar: otherAvatar,
+                                );
+                                if (!mounted) return;
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ChatRoomScreen(
+                                      chatID: chatID,
+                                      otherUserName: widget.company.companyName,
+                                      otherUserAvatar: otherAvatar,
+                                    ),
+                                  ),
+                                );
+                              } catch (_) {
+                                if (!mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Could not open chat.')),
+                                );
+                              }
+                            },
+                          ),
                         ],
                       ),
                       const SizedBox(height: 12),

@@ -33,12 +33,13 @@ class CompnayViewCompanyProfile extends StatelessWidget {
                   child: UserDescription(
                     imageURL: company.logo.isNotEmpty
                         ? company.logo
-                        : 'https://mir-s3-cdn-cf.behance.net/projects/404/e87f90243740647.Y3JvcCwxNTM0LDEyMDAsMzQsMA.jpg',
+                        : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(company.companyName.isNotEmpty ? company.companyName : "Company")}&background=random&color=fff&size=128&bold=true',
                     name: company.companyName,
                     shortDescription: company.industry,
                     skills: company.activeJobs,
                     followers: company.followersCount,
                     followings: 0,
+                    showSkills: false,
                   ),
                 ),
 

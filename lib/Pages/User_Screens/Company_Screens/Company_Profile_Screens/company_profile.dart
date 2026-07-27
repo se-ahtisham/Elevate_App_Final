@@ -7,6 +7,7 @@ import "package:elevate_app/Custom_Widgets/User_Widgets/user_description.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_socialMedia.dart";
 import "package:elevate_app/Data_Model_Classes/Firebase_Online_Models/company_model.dart";
 import "package:elevate_app/Database/Online_Database/auth_service.dart";
+import "package:elevate_app/Pages/User_Screens/Company_Screens/Company_Profile_Screens/company_follow_requests.dart";
 import "package:elevate_app/Pages/User_Screens/Company_Screens/Company_Profile_Screens/update_company_profile.dart";
 import "package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart";
 import "package:flutter/material.dart";
@@ -23,8 +24,11 @@ class CompanyProfile extends StatelessWidget {
       extendBodyBehindAppBar: true,
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.light,
-        child: FutureBuilder<DocumentSnapshot>(
-          future: FirebaseFirestore.instance.collection('companies').doc(companyId).get(),
+        child: StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('companies')
+              .doc(companyId)
+              .snapshots(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
@@ -33,7 +37,11 @@ class CompanyProfile extends StatelessWidget {
               return const Center(child: Text("Company profile not found."));
             }
 
-            final company = CompanyModel.fromMap(snapshot.data!.data() as Map<String, dynamic>);
+            final data = Map<String, dynamic>.from(
+              snapshot.data!.data() as Map<String, dynamic>,
+            );
+            data['companyID'] = snapshot.data!.id;
+            final company = CompanyModel.fromMap(data);
 
             return Container(
               height: double.infinity,
@@ -50,12 +58,13 @@ class CompanyProfile extends StatelessWidget {
                       child: UserDescription(
                         imageURL: company.logo.isNotEmpty
                             ? company.logo
-                            : 'https://mir-s3-cdn-cf.behance.net/projects/404/e87f90243740647.Y3JvcCwxNTM0LDEyMDAsMzQsMA.jpg',
+                            : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(company.companyName.isNotEmpty ? company.companyName : "Company")}&background=random&color=fff&size=128&bold=true',
                         name: company.companyName,
                         shortDescription: company.industry,
                         skills: company.activeJobs,
                         followers: company.followersCount,
                         followings: 0,
+                        showSkills: false,
                       ),
                     ),
 
@@ -67,22 +76,33 @@ class CompanyProfile extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          // ── Requests + Update Profile (two buttons side by side) ──────────
                           Row(
                             children: [
-                              CustomText(
-                                text: "ABOUT US",
-                                fontSize: 20,
-                                color: ElevateColor.lightgray,
-                                fontWeight: FontWeight.bold,
-                                textAlign: TextAlign.left,
-                                lineHeight: 1.0,
-                              ),
-                              const SizedBox(width: 75),
                               IconTextButton(
-                                text: "UPDATE PROFILE",
-                                iconTextSpacing: 5,
-                                paddingLeft: 15,
-                                paddingRight: 14,
+                                text: "Requests",
+                                iconData: Icons.person_add_alt_1_outlined,
+                                backgroundColor: ElevateColor.white,
+                                iconColor: ElevateColor.lightgray,
+                                textColor: ElevateColor.gray,
+                                textWeight: FontWeight.bold,
+                                borderColor: ElevateColor.gray,
+                                borderRadius: 50,
+                                textSize: 12,
+                                height: 40,
+                                width: 130,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const CompanyFollowRequests(),
+                                    ),
+                                  );
+                                },
+                              ),
+                              const SizedBox(width: 10),
+                              IconTextButton(
+                                text: "Update Profile",
                                 iconData: Icons.settings,
                                 backgroundColor: ElevateColor.white,
                                 iconColor: ElevateColor.lightgray,
@@ -90,7 +110,9 @@ class CompanyProfile extends StatelessWidget {
                                 textWeight: FontWeight.bold,
                                 borderColor: ElevateColor.gray,
                                 borderRadius: 50,
-                                textSize: 10,
+                                textSize: 12,
+                                height: 40,
+                                width: 150,
                                 onTap: () {
                                   Navigator.push(
                                     context,
@@ -101,6 +123,15 @@ class CompanyProfile extends StatelessWidget {
                                 },
                               ),
                             ],
+                          ),
+                          const SizedBox(height: 30),
+                          CustomText(
+                            text: "ABOUT US",
+                            fontSize: 20,
+                            color: ElevateColor.lightgray,
+                            fontWeight: FontWeight.bold,
+                            textAlign: TextAlign.left,
+                            lineHeight: 1.0,
                           ),
                           const SizedBox(height: 12),
                           CustomText(
@@ -144,20 +175,22 @@ class CompanyProfile extends StatelessWidget {
                                   lineHeight: 1.2,
                                 )
                               else
-                                ...company.achievementList.map((a) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 8.0),
-                                  child: IconText(
-                                    text: a,
-                                    iconData: Icons.emoji_events_outlined,
-                                    iconColor: ElevateColor.lightgray,
-                                    iconSize: 30,
-                                    iconTextSpacing: 8,
-                                    textSize: 12,
-                                    textColor: ElevateColor.lightgray,
-                                    textWeight: FontWeight.w400,
-                                    lineHeight: 1.2,
+                                ...company.achievementList.map(
+                                  (a) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 8.0),
+                                    child: IconText(
+                                      text: a,
+                                      iconData: Icons.emoji_events_outlined,
+                                      iconColor: ElevateColor.lightgray,
+                                      iconSize: 30,
+                                      iconTextSpacing: 8,
+                                      textSize: 12,
+                                      textColor: ElevateColor.lightgray,
+                                      textWeight: FontWeight.w400,
+                                      lineHeight: 1.2,
+                                    ),
                                   ),
-                                )),
+                                ),
 
                               const SizedBox(height: 30),
                               CustomText(
@@ -215,4 +248,3 @@ class CompanyProfile extends StatelessWidget {
     );
   }
 }
-

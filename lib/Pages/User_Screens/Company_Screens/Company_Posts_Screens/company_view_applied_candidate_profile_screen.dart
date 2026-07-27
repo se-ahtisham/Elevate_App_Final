@@ -46,7 +46,7 @@ class CompanyViewAppliedCandidateProfileScreen extends StatelessWidget {
                   child: UserDescription(
                     imageURL: candidate.profilePic.isNotEmpty
                         ? candidate.profilePic
-                        : 'https://avatars.githubusercontent.com/u/159082885?v=4',
+                        : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(candidate.name.isNotEmpty ? candidate.name : "User")}&background=random&color=fff&size=128',
                     name: candidate.name,
                     shortDescription: candidate.shortDescription,
                     skills: candidate.skillCount,

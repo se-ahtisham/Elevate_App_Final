@@ -469,7 +469,6 @@ class OtherPlatformJobsState extends ConsumerState<OtherPlatformJobs> {
     );
   }
 }*/
-
 import 'package:elevate_app/Custom_Widgets/Buttons/icon_text_button_gradient.dart';
 import 'package:elevate_app/Custom_Widgets/Drop_Down_Menu/custom_drop_down.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';

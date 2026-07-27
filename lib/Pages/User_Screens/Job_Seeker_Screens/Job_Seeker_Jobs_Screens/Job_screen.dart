@@ -102,9 +102,8 @@ class JobScreenState extends ConsumerState<JobScreen> {
         recommendedJobs = recommended;
         companiesByID = companyMap;
         allCompaniesList = companies;
-        followedCompaniesList = followedComps.isNotEmpty
-            ? followedComps
-            : companies;
+        // Only show actually followed companies - don't fallback to all
+        followedCompaniesList = followedComps;
         allJobsList = fetchedJobs;
         isLoading = false;
       });
@@ -118,18 +117,32 @@ class JobScreenState extends ConsumerState<JobScreen> {
   }
 
   List<JobPostModel> get filteredJobs {
-    List<JobPostModel> result = List.from(allJobsList);
-
+    // Start with jobs from followed companies only (when no company filter active)
+    List<JobPostModel> result;
     if (selectedCompanyID != null) {
-      result = result
-          .where((job) => job.companyID == selectedCompanyID)
-          .toList();
+      result = allJobsList.where((job) => job.companyID == selectedCompanyID).toList();
+    } else if (followedCompaniesList.isNotEmpty) {
+      final followedIds = followedCompaniesList.map((c) => c.companyID).toSet();
+      result = allJobsList.where((job) => followedIds.contains(job.companyID)).toList();
+    } else {
+      result = List.from(allJobsList);
     }
 
+    // Filter by passed skill if selected
     if (selectedSkillID != null) {
       result = result
           .where((job) => job.requiredSkills.contains(selectedSkillID))
           .toList();
+    }
+
+    // Filter by skill-based matching (show only jobs matching at least one passed skill)
+    // Only apply when there are actual skill test results AND no explicit skill filter is active
+    if (selectedSkillID == null && mySkills.isNotEmpty) {
+      final mySkillIds = mySkills.keys.toSet();
+      result = result.where((job) {
+        if (job.requiredSkills.isEmpty) return true; // show jobs with no skill requirement
+        return job.requiredSkills.any((s) => mySkillIds.contains(s));
+      }).toList();
     }
 
     if (selectedTierFilter != 'All') {
@@ -374,8 +387,10 @@ class JobScreenState extends ConsumerState<JobScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const CustomText(
-                        text: 'Followed Companies',
+                      CustomText(
+                        text: followedCompaniesList.isEmpty
+                            ? 'All Companies'
+                            : 'Followed Companies',
                         fontSize: 16,
                         color: ElevateColor.gray,
                         fontWeight: FontWeight.w700,
@@ -384,7 +399,7 @@ class JobScreenState extends ConsumerState<JobScreen> {
                         InkWell(
                           onTap: () => onSelectCompany(null),
                           child: const CustomText(
-                            text: 'Show All Companies',
+                            text: 'Show All',
                             fontSize: 11,
                             color: Colors.blue,
                             fontWeight: FontWeight.w600,
@@ -449,9 +464,13 @@ class JobScreenState extends ConsumerState<JobScreen> {
                         final company = displayCompanies[index - 1];
                         final isSelected =
                             selectedCompanyID == company.companyID;
-                        final companyJobsCount = allJobsList
-                            .where((j) => j.companyID == company.companyID)
-                            .length;
+                        final mySkillIds = mySkills.keys.toSet();
+                        final companyJobsCount = mySkillIds.isEmpty
+                            ? allJobsList.where((j) => j.companyID == company.companyID).length
+                            : allJobsList
+                                .where((j) => j.companyID == company.companyID)
+                                .where((j) => j.requiredSkills.isEmpty || j.requiredSkills.any((s) => mySkillIds.contains(s)))
+                                .length;
 
                         return GestureDetector(
                           onTap: () => onSelectCompany(company.companyID),
@@ -592,7 +611,9 @@ class JobScreenState extends ConsumerState<JobScreen> {
                       CustomText(
                         text: selectedCompanyID != null
                             ? '${companiesByID[selectedCompanyID]?.companyName ?? "Company"} Jobs (${filteredJobs.length})'
-                            : 'Matching Positions (${filteredJobs.length})',
+                            : followedCompaniesList.isEmpty
+                                ? 'All Matching Jobs (${filteredJobs.length})'
+                                : 'Followed Companies — Matches (${filteredJobs.length})',
                         fontSize: 16,
                         color: ElevateColor.gray,
                         fontWeight: FontWeight.w700,
