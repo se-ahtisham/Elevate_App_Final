@@ -185,33 +185,44 @@ class ApiStatusChecker {
     try {
       startResponse = await _rawRequest(startUrl, 'POST', testStartPayload);
     } catch (e) {
-      results.add(ApiEndpointStatus(
-        name: 'Test Start',
-        url: startUrl,
-        method: 'POST',
-        isRunning: false,
-        statusCode: 0,
-        message: shorten(e.toString()),
-      ));
+      results.add(
+        ApiEndpointStatus(
+          name: 'Test Start',
+          url: startUrl,
+          method: 'POST',
+          isRunning: false,
+          statusCode: 0,
+          message: shorten(e.toString()),
+        ),
+      );
       results.addAll(_skippedTestFlowRemainder('Skipped — /test/start failed'));
       return results;
     }
-    results.add(_statusFromResponse('Test Start', startUrl, 'POST', startResponse));
+    results.add(
+      _statusFromResponse('Test Start', startUrl, 'POST', startResponse),
+    );
 
     if (startResponse.statusCode < 200 || startResponse.statusCode >= 300) {
-      results.addAll(_skippedTestFlowRemainder('Skipped — /test/start did not return 200'));
+      results.addAll(
+        _skippedTestFlowRemainder('Skipped — /test/start did not return 200'),
+      );
       return results;
     }
 
     String? sessionId;
     try {
-      sessionId = (jsonDecode(startResponse.body) as Map)['session_id'] as String?;
+      sessionId =
+          (jsonDecode(startResponse.body) as Map)['session_id'] as String?;
     } catch (_) {
       // leave sessionId null, handled below
     }
 
     if (sessionId == null) {
-      results.addAll(_skippedTestFlowRemainder('Skipped — /test/start had no session_id in its response'));
+      results.addAll(
+        _skippedTestFlowRemainder(
+          'Skipped — /test/start had no session_id in its response',
+        ),
+      );
       return results;
     }
 
@@ -219,28 +230,42 @@ class ApiStatusChecker {
     final nextUrl = '$liveBaseUrl/test/next-question';
     http.Response nextResponse;
     try {
-      nextResponse = await _rawRequest(nextUrl, 'POST', {'session_id': sessionId});
+      nextResponse = await _rawRequest(nextUrl, 'POST', {
+        'session_id': sessionId,
+      });
     } catch (e) {
-      results.add(ApiEndpointStatus(
-        name: 'Test Next Question',
-        url: nextUrl,
-        method: 'POST',
-        isRunning: false,
-        statusCode: 0,
-        message: shorten(e.toString()),
-      ));
-      results.add(ApiEndpointStatus(
-        name: 'Test Submit Answer',
-        url: '$liveBaseUrl/test/submit-answer',
-        method: 'POST',
-        isRunning: false,
-        statusCode: 0,
-        message: 'Skipped — /test/next-question failed',
-      ));
-      results.add(await pingEndpoint('Test Result', '$liveBaseUrl/test/result/$sessionId', 'GET'));
+      results.add(
+        ApiEndpointStatus(
+          name: 'Test Next Question',
+          url: nextUrl,
+          method: 'POST',
+          isRunning: false,
+          statusCode: 0,
+          message: shorten(e.toString()),
+        ),
+      );
+      results.add(
+        ApiEndpointStatus(
+          name: 'Test Submit Answer',
+          url: '$liveBaseUrl/test/submit-answer',
+          method: 'POST',
+          isRunning: false,
+          statusCode: 0,
+          message: 'Skipped — /test/next-question failed',
+        ),
+      );
+      results.add(
+        await pingEndpoint(
+          'Test Result',
+          '$liveBaseUrl/test/result/$sessionId',
+          'GET',
+        ),
+      );
       return results;
     }
-    results.add(_statusFromResponse('Test Next Question', nextUrl, 'POST', nextResponse));
+    results.add(
+      _statusFromResponse('Test Next Question', nextUrl, 'POST', nextResponse),
+    );
 
     // Step 3: /test/submit-answer — build an answer that matches whatever
     // question_type came back (MCQ / Theory / Coding).
@@ -256,7 +281,8 @@ class ApiStatusChecker {
               : 'A';
           submitPayload['selected_option'] = firstKey;
         } else if (qType == 'Theory') {
-          submitPayload['candidate_answer'] = 'Diagnostic check answer — automated ping.';
+          submitPayload['candidate_answer'] =
+              'Diagnostic check answer — automated ping.';
         } else if (qType == 'Coding') {
           submitPayload['source_code'] = 'print("diagnostic")';
           submitPayload['language'] = 'python';
@@ -272,30 +298,44 @@ class ApiStatusChecker {
 
     final submitUrl = '$liveBaseUrl/test/submit-answer';
     try {
-      final submitResponse = await _rawRequest(submitUrl, 'POST', submitPayload);
-      results.add(_statusFromResponse('Test Submit Answer', submitUrl, 'POST', submitResponse));
+      final submitResponse = await _rawRequest(
+        submitUrl,
+        'POST',
+        submitPayload,
+      );
+      results.add(
+        _statusFromResponse(
+          'Test Submit Answer',
+          submitUrl,
+          'POST',
+          submitResponse,
+        ),
+      );
     } catch (e) {
-      results.add(ApiEndpointStatus(
-        name: 'Test Submit Answer',
-        url: submitUrl,
-        method: 'POST',
-        isRunning: false,
-        statusCode: 0,
-        message: shorten(e.toString()),
-      ));
+      results.add(
+        ApiEndpointStatus(
+          name: 'Test Submit Answer',
+          url: submitUrl,
+          method: 'POST',
+          isRunning: false,
+          statusCode: 0,
+          message: shorten(e.toString()),
+        ),
+      );
     }
 
     // Step 4: /test/result/{session_id} — always check this, regardless of
     // how submit-answer went, since the session exists either way.
-    results.add(await pingEndpoint('Test Result', '$liveBaseUrl/test/result/$sessionId', 'GET'));
+    results.add(
+      await pingEndpoint(
+        'Test Result',
+        '$liveBaseUrl/test/result/$sessionId',
+        'GET',
+      ),
+    );
 
     return results;
   }
-
-  // ---------------------------------------------------------------------
-  // Public entry point — runs the independent endpoints in parallel, then
-  // the dependent /test/* chain, and returns everything as one list.
-  // ---------------------------------------------------------------------
 
   static Future<List<ApiEndpointStatus>> checkAllEndpoints() async {
     final independentResults = await Future.wait([
