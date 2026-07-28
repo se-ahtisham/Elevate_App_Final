@@ -1,7 +1,9 @@
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/review_model.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/company_employee_model.dart';
 import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
+import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Profile_Screens/review_api_service.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,11 +14,15 @@ class CompanyReviewScreen extends StatefulWidget {
   final String jobSeekerID;
   final String logoPath;
 
+  // Needed for the API call — company_email is required by the backend.
+  final String companyEmail;
+
   const CompanyReviewScreen({
     super.key,
     required this.companyID,
     required this.companyName,
     required this.jobSeekerID,
+    required this.companyEmail,
     this.logoPath = '',
   });
 
@@ -26,17 +32,23 @@ class CompanyReviewScreen extends StatefulWidget {
 
 class _CompanyReviewScreenState extends State<CompanyReviewScreen> {
   final firebaseService = FirebaseService();
+  final reviewApiService = ReviewApiService();
   final TextEditingController _reviewController = TextEditingController();
 
   ReviewModel? _existingReview;
+  CompanyEmployeeModel? _employment; // this job seeker's record at this company
   bool _isLoading = true;
   bool _isSubmitting = false;
   bool _submitted = false;
+  String? _errorMessage;
+
+  // Only an Active employee of THIS company may submit a review.
+  bool get _isActiveEmployee => _employment?.employeeStatus == 'Active';
 
   @override
   void initState() {
     super.initState();
-    _checkExistingReview();
+    _loadInitialData();
   }
 
   @override
@@ -45,19 +57,36 @@ class _CompanyReviewScreenState extends State<CompanyReviewScreen> {
     super.dispose();
   }
 
-  Future<void> _checkExistingReview() async {
+  Future<void> _loadInitialData() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
 
     try {
-      final existing = await firebaseService.getReviewForSeekerAndCompany(
-        widget.companyID,
-        widget.jobSeekerID,
-      );
+      // Run both checks: does a review already exist, and is this job
+      // seeker an active employee of this company.
+      final results = await Future.wait([
+        firebaseService.getReviewForSeekerAndCompany(
+          widget.companyID,
+          widget.jobSeekerID,
+        ),
+        firebaseService.getEmployeesForJobSeeker(widget.jobSeekerID),
+      ]);
+
+      final existing = results[0] as ReviewModel?;
+      final employments = results[1] as List<CompanyEmployeeModel>;
+
+      CompanyEmployeeModel? employment;
+      for (final e in employments) {
+        if (e.companyID == widget.companyID) {
+          employment = e;
+          break;
+        }
+      }
 
       if (!mounted) return;
       setState(() {
         _existingReview = existing;
+        _employment = employment;
         _isLoading = false;
       });
     } catch (_) {
@@ -72,27 +101,55 @@ class _CompanyReviewScreenState extends State<CompanyReviewScreen> {
       _showSnack("Please write your review before submitting.");
       return;
     }
+    if (!_isActiveEmployee) {
+      _showSnack("Only active employees of this company can leave a review.");
+      return;
+    }
 
-    setState(() => _isSubmitting = true);
+    setState(() {
+      _isSubmitting = true;
+      _errorMessage = null;
+    });
 
     try {
+      // AI sentiment + aspect analysis happens server-side; the API writes
+      // companies/{companyID}.companyStrengthList / companyWeaknessList,
+      // which CompanyProfile already reads. Also keep a lightweight local
+      // ReviewModel write so getReviewForSeekerAndCompany's "already
+      // reviewed" check keeps working immediately without re-fetching.
+      await reviewApiService.submitReview(
+        companyID: widget.companyID,
+        companyName: widget.companyName,
+        companyEmail: widget.companyEmail,
+        jobSeekerID: widget.jobSeekerID,
+        rawReview: text,
+      );
+
       final review = ReviewModel(
         reviewID: FirebaseService.generateID(),
         companyID: widget.companyID,
         jobSeekerID: widget.jobSeekerID,
-        rating: 5.0,
         text: text,
-        sentiment: 'Positive',
         createdAt: DateTime.now(),
       );
-
-      await firebaseService.submitEmployeeReview(review);
+      await firebaseService.saveReview(review);
 
       if (!mounted) return;
       setState(() {
         _isSubmitting = false;
         _submitted = true;
       });
+    } on ReviewApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      if (e.statusCode == 409) {
+        // Backend says a review already exists — refresh local state so
+        // the "already reviewed" screen shows instead of the form.
+        _showSnack("You've already reviewed this company.");
+        _loadInitialData();
+      } else {
+        _showSnack(e.message);
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSubmitting = false);
@@ -119,7 +176,6 @@ class _CompanyReviewScreenState extends State<CompanyReviewScreen> {
         backgroundColor: Colors.white,
         body: Column(
           children: [
-            // ── Header ────────────────────────────────────────
             ElevateHeader(
               title: "Write a Review",
               subTitle: widget.companyName,
@@ -127,8 +183,6 @@ class _CompanyReviewScreenState extends State<CompanyReviewScreen> {
               subtitleSize: 14,
               showBackButton: true,
             ),
-
-            // ── Content ───────────────────────────────────────
             Expanded(
               child: _isLoading
                   ? const Center(
@@ -152,7 +206,6 @@ class _CompanyReviewScreenState extends State<CompanyReviewScreen> {
     );
   }
 
-  // ── Already submitted state ──────────────────────────────────
   Widget _buildAlreadyReviewed() {
     final existing = _existingReview!;
 
@@ -205,15 +258,11 @@ class _CompanyReviewScreenState extends State<CompanyReviewScreen> {
           ),
         ),
         const SizedBox(height: 24),
-        _OutlineButton(
-          label: "Go Back",
-          onTap: () => Navigator.pop(context),
-        ),
+        _OutlineButton(label: "Go Back", onTap: () => Navigator.pop(context)),
       ],
     );
   }
 
-  // ── Success state after submitting ───────────────────────────
   Widget _buildSuccessState() {
     return Column(
       children: [
@@ -249,24 +298,53 @@ class _CompanyReviewScreenState extends State<CompanyReviewScreen> {
           lineHeight: 1.6,
         ),
         const SizedBox(height: 32),
-        _OutlineButton(
-          label: "Go Back",
-          onTap: () => Navigator.pop(context),
-        ),
+        _OutlineButton(label: "Go Back", onTap: () => Navigator.pop(context)),
       ],
     );
   }
 
-  // ── Main review form ──────────────────────────────────────────
   Widget _buildReviewForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Company badge
         _CompanyBadge(logoPath: widget.logoPath, name: widget.companyName),
         const SizedBox(height: 28),
 
-        // Section label
+        // ── Employment-required notice ──────────────────────────
+        if (!_isActiveEmployee) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF3E0),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFFFCC80)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.info_outline_rounded,
+                  color: Color(0xFFEF6C00),
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: CustomText(
+                    text: _employment == null
+                        ? "Only active employees of ${widget.companyName} can leave a review. You don't have an employment record with this company."
+                        : "Your employment status with ${widget.companyName} is '${_employment!.employeeStatus}'. Only active employees can leave a review.",
+                    fontSize: 12.5,
+                    color: const Color(0xFFEF6C00),
+                    lineHeight: 1.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
+
         const CustomText(
           text: "YOUR REVIEW",
           fontSize: 11,
@@ -276,7 +354,6 @@ class _CompanyReviewScreenState extends State<CompanyReviewScreen> {
         ),
         const SizedBox(height: 10),
 
-        // ── Dark gradient text box ────────────────────────────
         Container(
           decoration: BoxDecoration(
             gradient: const LinearGradient(
@@ -292,6 +369,7 @@ class _CompanyReviewScreenState extends State<CompanyReviewScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           child: TextField(
             controller: _reviewController,
+            enabled: _isActiveEmployee,
             maxLines: 7,
             minLines: 6,
             style: const TextStyle(
@@ -315,7 +393,6 @@ class _CompanyReviewScreenState extends State<CompanyReviewScreen> {
         ),
         const SizedBox(height: 10),
 
-        // Hint
         const Align(
           alignment: Alignment.centerRight,
           child: CustomText(
@@ -327,12 +404,13 @@ class _CompanyReviewScreenState extends State<CompanyReviewScreen> {
         ),
         const SizedBox(height: 30),
 
-        // ── Submit button ─────────────────────────────────────
         SizedBox(
           width: double.infinity,
           height: 52,
           child: ElevatedButton(
-            onPressed: _isSubmitting ? null : _submitReview,
+            onPressed: (_isSubmitting || !_isActiveEmployee)
+                ? null
+                : _submitReview,
             style: ElevatedButton.styleFrom(
               backgroundColor: ElevateColor.gray,
               disabledBackgroundColor: const Color(0xFFBDBDBD),
@@ -360,16 +438,12 @@ class _CompanyReviewScreenState extends State<CompanyReviewScreen> {
           ),
         ),
         const SizedBox(height: 14),
-        _OutlineButton(
-          label: "Cancel",
-          onTap: () => Navigator.pop(context),
-        ),
+        _OutlineButton(label: "Cancel", onTap: () => Navigator.pop(context)),
       ],
     );
   }
 }
 
-// ── Company badge header ─────────────────────────────────────────
 class _CompanyBadge extends StatelessWidget {
   final String logoPath;
   final String name;
@@ -385,8 +459,11 @@ class _CompanyBadge extends StatelessWidget {
         shape: BoxShape.circle,
         color: Color(0xFFE8E8E8),
       ),
-      child:
-          const Icon(Icons.business_outlined, size: 30, color: Colors.black54),
+      child: const Icon(
+        Icons.business_outlined,
+        size: 30,
+        color: Colors.black54,
+      ),
     );
 
     return Row(
@@ -437,7 +514,6 @@ class _CompanyBadge extends StatelessWidget {
   }
 }
 
-// ── Outline cancel / back button ─────────────────────────────────
 class _OutlineButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
@@ -453,8 +529,9 @@ class _OutlineButton extends StatelessWidget {
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
           side: const BorderSide(color: ElevateColor.gray, width: 1.5),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
         ),
         child: CustomText(
           text: label,

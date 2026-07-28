@@ -152,6 +152,7 @@ class _CompanyEmploymentCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isActive = emp.employeeStatus == 'Active';
     final String companyName = company?.companyName ?? 'Company';
+    final String companyEmail = company?.email ?? '';
     final String industry = company?.industry ?? '';
     final String location = company?.location ?? '';
     final String logoUrl = company?.logo ?? '';
@@ -276,7 +277,7 @@ class _CompanyEmploymentCard extends StatelessWidget {
 
             const SizedBox(width: 8),
 
-            // ── Arrow → Review ────────────────────────────────
+      
             GestureDetector(
               onTap: () {
                 Navigator.push(
@@ -285,6 +286,7 @@ class _CompanyEmploymentCard extends StatelessWidget {
                     page: CompanyReviewScreen(
                       companyID: emp.companyID,
                       companyName: companyName,
+                      companyEmail: companyEmail,
                       jobSeekerID: emp.jobSeekerID,
                       logoPath: logoUrl,
                     ),
