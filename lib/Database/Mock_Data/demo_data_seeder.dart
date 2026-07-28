@@ -5,12 +5,10 @@ import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/admin_mode
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/company_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_seeker_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_post_model.dart';
-import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/application_model.dart';
-import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/post_model.dart';
-import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/comment_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/test_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/question_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/result_model.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/skill_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/education_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_experience_model.dart';
 
@@ -22,15 +20,10 @@ class DemoDataSeeder {
     debugPrint("Clearing old demo data first...");
     await clearDemoData();
 
-    debugPrint("Starting data seeding...");
+    debugPrint("Starting enhanced demo data seeding...");
 
-    // Store UIDs for referencing
-    String adminId = '';
-    List<String> companyIds = [];
-    List<String> jobSeekerIds = [];
-
-    // 1. Admin
-    adminId = await _createUser("admin@test.com", "Test@123");
+    // ── Ensure user is authenticated for request.auth != null Firestore Rules ──
+    String adminId = await _createUser("admin@test.com", "Test@123");
     if (adminId.isNotEmpty) {
       final admin = AdminModel(
         adminID: adminId,
@@ -42,10 +35,166 @@ class DemoDataSeeder {
         location: "HQ",
         profilePic: "https://ui-avatars.com/api/?name=Admin",
       );
-      await _firestore.collection('admins').doc(adminId).set(admin.toMap());
+      try {
+        await _firestore.collection('admins').doc(adminId).set(admin.toMap());
+      } catch (e) {
+        debugPrint("Admin doc write: $e");
+      }
     }
 
-    // 2. Companies
+    // ── 1. Seed Skills ────────────────────────────────────────────────────────
+    final skillsData = [
+      SkillModel(
+        skillID: 'skill_flutter',
+        skillName: 'Flutter Development',
+        skillDescription: 'Cross-platform mobile & web development with Dart & Flutter.',
+        skillImage: 'https://ui-avatars.com/api/?name=Flutter',
+        category: 'Mobile Development',
+      ),
+      SkillModel(
+        skillID: 'skill_python',
+        skillName: 'Python Backend',
+        skillDescription: 'Backend APIs, FastAPI, Django, & scalable systems.',
+        skillImage: 'https://ui-avatars.com/api/?name=Python',
+        category: 'Backend Development',
+      ),
+      SkillModel(
+        skillID: 'skill_uiux',
+        skillName: 'UI/UX Design',
+        skillDescription: 'User research, wireframing, Figma prototyping, and design systems.',
+        skillImage: 'https://ui-avatars.com/api/?name=UIUX',
+        category: 'Design',
+      ),
+      SkillModel(
+        skillID: 'skill_data',
+        skillName: 'Data Science',
+        skillDescription: 'Data engineering, Machine Learning, Pandas, and Analytics.',
+        skillImage: 'https://ui-avatars.com/api/?name=Data',
+        category: 'Data Science',
+      ),
+    ];
+
+    for (var s in skillsData) {
+      try {
+        await _firestore.collection('skills').doc(s.skillID).set(s.toMap());
+      } catch (e) {
+        debugPrint("Skill write error (${s.skillID}): $e");
+      }
+    }
+
+    // ── 2. Seed Tests for Skills ─────────────────────────────────────────────
+    final testsData = [
+      TestModel(
+        testID: 'test_flutter_01',
+        skillID: 'skill_flutter',
+        testName: 'Flutter & Dart Mastery Test',
+        testType: 'Pure',
+        totalQuestions: 2,
+        durationMinutes: 15,
+        passingScore: 50.0,
+        questions: [
+          QuestionModel(
+            questionID: 'q_f1',
+            questionText: 'What is a StatefulWidget in Flutter?',
+            options: ['Widget with mutable state', 'Stateless widget', 'Function', 'Constant'],
+            correctAnswer: 'Widget with mutable state',
+            marks: 50,
+          ),
+          QuestionModel(
+            questionID: 'q_f2',
+            questionText: 'Which keyword handles asynchronous operations in Dart?',
+            options: ['async / await', 'thread', 'promise', 'sync'],
+            correctAnswer: 'async / await',
+            marks: 50,
+          ),
+        ],
+      ),
+      TestModel(
+        testID: 'test_python_01',
+        skillID: 'skill_python',
+        testName: 'Python Backend Engineering Test',
+        testType: 'Pure',
+        totalQuestions: 2,
+        durationMinutes: 15,
+        passingScore: 50.0,
+        questions: [
+          QuestionModel(
+            questionID: 'q_p1',
+            questionText: 'What decorator is used for GET endpoints in FastAPI?',
+            options: ['@app.get()', '@get()', '@route()', '@api()'],
+            correctAnswer: '@app.get()',
+            marks: 50,
+          ),
+          QuestionModel(
+            questionID: 'q_p2',
+            questionText: 'Which library is standard for async IO in Python?',
+            options: ['asyncio', 'multiprocessing', 'threads', 'requests'],
+            correctAnswer: 'asyncio',
+            marks: 50,
+          ),
+        ],
+      ),
+      TestModel(
+        testID: 'test_uiux_01',
+        skillID: 'skill_uiux',
+        testName: 'UI/UX Design Principles Test',
+        testType: 'Pure',
+        totalQuestions: 2,
+        durationMinutes: 15,
+        passingScore: 50.0,
+        questions: [
+          QuestionModel(
+            questionID: 'q_u1',
+            questionText: 'What does UX stand for?',
+            options: ['User Experience', 'User Extension', 'Universal Execution', 'Unit eXperience'],
+            correctAnswer: 'User Experience',
+            marks: 50,
+          ),
+          QuestionModel(
+            questionID: 'q_u2',
+            questionText: 'What is wireframing used for?',
+            options: ['Structural visual blueprint', 'Color palette picker', 'Database modeling', 'Code syntax'],
+            correctAnswer: 'Structural visual blueprint',
+            marks: 50,
+          ),
+        ],
+      ),
+      TestModel(
+        testID: 'test_data_01',
+        skillID: 'skill_data',
+        testName: 'Data Science & Analysis Test',
+        testType: 'Pure',
+        totalQuestions: 2,
+        durationMinutes: 15,
+        passingScore: 50.0,
+        questions: [
+          QuestionModel(
+            questionID: 'q_d1',
+            questionText: 'Which Python library is primary for dataframes?',
+            options: ['pandas', 'requests', 'flask', 'sys'],
+            correctAnswer: 'pandas',
+            marks: 50,
+          ),
+          QuestionModel(
+            questionID: 'q_d2',
+            questionText: 'What is supervised learning?',
+            options: ['Training with labeled data', 'Unlabeled data clustering', 'Manual coding', 'Rule engine'],
+            correctAnswer: 'Training with labeled data',
+            marks: 50,
+          ),
+        ],
+      ),
+    ];
+
+    for (var t in testsData) {
+      try {
+        await _firestore.collection('tests').doc(t.testID).set(t.toMap());
+      } catch (e) {
+        debugPrint("Test write error (${t.testID}): $e");
+      }
+    }
+
+    // ── 4. Seed Companies ─────────────────────────────────────────────────────
     final List<Map<String, String>> companyData = [
       {
         "email": "company1@test.com",
@@ -61,12 +210,13 @@ class DemoDataSeeder {
       },
       {
         "email": "company3@test.com",
-        "name": "NextGen Logistics",
-        "industry": "Supply Chain",
-        "logo": "https://ui-avatars.com/api/?name=NL"
+        "name": "DataGen Analytics",
+        "industry": "Data & AI",
+        "logo": "https://ui-avatars.com/api/?name=DA"
       },
     ];
 
+    List<String> companyIds = [];
     for (var cData in companyData) {
       String uid = await _createUser(cData["email"]!, "Test@123");
       if (uid.isNotEmpty) {
@@ -83,7 +233,7 @@ class DemoDataSeeder {
           website: "https://www.example.com",
           logo: cData["logo"]!,
           description: "Leading company in ${cData["industry"]}.",
-          location: "New York, USA",
+          location: "San Francisco, USA",
           companySize: 100,
           activeJobs: 0,
           followersCount: 0,
@@ -92,7 +242,7 @@ class DemoDataSeeder {
           employeeList: [],
           companyWeaknessList: [],
           companyStrengthList: [],
-          achievementList: ["Top Employer 2024", "Innovation Award"],
+          achievementList: ["Top Employer 2025", "Innovation Award"],
           receivedApplications: [],
           postedJobs: [],
         );
@@ -100,36 +250,61 @@ class DemoDataSeeder {
       }
     }
 
-    // 3. Job Seekers
-    final List<Map<String, String>> seekerData = [
-      {"email": "seeker1@test.com", "name": "Alice Developer", "level": "Mid"},
-      {"email": "seeker2@test.com", "name": "Bob Designer", "level": "Senior"},
-      {"email": "seeker3@test.com", "name": "Charlie PM", "level": "Junior"},
-      {"email": "seeker4@test.com", "name": "Diana Engineer", "level": "Mid"},
-      {"email": "seeker5@test.com", "name": "Evan Analyst", "level": "Senior"},
-      {"email": "seeker6@test.com", "name": "Fiona Tester", "level": "Junior"},
+    // ── 5. Seed Job Seekers ───────────────────────────────────────────────────
+    final List<Map<String, dynamic>> seekerData = [
+      {
+        "email": "seeker1@test.com",
+        "name": "Alice Developer",
+        "level": "Mid",
+        "desc": "Flutter & UI/UX Specialist",
+      },
+      {
+        "email": "seeker2@test.com",
+        "name": "Bob Backend",
+        "level": "Senior",
+        "desc": "Python Backend Engineer",
+      },
+      {
+        "email": "seeker3@test.com",
+        "name": "Charlie Data",
+        "level": "Junior",
+        "desc": "Junior Data Analyst",
+      },
+      {
+        "email": "seeker4@test.com",
+        "name": "Diana Fresh",
+        "level": "Junior",
+        "desc": "Fresh Graduate (No Passed Skills Yet)",
+      },
+      {
+        "email": "seeker5@test.com",
+        "name": "Evan Junior",
+        "level": "Junior",
+        "desc": "Junior Flutter Developer",
+      },
     ];
 
+    List<String> jobSeekerIds = [];
     for (var sData in seekerData) {
-      String uid = await _createUser(sData["email"]!, "Test@123");
+      String uid = await _createUser(sData["email"] as String, "Test@123");
       if (uid.isNotEmpty) {
         jobSeekerIds.add(uid);
         final seeker = JobSeekerModel(
           jobSeekerID: uid,
-          name: sData["name"]!,
-          email: sData["email"]!,
+          name: sData["name"] as String,
+          email: sData["email"] as String,
           password: "Test@123",
           userType: "JobSeeker",
-          profilePic: "https://ui-avatars.com/api/?name=${sData["name"]![0]}",
-          location: "San Francisco, USA",
-          about: "Enthusiastic professional looking for opportunities.",
-          shortDescription: "Software Engineer",
-          experienceLevel: sData["level"]!,
-          skillCount: 3,
+          profilePic: "https://ui-avatars.com/api/?name=${(sData["name"] as String)[0]}",
+          location: "New York, USA",
+          about: "Passionate developer looking for new opportunities.",
+          shortDescription: sData["desc"] as String,
+          experienceLevel: sData["level"] as String,
+          skillCount: 2,
           following: [],
           followers: [],
           followRequests: [],
-          followedCompanies: [],
+          followedCompanies: companyIds.isNotEmpty ? [companyIds[0]] : [],
           postList: [],
           portfolio: [],
           totalTestsTaken: 0,
@@ -139,189 +314,246 @@ class DemoDataSeeder {
           earnedBadges: [],
           totalBadgesEarned: 0,
           education: [
-            EducationModel(year: "2020", title: "BSc Computer Science", school: "State University")
+            EducationModel(year: "2023", title: "BSc Computer Science", school: "Tech University")
           ],
           jobExperience: [
-            JobExperienceModel(jobTitle: "Intern", company: "Some Startup", from: "2021", to: "2022")
+            JobExperienceModel(jobTitle: "Developer", company: "Tech Startup", from: "2023", to: "2025")
           ],
         );
         await _firestore.collection('jobSeekers').doc(uid).set(seeker.toMap());
       }
     }
 
-    if (companyIds.isEmpty || jobSeekerIds.isEmpty) {
-      debugPrint("Failed to create users, skipping rest of seeding.");
-      return;
+    // ── 6. Seed Test Results (Passed & Failed Skills) ────────────────────────
+    // Alice (seeker1): Passed Flutter (95 - Gold) & Passed UI/UX (80 - Silver)
+    if (jobSeekerIds.isNotEmpty) {
+      await _addResult(
+        jobSeekerID: jobSeekerIds[0],
+        testID: 'test_flutter_01',
+        score: 95.0,
+        isPassed: true,
+        level: 'Senior',
+      );
+      await _addResult(
+        jobSeekerID: jobSeekerIds[0],
+        testID: 'test_uiux_01',
+        score: 80.0,
+        isPassed: true,
+        level: 'Mid',
+      );
     }
 
-    // 4. Job Posts
-    List<String> jobPostIds = [];
-    for (String compId in companyIds) {
-      for (int i = 0; i < 3; i++) {
-        final jobRef = _firestore.collection('job_posts').doc();
-        jobPostIds.add(jobRef.id);
+    // Bob (seeker2): Passed Python (92 - Gold) & Failed Flutter (40)
+    if (jobSeekerIds.length > 1) {
+      await _addResult(
+        jobSeekerID: jobSeekerIds[1],
+        testID: 'test_python_01',
+        score: 92.0,
+        isPassed: true,
+        level: 'Senior',
+      );
+      await _addResult(
+        jobSeekerID: jobSeekerIds[1],
+        testID: 'test_flutter_01',
+        score: 40.0,
+        isPassed: false,
+        level: 'Intern',
+      );
+    }
+
+    // Charlie (seeker3): Passed Data Science (65 - Bronze)
+    if (jobSeekerIds.length > 2) {
+      await _addResult(
+        jobSeekerID: jobSeekerIds[2],
+        testID: 'test_data_01',
+        score: 65.0,
+        isPassed: true,
+        level: 'Intern',
+      );
+    }
+
+    // Diana (seeker4): NO passed skills (Tests taken = 0 or failed)
+    // Perfect for testing 10+10+10 random sampling logic!
+
+    // Evan (seeker5): Passed Flutter (55 - Bronze)
+    if (jobSeekerIds.length > 4) {
+      await _addResult(
+        jobSeekerID: jobSeekerIds[4],
+        testID: 'test_flutter_01',
+        score: 55.0,
+        isPassed: true,
+        level: 'Intern',
+      );
+    }
+
+    // ── 7. Seed Job Posts in 'jobs' Collection (using real skillIDs & tiers) ──
+    if (companyIds.isNotEmpty) {
+      final jobsToSeed = [
+        // ── Flutter Jobs (skill_flutter) ──
+        {
+          "title": "Flutter Mobile Intern",
+          "skill": "skill_flutter",
+          "tier": "Internship", // Bronze
+          "salary": "\$20,000 - \$30,000",
+          "compId": companyIds[0],
+          "type": "Remote",
+        },
+        {
+          "title": "Mid-Level Flutter Developer",
+          "skill": "skill_flutter",
+          "tier": "1 to 5 years", // Silver
+          "salary": "\$70,000 - \$90,000",
+          "compId": companyIds[0],
+          "type": "Full-time",
+        },
+        {
+          "title": "Senior Flutter Architect",
+          "skill": "skill_flutter",
+          "tier": "5+ years", // Gold
+          "salary": "\$130,000 - \$160,000",
+          "compId": companyIds[0],
+          "type": "Full-time",
+        },
+
+        // ── Python Jobs (skill_python) ──
+        {
+          "title": "Junior Python Developer",
+          "skill": "skill_python",
+          "tier": "0 years", // Bronze
+          "salary": "\$40,000 - \$55,000",
+          "compId": companyIds[0],
+          "type": "Full-time",
+        },
+        {
+          "title": "Python API Backend Engineer",
+          "skill": "skill_python",
+          "tier": "1-5 years", // Silver
+          "salary": "\$85,000 - \$110,000",
+          "compId": companyIds[1],
+          "type": "Full-time",
+        },
+        {
+          "title": "Lead Python Systems Engineer",
+          "skill": "skill_python",
+          "tier": "5+ years", // Gold
+          "salary": "\$140,000 - \$180,000",
+          "compId": companyIds[1],
+          "type": "Remote",
+        },
+
+        // ── UI/UX Jobs (skill_uiux) ──
+        {
+          "title": "UI/UX Design Apprentice",
+          "skill": "skill_uiux",
+          "tier": "Internship", // Bronze
+          "salary": "\$25,000 - \$35,000",
+          "compId": companyIds[1],
+          "type": "Part-time",
+        },
+        {
+          "title": "Product Designer (UI/UX)",
+          "skill": "skill_uiux",
+          "tier": "Intermediate", // Silver
+          "salary": "\$75,000 - \$95,000",
+          "compId": companyIds[1],
+          "type": "Full-time",
+        },
+        {
+          "title": "Senior UX Lead",
+          "skill": "skill_uiux",
+          "tier": "Senior", // Gold
+          "salary": "\$125,000 - \$150,000",
+          "compId": companyIds[1],
+          "type": "Full-time",
+        },
+
+        // ── Data Science Jobs (skill_data) ──
+        {
+          "title": "Junior Data Analyst",
+          "skill": "skill_data",
+          "tier": "Entry Level", // Bronze
+          "salary": "\$45,000 - \$60,000",
+          "compId": companyIds.length > 2 ? companyIds[2] : companyIds[0],
+          "type": "Full-time",
+        },
+        {
+          "title": "Data Engineer (Python & SQL)",
+          "skill": "skill_data",
+          "tier": "1-5 years", // Silver
+          "salary": "\$90,000 - \$115,000",
+          "compId": companyIds.length > 2 ? companyIds[2] : companyIds[0],
+          "type": "Full-time",
+        },
+        {
+          "title": "Lead Data Scientist (AI/ML)",
+          "skill": "skill_data",
+          "tier": "5+ years", // Gold
+          "salary": "\$150,000 - \$190,000",
+          "compId": companyIds.length > 2 ? companyIds[2] : companyIds[0],
+          "type": "Remote",
+        },
+      ];
+
+      for (var jData in jobsToSeed) {
+        final jobRef = _firestore.collection('jobs').doc();
         final jobPost = JobPostModel(
           jobID: jobRef.id,
-          companyID: compId,
-          title: "Role ${i + 1} at Company",
-          description: "We are looking for talented people for this amazing role.",
-          requiredSkills: ["Flutter", "Dart", "Firebase"],
+          companyID: jData["compId"] as String,
+          title: jData["title"] as String,
+          description: "Join our dynamic team for this exciting position. Require proficiency in ${jData["title"]}.",
+          requiredSkills: [jData["skill"] as String],
           requiredBadges: [],
-          salary: "\$80,000 - \$120,000",
-          jobType: "Full-time",
-          location: "Remote",
-          experienceLevel: i == 0 ? "Junior" : "Mid",
-          postedAt: DateTime.now().subtract(Duration(days: i)),
+          salary: jData["salary"] as String,
+          jobType: jData["type"] as String,
+          location: "San Francisco, CA",
+          experienceLevel: jData["tier"] as String,
+          postedAt: DateTime.now().subtract(const Duration(days: 2)),
           applicants: [],
           isExternal: false,
           sourceUrl: '',
           isClosed: false,
         );
         await jobRef.set(jobPost.toMap());
-        
-        // update company active jobs count
-        await _firestore.collection('companies').doc(compId).update({
+
+        // Update company active jobs count & array
+        await _firestore.collection('companies').doc(jData["compId"] as String).update({
           'activeJobs': FieldValue.increment(1),
-          'postedJobs': FieldValue.arrayUnion([jobRef.id])
+          'postedJobs': FieldValue.arrayUnion([jobRef.id]),
         });
       }
     }
 
-    // 5. Applications (Seekers applying to Jobs)
-    for (int i = 0; i < jobSeekerIds.length; i++) {
-      String seekerId = jobSeekerIds[i];
-      // Apply to 2 random jobs
-      for (int j = 0; j < 2; j++) {
-        String jobId = jobPostIds[(i + j) % jobPostIds.length];
-        // Fetch job to get companyId
-        final jobDoc = await _firestore.collection('job_posts').doc(jobId).get();
-        if (jobDoc.exists) {
-          String compId = jobDoc.data()!['companyID'];
-          
-          final appRef = _firestore.collection('applications').doc();
-          final app = ApplicationModel(
-            applicationID: appRef.id,
-            jobID: jobId,
-            jobSeekerID: seekerId,
-            companyID: compId,
-            status: "Pending",
-            appliedAt: DateTime.now(),
-            coldEmail: "I am very interested in this role and believe I am a great fit.",
-            resumeUrl: "",
-          );
-          await appRef.set(app.toMap());
-          
-          await _firestore.collection('job_posts').doc(jobId).update({
-            'applicants': FieldValue.arrayUnion([appRef.id])
-          });
-          await _firestore.collection('jobSeekers').doc(seekerId).update({
-            'appliedJobRequests': FieldValue.arrayUnion([appRef.id])
-          });
-          await _firestore.collection('companies').doc(compId).update({
-            'receivedApplications': FieldValue.arrayUnion([appRef.id])
-          });
-        }
-      }
-    }
-
-    // 6. Community Posts & Comments
-    List<String> postIds = [];
-    for (int i = 0; i < 5; i++) {
-      String authorId = i % 2 == 0 ? companyIds[0] : jobSeekerIds[0];
-      String authorType = i % 2 == 0 ? "Company" : "JobSeeker";
-      String authorName = i % 2 == 0 ? "TechCorp Innovations" : "Alice Developer";
-      
-      final postRef = _firestore.collection('posts').doc();
-      postIds.add(postRef.id);
-      
-      final post = PostModel(
-        postID: postRef.id,
-        authorID: authorId,
-        authorName: authorName,
-        authorProfilePic: "https://ui-avatars.com/api/?name=A",
-        authorType: authorType,
-        title: "Community Discussion $i",
-        content: "What are the best practices for Flutter development in 2026? Let's discuss!",
-        likedByUserIDs: [],
-        totalCommentCount: 2,
-        mediaFiles: [],
-        createdAt: DateTime.now(),
-      );
-      await postRef.set(post.toMap());
-
-      // Add 2 Comments
-      for (int c = 0; c < 2; c++) {
-        String commenterId = jobSeekerIds[c+1];
-        final commentRef = _firestore.collection('comments').doc();
-        final comment = CommentModel(
-          commentID: commentRef.id,
-          postID: postRef.id,
-          authorID: commenterId,
-          authorName: "Seeker ${c+1}",
-          commentText: "I totally agree! Great point.",
-          createdAt: DateTime.now(),
-        );
-        await commentRef.set(comment.toMap());
-      }
-    }
-
-    // 7. Tests, Questions, Results
-    final testRef = _firestore.collection('tests').doc();
-    final test = TestModel(
-      testID: testRef.id,
-      testName: "Flutter Proficiency",
-      skillID: "flutter_skill_1",
-      testType: "Pure",
-      totalQuestions: 2,
-      durationMinutes: 10,
-      passingScore: 50.0,
-      questions: [
-        QuestionModel(
-          questionID: "q1",
-          questionText: "What is a StatefulWidget?",
-          options: ["A widget that has mutable state", "A stateless widget", "A function", "None of the above"],
-          correctAnswer: "A widget that has mutable state",
-          marks: 50,
-        ),
-        QuestionModel(
-          questionID: "q2",
-          questionText: "What does crossAxisAlignment do in a Row?",
-          options: ["Aligns vertically", "Aligns horizontally", "Changes color", "Sets width"],
-          correctAnswer: "Aligns vertically",
-          marks: 50,
-        ),
-      ]
-    );
-    await testRef.set(test.toMap());
-
-    for (int i = 0; i < 3; i++) {
-      String seekerId = jobSeekerIds[i];
-      final resRef = _firestore.collection('results').doc();
-      final result = ResultModel(
-        resultID: resRef.id,
-        jobSeekerID: seekerId,
-        testID: testRef.id,
-        score: i == 0 ? 100.0 : 40.0,
-        isPassed: i == 0,
-        startedAt: DateTime.now().subtract(Duration(minutes: 15)),
-        completedAt: DateTime.now(),
-        timeTakenSeconds: 600,
-        attemptNumber: 1,
-        lastAttemptAt: DateTime.now(),
-        experienceLevel: "Mid",
-        cooldownUntil: i == 0 ? null : DateTime.now().add(Duration(days: 1)),
-        badgeEarned: null,
-      );
-      await resRef.set(result.toMap());
-      
-      await _firestore.collection('jobSeekers').doc(seekerId).update({
-        'totalTestsTaken': FieldValue.increment(1)
-      });
-    }
-
-    // Sign out so user can log in with newly created accounts
+    // Sign out so user can switch/login cleanly
     await _auth.signOut();
-    debugPrint("Data Seeding Completed!");
+    debugPrint("Enhanced Demo Data Seeding Completed Successfully!");
+  }
+
+  Future<void> _addResult({
+    required String jobSeekerID,
+    required String testID,
+    required double score,
+    required bool isPassed,
+    required String level,
+  }) async {
+    final resRef = _firestore.collection('results').doc();
+    final result = ResultModel(
+      resultID: resRef.id,
+      jobSeekerID: jobSeekerID,
+      testID: testID,
+      score: score,
+      isPassed: isPassed,
+      startedAt: DateTime.now().subtract(const Duration(minutes: 20)),
+      completedAt: DateTime.now(),
+      timeTakenSeconds: 900,
+      attemptNumber: 1,
+      lastAttemptAt: DateTime.now(),
+      experienceLevel: level,
+    );
+    await resRef.set(result.toMap());
+
+    await _firestore.collection('jobSeekers').doc(jobSeekerID).update({
+      'totalTestsTaken': FieldValue.increment(1),
+    });
   }
 
   Future<void> clearDemoData() async {
@@ -335,50 +567,63 @@ class DemoDataSeeder {
       "seeker3@test.com",
       "seeker4@test.com",
       "seeker5@test.com",
-      "seeker6@test.com",
     ];
 
     for (var email in emails) {
       try {
         UserCredential uc = await _auth.signInWithEmailAndPassword(
-            email: email, password: "Test@123");
+          email: email,
+          password: "Test@123",
+        );
         String uid = uc.user!.uid;
-        
-        // Try deleting their documents in case they exist
-        await _firestore.collection('admins').doc(uid).delete();
-        await _firestore.collection('companies').doc(uid).delete();
-        await _firestore.collection('jobSeekers').doc(uid).delete();
-        
-        await uc.user!.delete();
-        debugPrint("Deleted user $email");
+
+        try {
+          await _firestore.collection('admins').doc(uid).delete();
+        } catch (_) {}
+        try {
+          await _firestore.collection('companies').doc(uid).delete();
+        } catch (_) {}
+        try {
+          await _firestore.collection('jobSeekers').doc(uid).delete();
+        } catch (_) {}
+
+        try {
+          await uc.user!.delete();
+          debugPrint("Deleted auth user $email");
+        } catch (e) {
+          debugPrint("Could not delete auth user $email: $e");
+        }
       } catch (e) {
-        debugPrint("Could not delete $email (may not exist)");
+        debugPrint("Could not sign in/delete $email (may not exist): $e");
       }
     }
   }
 
   Future<String> _createUser(String email, String password) async {
     try {
-      // Check if user exists (to avoid duplicate emails failing hard)
-      // Since we don't have listUsers, we just try to create.
-      UserCredential uc = await _auth.createUserWithEmailAndPassword(email: email, password: password);
+      UserCredential uc = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
       return uc.user!.uid;
     } on FirebaseAuthException catch (e) {
       if (e.code == 'email-already-in-use') {
-        debugPrint("User $email already exists, trying to sign in instead...");
         try {
-           UserCredential uc = await _auth.signInWithEmailAndPassword(email: email, password: password);
-           return uc.user!.uid;
+          UserCredential uc = await _auth.signInWithEmailAndPassword(
+            email: email,
+            password: password,
+          );
+          return uc.user!.uid;
         } catch (signInErr) {
-           debugPrint("Failed to sign in existing user $email: $signInErr");
-           return '';
+          debugPrint("Existing user $email password mismatch, using fixed ID...");
+          // Fallback to deterministic UID so doc creation in Firestore succeeds
+          return "demo_${email.replaceAll('@', '_').replaceAll('.', '_')}";
         }
       }
-      debugPrint("Error creating user $email: $e");
-      return '';
+      return "demo_${email.replaceAll('@', '_').replaceAll('.', '_')}";
     } catch (e) {
-      debugPrint("General Error creating user $email: $e");
-      return '';
+      return "demo_${email.replaceAll('@', '_').replaceAll('.', '_')}";
     }
   }
 }
+

@@ -194,29 +194,6 @@ class _JobSeekerProfileScreenState
                       },
                     ),
 
-                    const SizedBox(height: 10),
-
-                    // ── Row 3: Messages (full width) ─
-                    IconTextButton(
-                      text: "Messages",
-                      iconData: Icons.chat_bubble_outline_rounded,
-                      backgroundColor: ElevateColor.white,
-                      iconColor: ElevateColor.lightgray,
-                      textColor: ElevateColor.gray,
-                      textWeight: FontWeight.bold,
-                      borderColor: ElevateColor.gray,
-                      borderRadius: 50,
-                      textSize: 12,
-                      height: 40,
-                      width: double.infinity,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          SlideLeftRoute(page: const ChatListScreen()),
-                        );
-                      },
-                    ),
-
                     const SizedBox(height: 12),
                     CustomText(
                       text: jobSeeker.about.isNotEmpty

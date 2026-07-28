@@ -180,7 +180,6 @@ class CommunitySearchState extends ConsumerState<CommunitySearch> {
                   subTitle: "Your Network",
                   titleSize: 40,
                   subtitleSize: 25,
-                  showBackButton: true,
                 ),
                 Positioned(
                   top: 170,

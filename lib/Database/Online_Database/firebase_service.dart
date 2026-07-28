@@ -1461,4 +1461,42 @@ class FirebaseService {
         )
         .toList();
   }
+
+  // ─── Career Guidance Tasks ──────────────────────────────────────────────────
+
+  /// Save a new AI-generated or manually created guidance task.
+  Future<void> saveGuidanceTask(CareerGuidanceTaskModel task) async {
+    await db
+        .collection('careerGuidance')
+        .doc(task.taskID)
+        .set(task.toMap());
+  }
+
+  /// Fetch all guidance tasks for a specific job seeker, ordered by creation date.
+  Future<List<CareerGuidanceTaskModel>> getGuidanceTasks(
+    String jobSeekerID,
+  ) async {
+    final snap = await db
+        .collection('careerGuidance')
+        .where('jobSeekerID', isEqualTo: jobSeekerID)
+        .get();
+    final tasks = snap.docs
+        .map((d) => CareerGuidanceTaskModel.fromMap(d.data()))
+        .toList();
+    tasks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return tasks;
+  }
+
+  /// Partially update a guidance task (e.g. mark complete, change priority).
+  Future<void> updateGuidanceTask(
+    String taskID,
+    Map<String, dynamic> data,
+  ) async {
+    await db.collection('careerGuidance').doc(taskID).update(data);
+  }
+
+  /// Permanently delete a guidance task.
+  Future<void> deleteGuidanceTask(String taskID) async {
+    await db.collection('careerGuidance').doc(taskID).delete();
+  }
 }
