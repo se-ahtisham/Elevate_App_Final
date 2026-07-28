@@ -1,7 +1,7 @@
 import "package:elevate_app/Animation/slide_left_route.dart";
 import "package:elevate_app/Custom_Widgets/Buttons/icon_text_button.dart";
 import "package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart";
-import "package:elevate_app/Custom_Widgets/Header/elevate_header.dart";
+
 import "package:elevate_app/Custom_Widgets/Text/custom_text.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_description.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_education.dart";
@@ -9,7 +9,6 @@ import "package:elevate_app/Custom_Widgets/User_Widgets/user_socialMedia.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_work.dart";
 import "package:elevate_app/Database/Online_Database/auth_provider.dart";
 import "package:elevate_app/Pages/Login_Screens/Login_Screen.dart";
-import "package:elevate_app/Pages/Shared_Screens/chat_list_screen.dart";
 import "package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Profile_Screens/job_seeker_follow_requests.dart";
 import "package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Profile_Screens/job_seeker_update_profile.dart";
 import "package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Profile_Screens/job_seeker_working_companies.dart";
@@ -17,6 +16,7 @@ import "package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart";
 import "package:flutter/material.dart";
 import 'package:flutter/services.dart';
 import "package:flutter_riverpod/flutter_riverpod.dart";
+import "package:elevate_app/Custom_Widgets/Header/elevate_header.dart";
 
 class JobSeekerProfileScreen extends ConsumerStatefulWidget {
   const JobSeekerProfileScreen({super.key});
@@ -326,7 +326,6 @@ class _JobSeekerProfileScreenState
 
                     const SizedBox(height: 40),
 
-                    // ── Log Out ────────────────────────────────
                     TexxtButton(
                       text: "Log Out",
                       textSize: 13,

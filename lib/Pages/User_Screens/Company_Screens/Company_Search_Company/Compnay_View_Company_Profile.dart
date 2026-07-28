@@ -27,6 +27,7 @@ class CompnayViewCompanyProfile extends StatelessWidget {
                 ElevateHeader(
                   title: "Company Profile",
                   subTitle: "Account Control Center",
+                  showBackButton: true,
                 ),
                 Padding(
                   padding: const EdgeInsets.only(left: 10.0, right: 20),
@@ -44,7 +45,10 @@ class CompnayViewCompanyProfile extends StatelessWidget {
                 ),
 
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 40),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 30,
+                    horizontal: 40,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -100,20 +104,22 @@ class CompnayViewCompanyProfile extends StatelessWidget {
                               lineHeight: 1.2,
                             )
                           else
-                            ...company.achievementList.map((a) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8.0),
-                              child: IconText(
-                                text: a,
-                                iconData: Icons.emoji_events_outlined,
-                                iconColor: ElevateColor.lightgray,
-                                iconSize: 30,
-                                iconTextSpacing: 8,
-                                textSize: 12,
-                                textColor: ElevateColor.lightgray,
-                                textWeight: FontWeight.w400,
-                                lineHeight: 1.2,
+                            ...company.achievementList.map(
+                              (a) => Padding(
+                                padding: const EdgeInsets.only(bottom: 8.0),
+                                child: IconText(
+                                  text: a,
+                                  iconData: Icons.emoji_events_outlined,
+                                  iconColor: ElevateColor.lightgray,
+                                  iconSize: 30,
+                                  iconTextSpacing: 8,
+                                  textSize: 12,
+                                  textColor: ElevateColor.lightgray,
+                                  textWeight: FontWeight.w400,
+                                  lineHeight: 1.2,
+                                ),
                               ),
-                            )),
+                            ),
 
                           const SizedBox(height: 30),
                           CustomText(

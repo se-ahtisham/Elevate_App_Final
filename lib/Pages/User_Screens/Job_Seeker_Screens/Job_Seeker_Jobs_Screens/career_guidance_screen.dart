@@ -3,6 +3,7 @@ import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import "package:elevate_app/Custom_Widgets/Header/elevate_header.dart";
 
 class CareerGuidanceScreen extends StatefulWidget {
   final String jobSeekerID;
@@ -331,211 +332,137 @@ class _CareerGuidanceScreenState extends State<CareerGuidanceScreen>
     final tasks = _filteredTasks;
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: _loadTasks,
-          color: ElevateColor.gray,
-          child: CustomScrollView(
-            slivers: [
-              // ── Header ───────────────────────────────────────────────────────
-              SliverToBoxAdapter(
-                child: FadeTransition(
-                  opacity: _headerFade,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(22, 20, 22, 0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Back + title row
-                        Row(
+      backgroundColor: const Color(0xFFF9F9F9),
+      body: Column(
+        children: [
+          const ElevateHeader(
+            title: "Career Guidance",
+            subTitle: "Your AI-generated learning path",
+            titleSize: 35,
+            subtitleSize: 15,
+            showBackButton: true,
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _loadTasks,
+              color: ElevateColor.gray,
+              child: CustomScrollView(
+                slivers: [
+                  // ── Search + Stats + Filters ─────────────────────────────
+                  SliverToBoxAdapter(
+                    child: FadeTransition(
+                      opacity: _headerFade,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(22, 16, 22, 0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            GestureDetector(
-                              onTap: () => Navigator.pop(context),
-                              child: Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Colors.grey.shade200,
-                                  ),
-                                ),
-                                child: const Icon(
-                                  Icons.arrow_back_ios_new,
-                                  size: 16,
+                            // Stats row
+                            if (!_isLoading) _buildStatsRow(),
+
+                            const SizedBox(height: 20),
+
+                            // Search bar
+                            Container(
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade50,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: Colors.grey.shade200),
+                              ),
+                              child: TextField(
+                                controller: _searchCtrl,
+                                style: const TextStyle(
+                                  fontSize: 14,
                                   color: ElevateColor.gray,
                                 ),
-                              ),
-                            ),
-                            const SizedBox(width: 14),
-                            const Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Career Guidance',
-                                    style: TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w800,
-                                      color: ElevateColor.gray,
-                                      letterSpacing: -0.4,
-                                    ),
+                                decoration: InputDecoration(
+                                  hintText: 'Search tasks...',
+                                  hintStyle: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey.shade400,
                                   ),
-                                  Text(
-                                    'Your AI-generated learning path',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.black38,
-                                      fontWeight: FontWeight.w500,
-                                    ),
+                                  prefixIcon: Icon(
+                                    Icons.search,
+                                    size: 20,
+                                    color: Colors.grey.shade400,
                                   ),
-                                ],
-                              ),
-                            ),
-                            // AI sparkle badge
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFF1A6B3C),
-                                    Color(0xFF0D3D22),
-                                  ],
+                                  suffixIcon: _searchCtrl.text.isNotEmpty
+                                      ? GestureDetector(
+                                          onTap: () {
+                                            _searchCtrl.clear();
+                                            setState(() {});
+                                          },
+                                          child: Icon(
+                                            Icons.close,
+                                            size: 18,
+                                            color: Colors.grey.shade400,
+                                          ),
+                                        )
+                                      : null,
+                                  border: InputBorder.none,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
                                 ),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.auto_awesome,
-                                    size: 12,
-                                    color: Colors.white,
-                                  ),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'AI Path',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ],
                               ),
                             ),
+
+                            const SizedBox(height: 16),
+
+                            // Filter chips
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: [
+                                  'All',
+                                  'Pending',
+                                  'Completed',
+                                  'Important',
+                                ].map((f) => _buildFilterChip(f)).toList(),
+                              ),
+                            ),
+
+                            const SizedBox(height: 20),
                           ],
                         ),
-
-                        const SizedBox(height: 22),
-
-                        // Stats row
-                        if (!_isLoading) _buildStatsRow(),
-
-                        const SizedBox(height: 20),
-
-                        // Search bar
-                        Container(
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade50,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.grey.shade200),
-                          ),
-                          child: TextField(
-                            controller: _searchCtrl,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: ElevateColor.gray,
-                            ),
-                            decoration: InputDecoration(
-                              hintText: 'Search tasks...',
-                              hintStyle: TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey.shade400,
-                              ),
-                              prefixIcon: Icon(
-                                Icons.search,
-                                size: 20,
-                                color: Colors.grey.shade400,
-                              ),
-                              suffixIcon: _searchCtrl.text.isNotEmpty
-                                  ? GestureDetector(
-                                      onTap: () {
-                                        _searchCtrl.clear();
-                                        setState(() {});
-                                      },
-                                      child: Icon(
-                                        Icons.close,
-                                        size: 18,
-                                        color: Colors.grey.shade400,
-                                      ),
-                                    )
-                                  : null,
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(
-                                vertical: 14,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // Filter chips
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: [
-                              'All',
-                              'Pending',
-                              'Completed',
-                              'Important',
-                            ].map((f) => _buildFilterChip(f)).toList(),
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              // ── Body ─────────────────────────────────────────────────────────
-              if (_isLoading)
-                const SliverFillRemaining(
-                  child: Center(
-                    child: CircularProgressIndicator(color: ElevateColor.gray),
-                  ),
-                )
-              else if (tasks.isEmpty)
-                SliverFillRemaining(child: _buildEmptyState())
-              else
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(22, 0, 22, 100),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (ctx, i) => _GuidanceTaskCard(
-                        key: ValueKey(tasks[i].taskID),
-                        task: tasks[i],
-                        onToggleComplete: () => _toggleComplete(tasks[i]),
-                        onToggleImportant: () => _toggleImportant(tasks[i]),
-                        onEdit: () => _editTask(tasks[i]),
-                        onDelete: () => _deleteTask(tasks[i]),
                       ),
-                      childCount: tasks.length,
                     ),
                   ),
-                ),
-            ],
+
+                  // ── Body ────────────────────────────────────────────────
+                  if (_isLoading)
+                    const SliverFillRemaining(
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: ElevateColor.gray,
+                        ),
+                      ),
+                    )
+                  else if (tasks.isEmpty)
+                    SliverFillRemaining(child: _buildEmptyState())
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(22, 0, 22, 100),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                          (ctx, i) => _GuidanceTaskCard(
+                            key: ValueKey(tasks[i].taskID),
+                            task: tasks[i],
+                            onToggleComplete: () => _toggleComplete(tasks[i]),
+                            onToggleImportant: () => _toggleImportant(tasks[i]),
+                            onEdit: () => _editTask(tasks[i]),
+                            onDelete: () => _deleteTask(tasks[i]),
+                          ),
+                          childCount: tasks.length,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

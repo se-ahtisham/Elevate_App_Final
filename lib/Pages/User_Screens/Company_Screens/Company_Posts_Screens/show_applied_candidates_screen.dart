@@ -7,6 +7,7 @@ import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_post_m
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_seeker_model.dart';
 import 'package:elevate_app/Pages/User_Screens/Company_Screens/Company_Posts_Screens/company_view_applied_candidate_profile_screen.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
+import 'package:elevate_app/Custom_Widgets/Buttons/text_button_gradient.dart';
 import 'package:flutter/material.dart';
 
 class ShowAppliedCandidatesScreen extends StatefulWidget {
@@ -14,22 +15,24 @@ class ShowAppliedCandidatesScreen extends StatefulWidget {
   const ShowAppliedCandidatesScreen({super.key, required this.job});
 
   @override
-  State<ShowAppliedCandidatesScreen> createState() => _ShowAppliedCandidatesScreenState();
+  State<ShowAppliedCandidatesScreen> createState() =>
+      ShowAppliedCandidatesScreenState();
 }
 
-class _ShowAppliedCandidatesScreenState extends State<ShowAppliedCandidatesScreen> {
-  final TextEditingController _searchCtrl = TextEditingController();
-  List<JobSeekerModel> _allCandidates = [];
-  List<JobSeekerModel> _filteredCandidates = [];
+class ShowAppliedCandidatesScreenState
+    extends State<ShowAppliedCandidatesScreen> {
+  final TextEditingController searchCtrl = TextEditingController();
+  List<JobSeekerModel> allCandidates = [];
+  List<JobSeekerModel> filteredCandidates = [];
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _fetchCandidates();
+    fetchCandidates();
   }
 
-  Future<void> _fetchCandidates() async {
+  Future<void> fetchCandidates() async {
     if (widget.job.applicants.isEmpty) {
       setState(() {
         isLoading = false;
@@ -41,15 +44,20 @@ class _ShowAppliedCandidatesScreenState extends State<ShowAppliedCandidatesScree
       List<JobSeekerModel> fetched = [];
       // Fetch each applicant profile
       for (String uid in widget.job.applicants) {
-        final doc = await FirebaseFirestore.instance.collection('jobSeekers').doc(uid).get();
+        final doc = await FirebaseFirestore.instance
+            .collection('jobSeekers')
+            .doc(uid)
+            .get();
         if (doc.exists) {
-          fetched.add(JobSeekerModel.fromMap(doc.data() as Map<String, dynamic>));
+          fetched.add(
+            JobSeekerModel.fromMap(doc.data() as Map<String, dynamic>),
+          );
         }
       }
-      
+
       setState(() {
-        _allCandidates = fetched;
-        _filteredCandidates = fetched;
+        allCandidates = fetched;
+        filteredCandidates = fetched;
         isLoading = false;
       });
     } catch (e) {
@@ -59,25 +67,28 @@ class _ShowAppliedCandidatesScreenState extends State<ShowAppliedCandidatesScree
     }
   }
 
-  void _filterCandidates(String query) {
+  void filterCandidates(String query) {
     if (query.isEmpty) {
       setState(() {
-        _filteredCandidates = _allCandidates;
+        filteredCandidates = allCandidates;
       });
     } else {
       final q = query.toLowerCase();
       setState(() {
-        _filteredCandidates = _allCandidates.where((c) => 
-          c.name.toLowerCase().contains(q) || 
-          c.shortDescription.toLowerCase().contains(q)
-        ).toList();
+        filteredCandidates = allCandidates
+            .where(
+              (c) =>
+                  c.name.toLowerCase().contains(q) ||
+                  c.shortDescription.toLowerCase().contains(q),
+            )
+            .toList();
       });
     }
   }
 
   @override
   void dispose() {
-    _searchCtrl.dispose();
+    searchCtrl.dispose();
     super.dispose();
   }
 
@@ -91,9 +102,13 @@ class _ShowAppliedCandidatesScreenState extends State<ShowAppliedCandidatesScree
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             JobBlackTile(
-              title: widget.job.title.isNotEmpty ? widget.job.title : "Untitled",
+              title: widget.job.title.isNotEmpty
+                  ? widget.job.title
+                  : "Untitled",
               company: "Company", // Ideally we fetch company name too
-              location: widget.job.location.isNotEmpty ? widget.job.location : "Remote",
+              location: widget.job.location.isNotEmpty
+                  ? widget.job.location
+                  : "Remote",
               description: widget.job.description,
               jobType: widget.job.jobType,
               jobMode: "Full Time",
@@ -107,8 +122,8 @@ class _ShowAppliedCandidatesScreenState extends State<ShowAppliedCandidatesScree
               height: 60,
               textSize: 15,
               iconSize: 30,
-              controller: _searchCtrl,
-              onChanged: _filterCandidates,
+              controller: searchCtrl,
+              onChanged: filterCandidates,
             ),
             const SizedBox(height: 15),
             const IconText(
@@ -121,19 +136,19 @@ class _ShowAppliedCandidatesScreenState extends State<ShowAppliedCandidatesScree
             ),
             const SizedBox(height: 15),
             Expanded(
-              child: isLoading 
-                ? const Center(child: CircularProgressIndicator())
-                : _filteredCandidates.isEmpty 
+              child: isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : filteredCandidates.isEmpty
                   ? const Center(child: Text("No candidates found."))
                   : ListView.separated(
-                      itemCount: _filteredCandidates.length,
+                      itemCount: filteredCandidates.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 15),
                       itemBuilder: (context, index) {
-                        final candidate = _filteredCandidates[index];
+                        final candidate = filteredCandidates[index];
                         return ExperienceWhiteBlackFull(
-                          imageURL: candidate.profilePic.isNotEmpty 
-                            ? candidate.profilePic 
-                            : "lib/Resources/Images/Profile_Images/default_profile.png",
+                          imageURL: candidate.profilePic.isNotEmpty
+                              ? candidate.profilePic
+                              : "lib/Resources/Images/Profile_Images/default_profile.png",
                           name: candidate.name,
                           shortDescription: candidate.shortDescription,
                           experience: candidate.experienceLevel,
@@ -142,13 +157,25 @@ class _ShowAppliedCandidatesScreenState extends State<ShowAppliedCandidatesScree
                               context,
                               MaterialPageRoute(
                                 builder: (context) =>
-                                    CompanyViewAppliedCandidateProfileScreen(candidate: candidate, job: widget.job),
+                                    CompanyViewAppliedCandidateProfileScreen(
+                                      candidate: candidate,
+                                      job: widget.job,
+                                    ),
                               ),
                             );
                           },
                         );
                       },
                     ),
+            ),
+            const SizedBox(height: 15),
+            TextButtonGradient(
+              text: "BACK",
+              height: 50,
+              textSize: 14,
+              textWeight: FontWeight.w400,
+              borderRadius: 50,
+              onTap: () => Navigator.pop(context),
             ),
           ],
         ),

@@ -11,6 +11,10 @@ import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/result_mod
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/skill_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/education_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_experience_model.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/project_model.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/post_model.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/application_model.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/company_employee_model.dart';
 
 class DemoDataSeeder {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -226,8 +230,6 @@ class DemoDataSeeder {
           email: cData["email"]!,
           password: "Test@123",
           userType: "Company",
-          securityQuestion: "What is your pet's name?",
-          securityAnswer: "Fluffy",
           companyName: cData["name"]!,
           industry: cData["industry"]!,
           website: "https://www.example.com",
@@ -386,116 +388,187 @@ class DemoDataSeeder {
       );
     }
 
-    // ── 7. Seed Job Posts in 'jobs' Collection (using real skillIDs & tiers) ──
+    // ── 7. Seed Projects for Job Seekers (Portfolios) ──────────────────────
+    if (jobSeekerIds.isNotEmpty) {
+      final sampleProjects = [
+        {
+          "seekerId": jobSeekerIds[0],
+          "title": "Elevate E-Learning Mobile App",
+          "desc": "A full-featured mobile app built with Flutter and Firebase featuring AI skill assessments.",
+          "url": "https://github.com/example/elevate_app",
+        },
+        {
+          "seekerId": jobSeekerIds[0],
+          "title": "Crypto Wallet UI Kit",
+          "desc": "Modern clean crypto wallet design system with dynamic dark mode and custom interactive charts.",
+          "url": "https://github.com/example/crypto_ui",
+        },
+        {
+          "seekerId": jobSeekerIds.length > 1 ? jobSeekerIds[1] : jobSeekerIds[0],
+          "title": "FastAPI Microservices Infrastructure",
+          "desc": "Scalable RESTful API gateway integrated with Redis caching and Dockerized deployments.",
+          "url": "https://github.com/example/fastapi_gateway",
+        },
+        {
+          "seekerId": jobSeekerIds.length > 2 ? jobSeekerIds[2] : jobSeekerIds[0],
+          "title": "Automated Stock Sentiment Analysis",
+          "desc": "Python ML pipeline fetching financial news and rendering real-time sentiment metrics.",
+          "url": "https://github.com/example/stock_sentiment",
+        },
+      ];
+
+      for (var p in sampleProjects) {
+        final projRef = _firestore.collection('projects').doc();
+        final project = ProjectModel(
+          projectID: projRef.id,
+          jobSeekerID: p["seekerId"] as String,
+          projectTitle: p["title"] as String,
+          projectDescription: p["desc"] as String,
+          projectURL: p["url"] as String,
+          techStack: ["Flutter", "Dart", "Firebase"],
+        );
+        await projRef.set(project.toMap());
+
+        // Update seeker portfolio array
+        await _firestore.collection('jobSeekers').doc(p["seekerId"] as String).update({
+          'portfolio': FieldValue.arrayUnion([projRef.id]),
+        });
+      }
+    }
+
+    // ── 8. Seed Posts for Job Seekers & Companies ──────────────────────────
+    if (jobSeekerIds.isNotEmpty) {
+      final samplePosts = [
+        {
+          "authorId": jobSeekerIds[0],
+          "name": "Alice Developer",
+          "pic": "https://ui-avatars.com/api/?name=Alice+Developer",
+          "type": "JobSeeker",
+          "title": "Excited to share my latest Flutter project!",
+          "content": "Just published a complete open-source design kit for Flutter apps. Check out my portfolio!",
+        },
+        {
+          "authorId": jobSeekerIds.length > 1 ? jobSeekerIds[1] : jobSeekerIds[0],
+          "name": "Bob Backend",
+          "pic": "https://ui-avatars.com/api/?name=Bob+Backend",
+          "type": "JobSeeker",
+          "title": "Python 3.12 Performance Tweaks",
+          "content": "Here are 5 tips to speed up your FastAPI async endpoints by 40% using connection pooling.",
+        },
+      ];
+
+      if (companyIds.isNotEmpty) {
+        samplePosts.add({
+          "authorId": companyIds[0],
+          "name": "TechCorp Innovations",
+          "pic": "https://ui-avatars.com/api/?name=TC",
+          "type": "Company",
+          "title": "We are Hiring Mobile & Backend Engineers!",
+          "content": "TechCorp is expanding rapidly! Check our active job listings and apply directly on Elevate.",
+        });
+      }
+
+      for (var post in samplePosts) {
+        final postRef = _firestore.collection('posts').doc();
+        final postModel = PostModel(
+          postID: postRef.id,
+          authorID: post["authorId"] as String,
+          authorName: post["name"] as String,
+          authorProfilePic: post["pic"] as String,
+          authorType: post["type"] as String,
+          title: post["title"] as String,
+          content: post["content"] as String,
+          likes: 5,
+        );
+        await postRef.set(postModel.toMap());
+
+        if (post["type"] == "JobSeeker") {
+          await _firestore.collection('jobSeekers').doc(post["authorId"] as String).update({
+            'postList': FieldValue.arrayUnion([postRef.id]),
+          });
+        }
+      }
+    }
+
+    // ── 9. Seed Job Posts & Applicants ──────────────────────────────────────
     if (companyIds.isNotEmpty) {
       final jobsToSeed = [
         // ── Flutter Jobs (skill_flutter) ──
         {
           "title": "Flutter Mobile Intern",
           "skill": "skill_flutter",
-          "tier": "Internship", // Bronze
+          "tier": "Internship",
           "salary": "\$20,000 - \$30,000",
           "compId": companyIds[0],
           "type": "Remote",
+          "applicants": jobSeekerIds.take(3).toList(),
         },
         {
           "title": "Mid-Level Flutter Developer",
           "skill": "skill_flutter",
-          "tier": "1 to 5 years", // Silver
+          "tier": "1 to 5 years",
           "salary": "\$70,000 - \$90,000",
           "compId": companyIds[0],
           "type": "Full-time",
+          "applicants": jobSeekerIds.take(2).toList(),
         },
         {
           "title": "Senior Flutter Architect",
           "skill": "skill_flutter",
-          "tier": "5+ years", // Gold
+          "tier": "5+ years",
           "salary": "\$130,000 - \$160,000",
           "compId": companyIds[0],
           "type": "Full-time",
+          "applicants": jobSeekerIds.isNotEmpty ? [jobSeekerIds[0]] : [],
         },
 
         // ── Python Jobs (skill_python) ──
         {
           "title": "Junior Python Developer",
           "skill": "skill_python",
-          "tier": "0 years", // Bronze
+          "tier": "0 years",
           "salary": "\$40,000 - \$55,000",
           "compId": companyIds[0],
           "type": "Full-time",
+          "applicants": jobSeekerIds.length > 1 ? [jobSeekerIds[1]] : [],
         },
         {
           "title": "Python API Backend Engineer",
           "skill": "skill_python",
-          "tier": "1-5 years", // Silver
+          "tier": "1-5 years",
           "salary": "\$85,000 - \$110,000",
           "compId": companyIds[1],
           "type": "Full-time",
-        },
-        {
-          "title": "Lead Python Systems Engineer",
-          "skill": "skill_python",
-          "tier": "5+ years", // Gold
-          "salary": "\$140,000 - \$180,000",
-          "compId": companyIds[1],
-          "type": "Remote",
+          "applicants": jobSeekerIds.length > 2 ? [jobSeekerIds[1], jobSeekerIds[2]] : [],
         },
 
         // ── UI/UX Jobs (skill_uiux) ──
         {
-          "title": "UI/UX Design Apprentice",
-          "skill": "skill_uiux",
-          "tier": "Internship", // Bronze
-          "salary": "\$25,000 - \$35,000",
-          "compId": companyIds[1],
-          "type": "Part-time",
-        },
-        {
           "title": "Product Designer (UI/UX)",
           "skill": "skill_uiux",
-          "tier": "Intermediate", // Silver
+          "tier": "Intermediate",
           "salary": "\$75,000 - \$95,000",
           "compId": companyIds[1],
           "type": "Full-time",
-        },
-        {
-          "title": "Senior UX Lead",
-          "skill": "skill_uiux",
-          "tier": "Senior", // Gold
-          "salary": "\$125,000 - \$150,000",
-          "compId": companyIds[1],
-          "type": "Full-time",
+          "applicants": jobSeekerIds.isNotEmpty ? [jobSeekerIds[0]] : [],
         },
 
         // ── Data Science Jobs (skill_data) ──
         {
           "title": "Junior Data Analyst",
           "skill": "skill_data",
-          "tier": "Entry Level", // Bronze
+          "tier": "Entry Level",
           "salary": "\$45,000 - \$60,000",
           "compId": companyIds.length > 2 ? companyIds[2] : companyIds[0],
           "type": "Full-time",
-        },
-        {
-          "title": "Data Engineer (Python & SQL)",
-          "skill": "skill_data",
-          "tier": "1-5 years", // Silver
-          "salary": "\$90,000 - \$115,000",
-          "compId": companyIds.length > 2 ? companyIds[2] : companyIds[0],
-          "type": "Full-time",
-        },
-        {
-          "title": "Lead Data Scientist (AI/ML)",
-          "skill": "skill_data",
-          "tier": "5+ years", // Gold
-          "salary": "\$150,000 - \$190,000",
-          "compId": companyIds.length > 2 ? companyIds[2] : companyIds[0],
-          "type": "Remote",
+          "applicants": jobSeekerIds.length > 2 ? [jobSeekerIds[2]] : [],
         },
       ];
 
       for (var jData in jobsToSeed) {
         final jobRef = _firestore.collection('jobs').doc();
+        final List<String> applicants = List<String>.from(jData["applicants"] as List);
+
         final jobPost = JobPostModel(
           jobID: jobRef.id,
           companyID: jData["compId"] as String,
@@ -508,18 +581,72 @@ class DemoDataSeeder {
           location: "San Francisco, CA",
           experienceLevel: jData["tier"] as String,
           postedAt: DateTime.now().subtract(const Duration(days: 2)),
-          applicants: [],
+          applicants: applicants,
           isExternal: false,
           sourceUrl: '',
           isClosed: false,
         );
         await jobRef.set(jobPost.toMap());
 
-        // Update company active jobs count & array
+        // Create matching ApplicationModel entries & update seekers
+        for (String seekerId in applicants) {
+          final appRef = _firestore.collection('applications').doc();
+          final appModel = ApplicationModel(
+            applicationID: appRef.id,
+            jobID: jobRef.id,
+            jobSeekerID: seekerId,
+            companyID: jData["compId"] as String,
+            status: "Pending",
+            coldEmail: "Hello, I am very interested in the ${jData["title"]} role and believe my skills align well with your team.",
+          );
+          await appRef.set(appModel.toMap());
+
+          await _firestore.collection('jobSeekers').doc(seekerId).update({
+            'appliedJobRequests': FieldValue.arrayUnion([appRef.id]),
+          });
+        }
+
+        // Update company active jobs count & array & receivedApplications
         await _firestore.collection('companies').doc(jData["compId"] as String).update({
           'activeJobs': FieldValue.increment(1),
           'postedJobs': FieldValue.arrayUnion([jobRef.id]),
         });
+      }
+    }
+
+    // ── 10. Seed Employee Requests for Companies ───────────────────────────
+    if (companyIds.isNotEmpty && jobSeekerIds.length >= 2) {
+      final empRequests = [
+        {
+          "companyId": companyIds[0],
+          "seekerId": jobSeekerIds[0],
+          "position": "Flutter Mobile Developer",
+          "status": "Pending",
+        },
+        {
+          "companyId": companyIds[0],
+          "seekerId": jobSeekerIds[1],
+          "position": "Backend Developer",
+          "status": "Pending",
+        },
+        {
+          "companyId": companyIds[1],
+          "seekerId": jobSeekerIds[2],
+          "position": "Data Analyst Trainee",
+          "status": "Pending",
+        },
+      ];
+
+      for (var req in empRequests) {
+        final empRef = _firestore.collection('companyEmployees').doc();
+        final empModel = CompanyEmployeeModel(
+          employeeID: empRef.id,
+          jobSeekerID: req["seekerId"] as String,
+          companyID: req["companyId"] as String,
+          position: req["position"] as String,
+          employeeStatus: req["status"] as String,
+        );
+        await empRef.set(empModel.toMap());
       }
     }
 

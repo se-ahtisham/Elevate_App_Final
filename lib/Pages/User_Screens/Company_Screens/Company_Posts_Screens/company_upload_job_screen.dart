@@ -65,7 +65,8 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
   }
 
   Future<void> _postJob() async {
-    final isInvalid = jobTitleController.text.trim().isEmpty ||
+    final isInvalid =
+        jobTitleController.text.trim().isEmpty ||
         jobDescriptionController.text.trim().isEmpty ||
         locationController.text.trim().isEmpty ||
         salaryController.text.trim().isEmpty;
@@ -73,7 +74,11 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
     if (isInvalid) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please fill all required fields (title, description, location, salary).')),
+          const SnackBar(
+            content: Text(
+              'Please fill all required fields (title, description, location, salary).',
+            ),
+          ),
         );
       }
       return;
@@ -92,7 +97,11 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
         companyID: companyId,
         title: jobTitleController.text.trim(),
         description: jobDescriptionController.text.trim(),
-        requiredSkills: requiredSkillsController.text.trim().split(',').map((e) => e.trim()).toList(),
+        requiredSkills: requiredSkillsController.text
+            .trim()
+            .split(',')
+            .map((e) => e.trim())
+            .toList(),
         requiredBadges: [skillBadgeselectedValue ?? ''],
         salary: salaryController.text.trim(),
         jobType: jobTypeselectedValue ?? 'Full Time',
@@ -113,7 +122,9 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) {
@@ -136,6 +147,7 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
             ElevateHeader(
               title: "CREATING BEST",
               subTitle: "Opportunity For Others",
+              showBackButton: true,
             ),
             Expanded(
               child: Padding(
