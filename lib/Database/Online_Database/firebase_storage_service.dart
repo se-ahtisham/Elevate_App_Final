@@ -218,4 +218,43 @@ class FirebaseStorageService {
       return false;
     }
   }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // DEMO ONLY — isolated under demo_files/ prefix, no real user data touched
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /// Uploads raw bytes to `demo_files/<fileName>` in Storage.
+  /// This path is completely separate from all real user uploads.
+  /// Returns the public download URL, or null on failure.
+  Future<String?> uploadDemoFile({
+    required String fileName,
+    required Uint8List bytes,
+    String contentType = 'text/plain',
+  }) async {
+    try {
+      final ref = storage.ref().child('demo_files').child(fileName);
+      final uploadTask = await ref.putData(
+        bytes,
+        SettableMetadata(
+          contentType: contentType,
+          customMetadata: {'purpose': 'demo', 'createdBy': 'seed_script'},
+        ),
+      );
+      return await uploadTask.ref.getDownloadURL();
+    } catch (e) {
+      // ignore: avoid_print
+      print('[DEMO] Failed to upload demo file: $e');
+      return null;
+    }
+  }
+
+  /// Deletes the demo file at `demo_files/<fileName>` from Storage.
+  Future<bool> deleteDemoFile(String fileName) async {
+    try {
+      await storage.ref().child('demo_files').child(fileName).delete();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
 }

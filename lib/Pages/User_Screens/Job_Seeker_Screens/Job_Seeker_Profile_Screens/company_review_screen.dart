@@ -40,7 +40,6 @@ class _CompanyReviewScreenState extends State<CompanyReviewScreen> {
   bool _isLoading = true;
   bool _isSubmitting = false;
   bool _submitted = false;
-  String? _errorMessage;
 
   // Only an Active employee of THIS company may submit a review.
   bool get _isActiveEmployee => _employment?.employeeStatus == 'Active';
@@ -108,7 +107,6 @@ class _CompanyReviewScreenState extends State<CompanyReviewScreen> {
 
     setState(() {
       _isSubmitting = true;
-      _errorMessage = null;
     });
 
     try {

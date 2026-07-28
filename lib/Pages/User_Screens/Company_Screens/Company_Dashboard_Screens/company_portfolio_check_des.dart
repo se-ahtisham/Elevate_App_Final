@@ -1,151 +1,162 @@
 import 'package:elevate_app/Custom_Widgets/Buttons/circle_icon_button.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
+import 'package:elevate_app/Custom_Widgets/Message_Box/messageBox.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/project_model.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class CompanyPortfolioCheckDes extends StatelessWidget {
-  final ProjectModel project;
+   final ProjectModel project;
 
-  const CompanyPortfolioCheckDes({super.key, required this.project});
+   const CompanyPortfolioCheckDes({super.key, required this.project});
+
+  Future<void> downloadOrWarn(BuildContext context, String url) async {
+    if (url.isEmpty) {
+      showDialog(
+        context: context,
+        builder: (_) => const Messagebox(
+          message: "This file can't be downloaded.",
+        ),
+      );
+      return;
+    }
+    final uri = Uri.parse(url);
+    try {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          builder: (_) => const Messagebox(message: "Couldn't open this file."),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final previewImages = project.mediaFiles.isNotEmpty ? project.mediaFiles : ["lib/Resources/Images/mock.png"];
-    
+    final previewImages = project.mediaFiles;
+
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 245, 245, 245),
-      body: Stack(
+      body: Column(
         children: [
-          Column(
-            children: [
-              ElevateHeader(),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 30.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 30),
-                        const CustomText(
-                          text: "My Creation",
-                          fontSize: 16,
-                          textAlign: TextAlign.left,
-                          fontWeight: FontWeight.w700,
-                          color: ElevateColor.lightgray,
-                          lineHeight: 1.2,
-                        ),
-                        const SizedBox(height: 12),
-
-                        SizedBox(
-                          height: 92,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            physics: const BouncingScrollPhysics(),
-                            itemCount: previewImages.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(width: 14),
-                            itemBuilder: (context, i) {
-                              return _PreviewCard(
-                                imagePath: previewImages[i],
-                                heroTag: "preview_$i",
-                              );
-                            },
-                          ),
-                        ),
-
-                        const SizedBox(height: 20),
-                        const CustomText(
-                          text: "Description",
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: ElevateColor.lightgray,
-                          lineHeight: 1.2,
-                        ),
-                        const SizedBox(height: 10),
-                        CustomText(
-                          text: project.projectDescription.isNotEmpty ? project.projectDescription : "No description provided.",
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w400,
-                          color: ElevateColor.whitegray,
-                          lineHeight: 1.45,
-                        ),
-
-                        const SizedBox(height: 18),
-
-                        if (project.techStack.isNotEmpty) ...[
-                          const CustomText(
-                            text: "Files",
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: ElevateColor.lightgray,
-                            lineHeight: 1.2,
-                          ),
-                          const SizedBox(height: 12),
-
-                          ...List.generate(project.techStack.length, (index) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 12.0),
-                              child: _FilePill(
-                                fileName: project.techStack[index], 
-                                onDownload: () async {
-                                  if (project.techFileUrls.length > index) {
-                                    final url = project.techFileUrls[index];
-                                    debugPrint('Downloading: $url');
-                                  }
-                                }
-                              ),
-                            );
-                          }),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
+          ElevateHeader(
+            title: project.projectTitle.isNotEmpty
+                ? project.projectTitle
+                : "Project Details",
+            subTitle: project.techStack.isNotEmpty
+                ? project.techStack.join(', ')
+                : "Developer",
+            titleSize: 24,
+            subtitleSize: 14,
+            showBackButton: true,
           ),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24.0,
+                  vertical: 16.0,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const CustomText(
+                      text: "Project Media",
+                      fontSize: 16,
+                      textAlign: TextAlign.left,
+                      fontWeight: FontWeight.w700,
+                      color: ElevateColor.lightgray,
+                      lineHeight: 1.2,
+                    ),
+                    const SizedBox(height: 12),
 
-          // floating header
-          Padding(
-            padding: const EdgeInsets.only(left: 18, right: 18, top: 150),
-            child: Container(
-              width: double.infinity,
-              height: 140,
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 22),
-              decoration: BoxDecoration(
-                color: ElevateColor.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    blurRadius: 18,
-                    color: Colors.black.withValues(alpha: 0.12),
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CustomText(
-                    text: project.projectTitle.isNotEmpty ? project.projectTitle : "Untitled Project",
-                    textAlign: TextAlign.center,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w700,
-                    color: ElevateColor.lightgray,
-                    lineHeight: 1.15,
-                  ),
-                  const SizedBox(height: 10),
-                  const CustomText(
-                    text: "Developer",
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w500,
-                    color: ElevateColor.whitegray,
-                    lineHeight: 1.2,
-                  ),
-                ],
+                    // Preview images
+                    if (previewImages.isNotEmpty)
+                      SizedBox(
+                        height: 110,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: previewImages.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(width: 14),
+                          itemBuilder: (context, i) {
+                            return _NetworkPreviewCard(
+                              imageUrl: previewImages[i],
+                              heroTag: "preview_$i",
+                            );
+                          },
+                        ),
+                      )
+                    else
+                      Container(
+                        height: 70,
+                        alignment: Alignment.centerLeft,
+                        child: const Text(
+                          "No images uploaded.",
+                          style: TextStyle(color: Colors.grey, fontSize: 13),
+                        ),
+                      ),
+
+                    const SizedBox(height: 24),
+                    const CustomText(
+                      text: "Description",
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: ElevateColor.lightgray,
+                      lineHeight: 1.2,
+                    ),
+                    const SizedBox(height: 10),
+                    CustomText(
+                      text: project.projectDescription.isNotEmpty
+                          ? project.projectDescription
+                          : "No description provided.",
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.black87,
+                      lineHeight: 1.45,
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    const CustomText(
+                      text: "Attached Tech Files",
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: ElevateColor.lightgray,
+                      lineHeight: 1.2,
+                    ),
+                    const SizedBox(height: 12),
+
+                    if (project.techStack.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.only(bottom: 12),
+                        child: Text(
+                          "No files attached.",
+                          style: TextStyle(color: Colors.grey, fontSize: 13),
+                        ),
+                      )
+                    else
+                      ...List.generate(project.techStack.length, (i) {
+                        final url = i < project.techFileUrls.length
+                            ? project.techFileUrls[i]
+                            : '';
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _FilePill(
+                            fileName: project.techStack[i],
+                            onDownload: () => downloadOrWarn(context, url),
+                          ),
+                        );
+                      }),
+
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
             ),
           ),
@@ -155,13 +166,13 @@ class CompanyPortfolioCheckDes extends StatelessWidget {
   }
 }
 
-//  Preview Card (TAP -> FULL SCREEN)
+// Network Preview Card
 
-class _PreviewCard extends StatelessWidget {
-  final String imagePath;
+class _NetworkPreviewCard extends StatelessWidget {
+  final String imageUrl;
   final String heroTag;
 
-  const _PreviewCard({required this.imagePath, required this.heroTag});
+  const _NetworkPreviewCard({required this.imageUrl, required this.heroTag});
 
   @override
   Widget build(BuildContext context) {
@@ -172,7 +183,7 @@ class _PreviewCard extends StatelessWidget {
           context,
           MaterialPageRoute(
             builder: (_) =>
-                _FullScreenImage(imagePath: imagePath, heroTag: heroTag),
+                _FullScreenNetworkImage(imageUrl: imageUrl, heroTag: heroTag),
           ),
         );
       },
@@ -192,40 +203,33 @@ class _PreviewCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: Hero(
           tag: heroTag,
-          child: imagePath.startsWith('http') 
-              ? Image.network(
-                  imagePath,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _errorIcon(),
-                )
-              : Image.asset(
-                  imagePath,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => _errorIcon(),
-                ),
+          child: Image.network(
+            imageUrl,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
+              color: const Color(0xFFF2F2F2),
+              alignment: Alignment.center,
+              child: const Icon(
+                Icons.image_outlined,
+                size: 28,
+                color: Color(0xFF9B9B9B),
+              ),
+            ),
+          ),
         ),
-      ),
-    );
-  }
-  
-  Widget _errorIcon() {
-    return Container(
-      color: const Color(0xFFF2F2F2),
-      alignment: Alignment.center,
-      child: const Icon(
-        Icons.image_outlined,
-        size: 28,
-        color: Color(0xFF9B9B9B),
       ),
     );
   }
 }
 
-class _FullScreenImage extends StatelessWidget {
-  final String imagePath;
+class _FullScreenNetworkImage extends StatelessWidget {
+  final String imageUrl;
   final String heroTag;
 
-  const _FullScreenImage({required this.imagePath, required this.heroTag});
+  const _FullScreenNetworkImage({
+    required this.imageUrl,
+    required this.heroTag,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -239,13 +243,10 @@ class _FullScreenImage extends StatelessWidget {
               child: InteractiveViewer(
                 minScale: 0.8,
                 maxScale: 4.0,
-                child: imagePath.startsWith('http')
-                    ? Image.network(imagePath)
-                    : Image.asset(imagePath),
+                child: Image.network(imageUrl),
               ),
             ),
           ),
-
           Positioned(
             top: 50,
             left: 20,
@@ -265,7 +266,7 @@ class _FullScreenImage extends StatelessWidget {
   }
 }
 
-//  Files Pill container with download button
+// File Pill
 
 class _FilePill extends StatelessWidget {
   final String fileName;

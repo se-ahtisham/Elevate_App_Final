@@ -47,7 +47,7 @@ class ProjectModel {
       techFileUrls: List<String>.from(map['techFileUrls'] ?? []),
       mediaFiles: List<String>.from(map['mediaFiles'] ?? []),
       createdAt: map['createdAt'] != null
-          ? DateTime.tryParse(map['createdAt'])
+          ? DateTime.tryParse(map['createdAt']) ?? DateTime.now()
           : DateTime.now(),
     );
   }

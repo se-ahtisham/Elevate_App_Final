@@ -201,13 +201,13 @@ class DemoDataSeeder {
     // ── 4. Seed Companies ─────────────────────────────────────────────────────
     final List<Map<String, String>> companyData = [
       {
-        "email": "company1@test.com",
+        "email": "company99@test.com",
         "name": "TechCorp Innovations",
         "industry": "Software Development",
         "logo": "https://ui-avatars.com/api/?name=TC"
       },
       {
-        "email": "company2@test.com",
+        "email": "company98@test.com",
         "name": "Creative Studio",
         "industry": "Design & UI/UX",
         "logo": "https://ui-avatars.com/api/?name=CS"
@@ -255,32 +255,32 @@ class DemoDataSeeder {
     // ── 5. Seed Job Seekers ───────────────────────────────────────────────────
     final List<Map<String, dynamic>> seekerData = [
       {
-        "email": "seeker1@test.com",
-        "name": "Alice Developer",
+        "email": "seeker99@test.com",
+        "name": "Ahmad Raza",
         "level": "Mid",
         "desc": "Flutter & UI/UX Specialist",
       },
       {
         "email": "seeker2@test.com",
-        "name": "Bob Backend",
+        "name": "Usman Tariq",
         "level": "Senior",
         "desc": "Python Backend Engineer",
       },
       {
         "email": "seeker3@test.com",
-        "name": "Charlie Data",
+        "name": "Yusuf Malik",
         "level": "Junior",
         "desc": "Junior Data Analyst",
       },
       {
         "email": "seeker4@test.com",
-        "name": "Diana Fresh",
+        "name": "Fatima Noor",
         "level": "Junior",
         "desc": "Fresh Graduate (No Passed Skills Yet)",
       },
       {
         "email": "seeker5@test.com",
-        "name": "Evan Junior",
+        "name": "Hassan Ali",
         "level": "Junior",
         "desc": "Junior Flutter Developer",
       },
@@ -327,7 +327,7 @@ class DemoDataSeeder {
     }
 
     // ── 6. Seed Test Results (Passed & Failed Skills) ────────────────────────
-    // Alice (seeker1): Passed Flutter (95 - Gold) & Passed UI/UX (80 - Silver)
+    // Ahmad Raza (seeker1): Passed Flutter (95 - Gold) & Passed UI/UX (80 - Silver)
     if (jobSeekerIds.isNotEmpty) {
       await _addResult(
         jobSeekerID: jobSeekerIds[0],
@@ -345,7 +345,7 @@ class DemoDataSeeder {
       );
     }
 
-    // Bob (seeker2): Passed Python (92 - Gold) & Failed Flutter (40)
+    // Usman Tariq (seeker2): Passed Python (92 - Gold) & Failed Flutter (40)
     if (jobSeekerIds.length > 1) {
       await _addResult(
         jobSeekerID: jobSeekerIds[1],
@@ -363,7 +363,7 @@ class DemoDataSeeder {
       );
     }
 
-    // Charlie (seeker3): Passed Data Science (65 - Bronze)
+    // Yusuf Malik (seeker3): Passed Data Science (65 - Bronze)
     if (jobSeekerIds.length > 2) {
       await _addResult(
         jobSeekerID: jobSeekerIds[2],
@@ -374,10 +374,10 @@ class DemoDataSeeder {
       );
     }
 
-    // Diana (seeker4): NO passed skills (Tests taken = 0 or failed)
+    // Fatima Noor (seeker4): NO passed skills (Tests taken = 0 or failed)
     // Perfect for testing 10+10+10 random sampling logic!
 
-    // Evan (seeker5): Passed Flutter (55 - Bronze)
+    // Hassan Ali (seeker5): Passed Flutter (55 - Bronze)
     if (jobSeekerIds.length > 4) {
       await _addResult(
         jobSeekerID: jobSeekerIds[4],
@@ -441,16 +441,16 @@ class DemoDataSeeder {
       final samplePosts = [
         {
           "authorId": jobSeekerIds[0],
-          "name": "Alice Developer",
-          "pic": "https://ui-avatars.com/api/?name=Alice+Developer",
+          "name": "Ahmad Raza",
+          "pic": "https://ui-avatars.com/api/?name=Ahmad+Raza",
           "type": "JobSeeker",
           "title": "Excited to share my latest Flutter project!",
           "content": "Just published a complete open-source design kit for Flutter apps. Check out my portfolio!",
         },
         {
           "authorId": jobSeekerIds.length > 1 ? jobSeekerIds[1] : jobSeekerIds[0],
-          "name": "Bob Backend",
-          "pic": "https://ui-avatars.com/api/?name=Bob+Backend",
+          "name": "Usman Tariq",
+          "pic": "https://ui-avatars.com/api/?name=Usman+Tariq",
           "type": "JobSeeker",
           "title": "Python 3.12 Performance Tweaks",
           "content": "Here are 5 tips to speed up your FastAPI async endpoints by 40% using connection pooling.",
@@ -615,7 +615,7 @@ class DemoDataSeeder {
     }
 
     // ── 10. Seed Employee Requests for Companies ───────────────────────────
-    if (companyIds.isNotEmpty && jobSeekerIds.length >= 2) {
+    if (companyIds.isNotEmpty && jobSeekerIds.length >= 4) {
       final empRequests = [
         {
           "companyId": companyIds[0],
@@ -627,18 +627,49 @@ class DemoDataSeeder {
           "companyId": companyIds[0],
           "seekerId": jobSeekerIds[1],
           "position": "Backend Developer",
+          "status": "Active", // Active for testing dashboard home screen
+        },
+        {
+          "companyId": companyIds[0],
+          "seekerId": jobSeekerIds[2],
+          "position": "Data Analyst",
+          "status": "Pending",
+        },
+        {
+          "companyId": companyIds[0],
+          "seekerId": jobSeekerIds[3],
+          "position": "Junior Developer",
+          "status": "Active",
+        },
+        {
+          "companyId": companyIds[0],
+          "seekerId": jobSeekerIds[4],
+          "position": "Junior Flutter Developer",
+          "status": "Pending",
+        },
+        // --- Added pending requests for companyIds[1] (Creative Studio) ---
+        {
+          "companyId": companyIds[1],
+          "seekerId": jobSeekerIds[2],
+          "position": "UI/UX Designer",
           "status": "Pending",
         },
         {
           "companyId": companyIds[1],
-          "seekerId": jobSeekerIds[2],
-          "position": "Data Analyst Trainee",
+          "seekerId": jobSeekerIds[3],
+          "position": "Senior Graphic Designer",
+          "status": "Pending",
+        },
+        {
+          "companyId": companyIds[1],
+          "seekerId": jobSeekerIds[4],
+          "position": "Art Director",
           "status": "Pending",
         },
       ];
 
       for (var req in empRequests) {
-        final empRef = _firestore.collection('companyEmployees').doc();
+        final empRef = _firestore.collection('employees').doc();
         final empModel = CompanyEmployeeModel(
           employeeID: empRef.id,
           jobSeekerID: req["seekerId"] as String,
@@ -647,6 +678,15 @@ class DemoDataSeeder {
           employeeStatus: req["status"] as String,
         );
         await empRef.set(empModel.toMap());
+
+        if (req["status"] == "Active") {
+          await _firestore.collection('companies').doc(req["companyId"] as String).update({
+            'employeeList': FieldValue.arrayUnion([empRef.id]),
+          });
+          await _firestore.collection('jobSeekers').doc(req["seekerId"] as String).update({
+            'becomeEmployee': FieldValue.arrayUnion([empRef.id]),
+          });
+        }
       }
     }
 
@@ -686,10 +726,10 @@ class DemoDataSeeder {
   Future<void> clearDemoData() async {
     final emails = [
       "admin@test.com",
-      "company1@test.com",
-      "company2@test.com",
+      "company99@test.com",
+      "company98@test.com",
       "company3@test.com",
-      "seeker1@test.com",
+      "seeker99@test.com",
       "seeker2@test.com",
       "seeker3@test.com",
       "seeker4@test.com",

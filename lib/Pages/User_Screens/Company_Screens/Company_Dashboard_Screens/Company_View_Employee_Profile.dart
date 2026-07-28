@@ -27,10 +27,12 @@ class CompanyViewEmployeeProfile extends StatefulWidget {
   });
 
   @override
-  State<CompanyViewEmployeeProfile> createState() => _CompanyViewEmployeeProfileState();
+  State<CompanyViewEmployeeProfile> createState() =>
+      _CompanyViewEmployeeProfileState();
 }
 
-class _CompanyViewEmployeeProfileState extends State<CompanyViewEmployeeProfile> {
+class _CompanyViewEmployeeProfileState
+    extends State<CompanyViewEmployeeProfile> {
   final FirebaseService _firebaseService = FirebaseService();
   late Future<JobSeekerModel?> _profileFuture;
 
@@ -62,7 +64,9 @@ class _CompanyViewEmployeeProfileState extends State<CompanyViewEmployeeProfile>
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               }
-              if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
+              if (snapshot.hasError ||
+                  !snapshot.hasData ||
+                  snapshot.data == null) {
                 return const Center(child: Text('Profile not found'));
               }
 
@@ -73,12 +77,13 @@ class _CompanyViewEmployeeProfileState extends State<CompanyViewEmployeeProfile>
                     ElevateHeader(
                       title: "Your Digital Identity",
                       subTitle: "Account Control Center",
+                      showBackButton: true,
                     ),
                     Padding(
                       padding: const EdgeInsets.only(left: 10.0, right: 20),
                       child: UserDescription(
-                        imageURL: seeker.profilePic.isNotEmpty 
-                            ? seeker.profilePic 
+                        imageURL: seeker.profilePic.isNotEmpty
+                            ? seeker.profilePic
                             : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(seeker.name.isNotEmpty ? seeker.name : "User")}&background=random&color=fff&size=128',
                         name: seeker.name,
                         shortDescription: seeker.shortDescription,
@@ -162,7 +167,9 @@ class _CompanyViewEmployeeProfileState extends State<CompanyViewEmployeeProfile>
                           ),
                           SizedBox(height: 12),
                           CustomText(
-                            text: seeker.about.isNotEmpty ? seeker.about : "No about info provided.",
+                            text: seeker.about.isNotEmpty
+                                ? seeker.about
+                                : "No about info provided.",
                             fontSize: 13,
                             color: ElevateColor.whitegray,
                             fontWeight: FontWeight.w400,
@@ -172,9 +179,9 @@ class _CompanyViewEmployeeProfileState extends State<CompanyViewEmployeeProfile>
                           SizedBox(height: 22),
                           UserSocialmedia(
                             city: seeker.location,
-                            country: "", 
+                            country: "",
                             email: seeker.email,
-                            phone: "", 
+                            phone: "",
                           ),
 
                           SizedBox(height: 22),
@@ -237,7 +244,7 @@ class _CompanyViewEmployeeProfileState extends State<CompanyViewEmployeeProfile>
                             ),
                             SizedBox(height: 22),
                           ],
-                          
+
                           CustomText(
                             text: "SKILL",
                             fontSize: 20,
@@ -310,7 +317,9 @@ class _CompanyViewEmployeeProfileState extends State<CompanyViewEmployeeProfile>
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => CompanyViewUserPost(authorID: seeker.jobSeekerID),
+                                  builder: (context) => CompanyViewUserPost(
+                                    authorID: seeker.jobSeekerID,
+                                  ),
                                 ),
                               );
                             },

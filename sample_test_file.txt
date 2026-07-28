@@ -1,0 +1,58 @@
+Project Test File
+=================
+
+This is a sample text file created for testing purposes.
+
+User: Ahmad
+Date: 28 July 2026
+Version: 1.0
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
+Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore.
+Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt.
+
+Random Data:
+-------------
+ID: 1001
+ID: 1002
+ID: 1003
+ID: 1004
+ID: 1005
+
+Names:
+- Ali
+- Ahmed
+- Sara
+- Fatima
+- Bilal
+- Ayesha
+- Hamza
+- Zain
+- Hira
+- Usman
+
+Sample Notes:
+-------------
+The quick brown fox jumps over the lazy dog.
+Pack my box with five dozen liquor jugs.
+Testing file upload functionality.
+Testing text file reading.
+Testing file storage.
+Testing download feature.
+Testing preview feature.
+
+Numbers:
+---------
+1234567890
+9876543210
+1122334455
+5566778899
+9988776655
+
+Special Characters:
+-------------------
+! @ # $ % ^ & * ( ) _ + - = { } [ ] | \ : ; " ' < > , . ? /
+
+End of sample file.

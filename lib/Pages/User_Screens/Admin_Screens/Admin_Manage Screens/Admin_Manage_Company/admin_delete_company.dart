@@ -197,7 +197,7 @@ class _AdminDeleteCompanyState extends State<AdminDeleteCompany> {
                             child: ExperienceWhiteBlackFull(
                               imageURL: company.logo.isNotEmpty
                                   ? company.logo
-                                  : "lib/Resources/Images/Profile_Images/Company_Logo.jpg",
+                                  : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(company.companyName.isNotEmpty ? company.companyName : "Company")}&background=E0E0E0&color=757575&size=128&bold=true',
                               name: company.companyName,
                               shortDescription: company.industry.isNotEmpty
                                   ? company.industry

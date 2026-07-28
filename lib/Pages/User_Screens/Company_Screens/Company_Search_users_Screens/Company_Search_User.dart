@@ -92,7 +92,7 @@ class _CompanySearchUserState extends State<CompanySearchUser> {
                           borderRadius: 20,
                           imageURL: seeker.profilePic.isNotEmpty
                               ? seeker.profilePic
-                              : 'lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg',
+                              : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(seeker.name.isNotEmpty ? seeker.name : "User")}&background=E0E0E0&color=757575&size=128&bold=true',
                           name: seeker.name,
                           shortDescription: seeker.shortDescription,
                           iconData: Icons.arrow_forward,
