@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/review_model.dart';
@@ -41,6 +43,8 @@ class _CompanyReviewScreenState extends State<CompanyReviewScreen> {
   bool _isSubmitting = false;
   bool _submitted = false;
   String? _errorMessage;
+  String _processingStep = "Submitting review to AI NLP Model...";
+  Timer? _stepTimer;
 
   // Only an Active employee of THIS company may submit a review.
   bool get _isActiveEmployee => _employment?.employeeStatus == 'Active';
@@ -53,6 +57,7 @@ class _CompanyReviewScreenState extends State<CompanyReviewScreen> {
 
   @override
   void dispose() {
+    _stepTimer?.cancel();
     _reviewController.dispose();
     super.dispose();
   }
@@ -95,6 +100,50 @@ class _CompanyReviewScreenState extends State<CompanyReviewScreen> {
     }
   }
 
+  void _startProcessingSteps() {
+    _stepTimer?.cancel();
+    int stepIndex = 0;
+    final steps = [
+      "Submitting review to AI NLP Model...",
+      "Analyzing sentiment & extracting company strengths/weaknesses...",
+      "Updating company profile & jobseeker review records on both sides...",
+      "Finalizing AI model updates...",
+    ];
+
+    setState(() => _processingStep = steps[0]);
+
+    _stepTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (!mounted || !_isSubmitting) {
+        timer.cancel();
+        return;
+      }
+      stepIndex = (stepIndex + 1) % steps.length;
+      setState(() => _processingStep = steps[stepIndex]);
+    });
+  }
+
+  void _copyToClipboard() {
+    final text = _reviewController.text.trim();
+    if (text.isEmpty) {
+      _showSnack("Nothing to copy.");
+      return;
+    }
+    Clipboard.setData(ClipboardData(text: text));
+    _showSnack("Review text copied to clipboard!");
+  }
+
+  Future<void> _pasteFromClipboard() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    if (data?.text != null && data!.text!.isNotEmpty) {
+      setState(() {
+        _reviewController.text = data.text!;
+      });
+      _showSnack("Pasted from clipboard!");
+    } else {
+      _showSnack("Clipboard is empty.");
+    }
+  }
+
   void _submitReview() async {
     final text = _reviewController.text.trim();
     if (text.isEmpty) {
@@ -111,12 +160,9 @@ class _CompanyReviewScreenState extends State<CompanyReviewScreen> {
       _errorMessage = null;
     });
 
+    _startProcessingSteps();
+
     try {
-      // AI sentiment + aspect analysis happens server-side; the API writes
-      // companies/{companyID}.companyStrengthList / companyWeaknessList,
-      // which CompanyProfile already reads. Also keep a lightweight local
-      // ReviewModel write so getReviewForSeekerAndCompany's "already
-      // reviewed" check keeps working immediately without re-fetching.
       await reviewApiService.submitReview(
         companyID: widget.companyID,
         companyName: widget.companyName,
@@ -134,26 +180,31 @@ class _CompanyReviewScreenState extends State<CompanyReviewScreen> {
       );
       await firebaseService.saveReview(review);
 
+      _stepTimer?.cancel();
       if (!mounted) return;
       setState(() {
         _isSubmitting = false;
         _submitted = true;
       });
     } on ReviewApiException catch (e) {
+      _stepTimer?.cancel();
       if (!mounted) return;
-      setState(() => _isSubmitting = false);
+      setState(() {
+        _isSubmitting = false;
+        _errorMessage = e.message;
+      });
       if (e.statusCode == 409) {
-        // Backend says a review already exists — refresh local state so
-        // the "already reviewed" screen shows instead of the form.
         _showSnack("You've already reviewed this company.");
         _loadInitialData();
-      } else {
-        _showSnack(e.message);
       }
     } catch (e) {
+      _stepTimer?.cancel();
       if (!mounted) return;
-      setState(() => _isSubmitting = false);
-      _showSnack("Failed to submit review. Please try again.");
+      setState(() {
+        _isSubmitting = false;
+        _errorMessage =
+            "Failed to submit review to AI model. Please check network and try again.";
+      });
     }
   }
 
@@ -303,12 +354,188 @@ class _CompanyReviewScreenState extends State<CompanyReviewScreen> {
     );
   }
 
+  Widget _buildProcessingMessageBox() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      margin: const EdgeInsets.only(bottom: 24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color.fromARGB(255, 31, 31, 31),
+            Color.fromARGB(255, 65, 65, 65),
+          ],
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 12,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          const SizedBox(
+            width: 36,
+            height: 36,
+            child: CircularProgressIndicator(
+              strokeWidth: 3,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const CustomText(
+            text: "Processing Review with AI Model",
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            textAlign: TextAlign.center,
+            lineHeight: 1.2,
+          ),
+          const SizedBox(height: 10),
+          CustomText(
+            text: _processingStep,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xFF64B5F6),
+            textAlign: TextAlign.center,
+            lineHeight: 1.4,
+          ),
+          const SizedBox(height: 10),
+          const CustomText(
+            text:
+                "Please wait ~15–30s while the AI NLP model processes your review and updates company insights.",
+            fontSize: 11.5,
+            color: Color(0xFFB0BEC5),
+            textAlign: TextAlign.center,
+            lineHeight: 1.4,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorMessageBox() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.only(bottom: 24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color.fromARGB(255, 55, 20, 20),
+            Color.fromARGB(255, 90, 30, 30),
+          ],
+        ),
+        border: Border.all(color: Colors.redAccent.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.error_outline_rounded,
+                color: Colors.redAccent,
+                size: 22,
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: CustomText(
+                  text: "Submission Issue",
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  lineHeight: 1.2,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(
+                  Icons.copy_rounded,
+                  color: Colors.white70,
+                  size: 20,
+                ),
+                tooltip: "Copy Review Text",
+                onPressed: _copyToClipboard,
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          CustomText(
+            text: _errorMessage ?? "Failed to submit review to AI model.",
+            fontSize: 12.5,
+            color: const Color(0xFFFFCDD2),
+            lineHeight: 1.4,
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _submitReview,
+                  icon: const Icon(
+                    Icons.refresh_rounded,
+                    size: 18,
+                    color: Colors.black,
+                  ),
+                  label: const Text(
+                    "Try Again",
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              OutlinedButton.icon(
+                onPressed: _copyToClipboard,
+                icon: const Icon(
+                  Icons.copy_rounded,
+                  size: 16,
+                  color: Colors.white,
+                ),
+                label: const Text(
+                  "Copy Text",
+                  style: TextStyle(color: Colors.white),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.white54),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildReviewForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _CompanyBadge(logoPath: widget.logoPath, name: widget.companyName),
-        const SizedBox(height: 28),
+        const SizedBox(height: 24),
+
+        if (_isSubmitting) _buildProcessingMessageBox(),
+
+        if (!_isSubmitting && _errorMessage != null) _buildErrorMessageBox(),
 
         // ── Employment-required notice ──────────────────────────
         if (!_isActiveEmployee) ...[
@@ -345,14 +572,74 @@ class _CompanyReviewScreenState extends State<CompanyReviewScreen> {
           const SizedBox(height: 24),
         ],
 
-        const CustomText(
-          text: "YOUR REVIEW",
-          fontSize: 11,
-          fontWeight: FontWeight.bold,
-          color: ElevateColor.whitegray,
-          lineHeight: 1.0,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const CustomText(
+              text: "YOUR REVIEW",
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: ElevateColor.whitegray,
+              lineHeight: 1.0,
+            ),
+            Row(
+              children: [
+                InkWell(
+                  onTap: _copyToClipboard,
+                  borderRadius: BorderRadius.circular(12),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.copy_rounded,
+                          size: 14,
+                          color: ElevateColor.gray,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          "Copy",
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: ElevateColor.gray,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: _pasteFromClipboard,
+                  borderRadius: BorderRadius.circular(12),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.content_paste_rounded,
+                          size: 14,
+                          color: ElevateColor.gray,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          "Paste",
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: ElevateColor.gray,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
 
         Container(
           decoration: BoxDecoration(

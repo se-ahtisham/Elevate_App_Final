@@ -1419,7 +1419,7 @@ class FirebaseService {
     String jobSeekerID,
   ) async {
     final snap = await db
-        .collection('employees')
+        .collection('companyEmployees')
         .where('jobSeekerID', isEqualTo: jobSeekerID)
         .get();
     return snap.docs
