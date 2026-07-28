@@ -460,9 +460,11 @@ class FirebaseService {
   Future<void> createPost(PostModel post) async {
     final batch = db.batch();
     batch.set(db.collection('posts').doc(post.postID), post.toMap());
-    batch.update(db.collection('jobSeekers').doc(post.authorID), {
-      'postList': FieldValue.arrayUnion([post.postID]),
-    });
+    if (post.authorType != 'Company') {
+      batch.update(db.collection('jobSeekers').doc(post.authorID), {
+        'postList': FieldValue.arrayUnion([post.postID]),
+      });
+    }
     await batch.commit();
   }
 
@@ -647,6 +649,33 @@ class FirebaseService {
   ) async {
     final seeker = await getJobSeeker(jobSeekerID);
     final requestIDs = seeker?.followRequests ?? [];
+
+    final result = <Map<String, String>>[];
+    for (final requestID in requestIDs) {
+      final request = await getFollowRequest(requestID);
+      if (request == null || request.status != 'Pending') continue;
+
+      final fromUser = await getJobSeeker(request.fromID);
+      if (fromUser == null) continue;
+
+      result.add({
+        'requestID': request.requestID,
+        'fromID': request.fromID,
+        'name': fromUser.name,
+        'imageURL': fromUser.profilePic,
+        'shortDescription': fromUser.experienceLevel.isNotEmpty
+            ? fromUser.experienceLevel
+            : 'Job Seeker',
+      });
+    }
+    return result;
+  }
+
+  Future<List<Map<String, String>>> getFollowRequestsForCompany(
+    String companyID,
+  ) async {
+    final company = await getCompany(companyID);
+    final requestIDs = company?.followRequests ?? [];
 
     final result = <Map<String, String>>[];
     for (final requestID in requestIDs) {
@@ -1206,16 +1235,33 @@ class FirebaseService {
   static String jobExperienceTier(String experienceLevel) {
     final level = experienceLevel.toLowerCase();
 
-    if (level.contains('intern') || level.contains('0 year')) {
-      return 'Bronze';
-    }
-    if (level.contains('1 to 5') || level.contains('1-5')) {
-      return 'Silver';
-    }
-    if (level.contains('5 to onward') || level.contains('5+')) {
+    // Gold: 5+ years, Senior, Lead
+    if (level.contains('5+') ||
+        level.contains('5 to onward') ||
+        level.contains('5 years+') ||
+        level.contains('senior') ||
+        level.contains('lead')) {
       return 'Gold';
     }
 
+    // Silver: 1-5 years, Intermediate
+    if (level.contains('1 to 5') ||
+        level.contains('1-5') ||
+        level.contains('intermediate')) {
+      return 'Silver';
+    }
+
+    // Bronze: Internship, 0 years, Fresher, Entry Level
+    if (level.contains('intern') ||
+        level.contains('0 year') ||
+        level.contains('fresher') ||
+        level.contains('entry level') ||
+        level.contains('entry-level') ||
+        level.contains('junior')) {
+      return 'Bronze';
+    }
+
+    // Default fallback to Bronze for unrecognized levels
     return 'Bronze';
   }
 
@@ -1414,5 +1460,43 @@ class FirebaseService {
               p.projectTitle.toLowerCase().contains(titleQuery.toLowerCase()),
         )
         .toList();
+  }
+
+  // ─── Career Guidance Tasks ──────────────────────────────────────────────────
+
+  /// Save a new AI-generated or manually created guidance task.
+  Future<void> saveGuidanceTask(CareerGuidanceTaskModel task) async {
+    await db
+        .collection('careerGuidance')
+        .doc(task.taskID)
+        .set(task.toMap());
+  }
+
+  /// Fetch all guidance tasks for a specific job seeker, ordered by creation date.
+  Future<List<CareerGuidanceTaskModel>> getGuidanceTasks(
+    String jobSeekerID,
+  ) async {
+    final snap = await db
+        .collection('careerGuidance')
+        .where('jobSeekerID', isEqualTo: jobSeekerID)
+        .get();
+    final tasks = snap.docs
+        .map((d) => CareerGuidanceTaskModel.fromMap(d.data()))
+        .toList();
+    tasks.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return tasks;
+  }
+
+  /// Partially update a guidance task (e.g. mark complete, change priority).
+  Future<void> updateGuidanceTask(
+    String taskID,
+    Map<String, dynamic> data,
+  ) async {
+    await db.collection('careerGuidance').doc(taskID).update(data);
+  }
+
+  /// Permanently delete a guidance task.
+  Future<void> deleteGuidanceTask(String taskID) async {
+    await db.collection('careerGuidance').doc(taskID).delete();
   }
 }

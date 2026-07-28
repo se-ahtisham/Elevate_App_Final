@@ -38,14 +38,45 @@ class _JobSeekerWorkingCompaniesState
     setState(() => isLoading = true);
 
     try {
+      final seeker = await firebaseService.getJobSeeker(widget.jobSeekerID);
       final employments =
           await firebaseService.getEmployeesForJobSeeker(widget.jobSeekerID);
       final companies = await firebaseService.listAllCompanies();
       final map = {for (final c in companies) c.companyID: c};
 
+      // Also process manual job experiences/internships from the job seeker profile
+      final List<CompanyEmployeeModel> combined = List.from(employments);
+      
+      if (seeker != null) {
+        for (final exp in seeker.jobExperience) {
+          // Check if this manual company already exists in employments to avoid duplicates
+          final alreadyPresent = employments.any((emp) {
+            final compName = map[emp.companyID]?.companyName ?? '';
+            return compName.toLowerCase() == exp.company.toLowerCase();
+          });
+          if (alreadyPresent) continue;
+
+          // Find if the manually added company name matches any platform company
+          final matchedCompany = companies.firstWhere(
+            (c) => c.companyName.toLowerCase() == exp.company.toLowerCase(),
+            orElse: () => CompanyModel(companyID: '', companyName: exp.company),
+          );
+
+          combined.add(
+            CompanyEmployeeModel(
+              employeeID: 'manual_${exp.company}_${exp.jobTitle}',
+              jobSeekerID: widget.jobSeekerID,
+              companyID: matchedCompany.companyID, // Empty if not a registered company
+              position: exp.jobTitle,
+              employeeStatus: 'Terminated', // Treated as past experience
+            ),
+          );
+        }
+      }
+
       if (!mounted) return;
       setState(() {
-        myEmployments = employments;
+        myEmployments = combined;
         companiesByID = map;
         isLoading = false;
       });
@@ -66,7 +97,7 @@ class _JobSeekerWorkingCompaniesState
             // ── Header ──────────────────────────────────────────
             ElevateHeader(
               title: "Working Companies",
-              subTitle: "Your employment history",
+              subTitle: "Your employment history & experiences",
               titleSize: 25,
               subtitleSize: 14,
               showBackButton: true,
@@ -88,10 +119,14 @@ class _JobSeekerWorkingCompaniesState
                           itemCount: myEmployments.length,
                           itemBuilder: (context, index) {
                             final emp = myEmployments[index];
-                            final company = companiesByID[emp.companyID];
+                            final isManual = emp.employeeID.startsWith('manual_');
+                            final company = emp.companyID.isNotEmpty 
+                                ? companiesByID[emp.companyID] 
+                                : CompanyModel(companyID: '', companyName: emp.employeeID.split('_')[1]);
                             return _CompanyEmploymentCard(
                               emp: emp,
                               company: company,
+                              isManual: isManual,
                             );
                           },
                         ),
@@ -129,7 +164,7 @@ class _JobSeekerWorkingCompaniesState
           ),
           const SizedBox(height: 8),
           const CustomText(
-            text: "You haven't been added to any\ncompany as an employee.",
+            text: "You haven't been added to any company\nor added any work experience.",
             fontSize: 13,
             color: ElevateColor.whitegray,
             textAlign: TextAlign.center,
@@ -145,8 +180,9 @@ class _JobSeekerWorkingCompaniesState
 class _CompanyEmploymentCard extends StatelessWidget {
   final CompanyEmployeeModel emp;
   final CompanyModel? company;
+  final bool isManual;
 
-  const _CompanyEmploymentCard({required this.emp, this.company});
+  const _CompanyEmploymentCard({required this.emp, this.company, this.isManual = false});
 
   @override
   Widget build(BuildContext context) {
@@ -277,36 +313,51 @@ class _CompanyEmploymentCard extends StatelessWidget {
 
             const SizedBox(width: 8),
 
-      
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  SlideLeftRoute(
-                    page: CompanyReviewScreen(
-                      companyID: emp.companyID,
-                      companyName: companyName,
-                      companyEmail: companyEmail,
-                      jobSeekerID: emp.jobSeekerID,
-                      logoPath: logoUrl,
+
+            // ── Arrow → Review ────────────────────────────────
+            emp.companyID.isEmpty
+                ? Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const CustomText(
+                      text: "Offline",
+                      fontSize: 10,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  )
+                : GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        SlideLeftRoute(
+                          page: CompanyReviewScreen(
+                            companyID: emp.companyID,
+                            companyName: companyName,
+                            companyEmail: companyEmail,
+                            jobSeekerID: emp.jobSeekerID,
+                            logoPath: logoUrl,
+                          ),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: ElevateColor.gray,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                     ),
                   ),
-                );
-              },
-              child: Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: ElevateColor.gray,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  color: Colors.white,
-                  size: 18,
-                ),
-              ),
-            ),
           ],
         ),
       ),

@@ -37,16 +37,17 @@ class CompanyViewAppliedCandidateProfileScreen extends StatelessWidget {
           child: SingleChildScrollView(
             child: Column(
               children: [
-                const ElevateHeader(
+                ElevateHeader(
                   title: "User Digital Identity",
                   subTitle: "Account Control Center",
+                  showBackButton: true,
                 ),
                 Padding(
                   padding: const EdgeInsets.only(left: 10.0, right: 20),
                   child: UserDescription(
                     imageURL: candidate.profilePic.isNotEmpty
                         ? candidate.profilePic
-                        : 'https://avatars.githubusercontent.com/u/159082885?v=4',
+                        : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(candidate.name.isNotEmpty ? candidate.name : "User")}&background=random&color=fff&size=128',
                     name: candidate.name,
                     shortDescription: candidate.shortDescription,
                     skills: candidate.skillCount,
@@ -125,36 +126,183 @@ class CompanyViewAppliedCandidateProfileScreen extends StatelessWidget {
                       Container(
                         height: 80,
                         decoration: BoxDecoration(
-                          color: const Color.fromARGB(255, 233, 233, 233),
+                          color: const Color.fromARGB(255, 240, 240, 240),
                           borderRadius: BorderRadius.circular(15),
+                          border: Border.all(
+                            color: const Color.fromARGB(255, 173, 173, 173),
+                            width: 1,
+                          ),
                         ),
                         child: Center(
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              CustomText(
+                              const CustomText(
                                 text: "EXPERIENCE LEVEL",
                                 fontSize: 20,
                                 color: ElevateColor.lightgray,
                                 fontWeight: FontWeight.bold,
-                                textAlign: TextAlign.left,
+                                textAlign: TextAlign.center,
                                 lineHeight: 1.0,
                               ),
                               const SizedBox(height: 8),
                               CustomText(
                                 text: candidate.experienceLevel.isNotEmpty
                                     ? candidate.experienceLevel
-                                    : "No experience listed",
+                                    : "Not specified",
                                 fontSize: 12,
                                 color: ElevateColor.lightgray,
                                 fontWeight: FontWeight.w300,
-                                textAlign: TextAlign.left,
+                                textAlign: TextAlign.center,
                                 lineHeight: 1.0,
                               ),
                             ],
                           ),
                         ),
+                      ),
+
+                      const SizedBox(height: 22),
+                      const CustomText(
+                        text: "SKILLS & TESTS",
+                        fontSize: 20,
+                        color: ElevateColor.lightgray,
+                        fontWeight: FontWeight.bold,
+                        textAlign: TextAlign.left,
+                        lineHeight: 1.0,
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                                horizontal: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color.fromARGB(255, 240, 240, 240),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: const Color.fromARGB(255, 173, 173, 173),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  const Icon(
+                                    Icons.verified_outlined,
+                                    size: 26,
+                                    color: ElevateColor.lightgray,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  CustomText(
+                                    text: '${candidate.passedResultIDs.length}',
+                                    fontSize: 18,
+                                    color: ElevateColor.lightgray,
+                                    fontWeight: FontWeight.bold,
+                                    textAlign: TextAlign.center,
+                                    lineHeight: 1.0,
+                                  ),
+                                  const CustomText(
+                                    text: 'Skills Passed',
+                                    fontSize: 11,
+                                    color: ElevateColor.lightgray,
+                                    fontWeight: FontWeight.w400,
+                                    textAlign: TextAlign.center,
+                                    lineHeight: 1.2,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                                horizontal: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color.fromARGB(255, 240, 240, 240),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: const Color.fromARGB(255, 173, 173, 173),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  const Icon(
+                                    Icons.military_tech_outlined,
+                                    size: 26,
+                                    color: ElevateColor.lightgray,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  CustomText(
+                                    text: '${candidate.totalBadgesEarned}',
+                                    fontSize: 18,
+                                    color: ElevateColor.lightgray,
+                                    fontWeight: FontWeight.bold,
+                                    textAlign: TextAlign.center,
+                                    lineHeight: 1.0,
+                                  ),
+                                  const CustomText(
+                                    text: 'Badges Earned',
+                                    fontSize: 11,
+                                    color: ElevateColor.lightgray,
+                                    fontWeight: FontWeight.w400,
+                                    textAlign: TextAlign.center,
+                                    lineHeight: 1.2,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                                horizontal: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color.fromARGB(255, 240, 240, 240),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: const Color.fromARGB(255, 173, 173, 173),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  const Icon(
+                                    Icons.work_outline,
+                                    size: 26,
+                                    color: ElevateColor.lightgray,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  CustomText(
+                                    text: '${candidate.totalTestsTaken}',
+                                    fontSize: 18,
+                                    color: ElevateColor.lightgray,
+                                    fontWeight: FontWeight.bold,
+                                    textAlign: TextAlign.center,
+                                    lineHeight: 1.0,
+                                  ),
+                                  const CustomText(
+                                    text: 'Tests Taken',
+                                    fontSize: 11,
+                                    color: ElevateColor.lightgray,
+                                    fontWeight: FontWeight.w400,
+                                    textAlign: TextAlign.center,
+                                    lineHeight: 1.2,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
 
                       const SizedBox(height: 22),

@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/featured_job_card.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/job_compact_tile.dart';
@@ -7,6 +8,7 @@ import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/company_mo
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_post_model.dart';
 import 'package:elevate_app/Database/Online_Database/auth_provider.dart';
 import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
+import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Jobs_Screens/career_guidance_screen.dart';
 import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Jobs_Screens/job_selection.dart';
 import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Jobs_Screens/other_platform_jobs.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
@@ -35,6 +37,7 @@ class JobScreenState extends ConsumerState<JobScreen> {
 
   List<JobPostModel> allJobsList = [];
   List<JobPostModel> recommendedJobs = [];
+  List<JobPostModel> randomJobsPool = [];
 
   String? selectedCompanyID;
   String? selectedSkillID;
@@ -96,16 +99,44 @@ class JobScreenState extends ConsumerState<JobScreen> {
           .map((d) => JobPostModel.fromMap(d.data()))
           .toList();
 
+      // Build static 10 Bronze + 10 Silver + 10 Gold random pool for no-skills mode
+      final bronzePool = fetchedJobs
+          .where(
+            (j) =>
+                FirebaseService.jobExperienceTier(j.experienceLevel) ==
+                'Bronze',
+          )
+          .toList();
+      final silverPool = fetchedJobs
+          .where(
+            (j) =>
+                FirebaseService.jobExperienceTier(j.experienceLevel) ==
+                'Silver',
+          )
+          .toList();
+      final goldPool = fetchedJobs
+          .where(
+            (j) =>
+                FirebaseService.jobExperienceTier(j.experienceLevel) == 'Gold',
+          )
+          .toList();
+
+      final samplePool = [
+        ..._randomSample(bronzePool, 10),
+        ..._randomSample(silverPool, 10),
+        ..._randomSample(goldPool, 10),
+      ];
+
       if (!mounted) return;
       setState(() {
         mySkills = skillMap;
         recommendedJobs = recommended;
         companiesByID = companyMap;
         allCompaniesList = companies;
-        followedCompaniesList = followedComps.isNotEmpty
-            ? followedComps
-            : companies;
+        // Only show actually followed companies - don't fallback to all
+        followedCompaniesList = followedComps;
         allJobsList = fetchedJobs;
+        randomJobsPool = samplePool;
         isLoading = false;
       });
     } catch (e) {
@@ -117,19 +148,60 @@ class JobScreenState extends ConsumerState<JobScreen> {
     }
   }
 
-  List<JobPostModel> get filteredJobs {
-    List<JobPostModel> result = List.from(allJobsList);
+  /// Returns up to [n] random items from [source] without repeating.
+  List<T> _randomSample<T>(List<T> source, int n) {
+    if (source.length <= n) return List.from(source);
+    final shuffled = List<T>.from(source)..shuffle(Random());
+    return shuffled.take(n).toList();
+  }
 
-    if (selectedCompanyID != null) {
-      result = result
-          .where((job) => job.companyID == selectedCompanyID)
-          .toList();
+  List<JobPostModel> get filteredJobs {
+    // ── No-skills case: use cached 10 Bronze + 10 Silver + 10 Gold random pool ──
+    if (mySkills.isEmpty) {
+      List<JobPostModel> result = List.from(randomJobsPool);
+
+      // Apply company filter if selected
+      if (selectedCompanyID != null) {
+        result = result.where((j) => j.companyID == selectedCompanyID).toList();
+      }
+      // Apply tier chip filter
+      if (selectedTierFilter != 'All') {
+        result = result
+            .where(
+              (j) =>
+                  FirebaseService.jobExperienceTier(j.experienceLevel) ==
+                  selectedTierFilter,
+            )
+            .toList();
+      }
+      return result;
     }
 
+    // ── Skills exist: skill-based matching ────────────────────────────────────
+    // Base pool is always ALL open jobs — the company carousel chip (selectedCompanyID)
+    // handles company-specific filtering when tapped. Followed companies section
+    // is a shortcut UI only — it does not restrict the base pool.
+    List<JobPostModel> result;
+    if (selectedCompanyID != null) {
+      result = allJobsList
+          .where((job) => job.companyID == selectedCompanyID)
+          .toList();
+    } else {
+      result = List.from(allJobsList);
+    }
+
+    // Filter by explicitly selected skill chip
     if (selectedSkillID != null) {
       result = result
           .where((job) => job.requiredSkills.contains(selectedSkillID))
           .toList();
+    } else {
+      // Show jobs matching at least one passed skill
+      final mySkillIds = mySkills.keys.toSet();
+      result = result.where((job) {
+        if (job.requiredSkills.isEmpty) return true;
+        return job.requiredSkills.any((s) => mySkillIds.contains(s));
+      }).toList();
     }
 
     if (selectedTierFilter != 'All') {
@@ -140,6 +212,11 @@ class JobScreenState extends ConsumerState<JobScreen> {
     }
 
     return result;
+  }
+
+  /// Compute the count of jobs from [pool] that belong to [companyID].
+  int _jobCountForCompany(String companyID, List<JobPostModel> pool) {
+    return pool.where((j) => j.companyID == companyID).length;
   }
 
   void onSelectCompany(String? companyID) {
@@ -374,8 +451,10 @@ class JobScreenState extends ConsumerState<JobScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const CustomText(
-                        text: 'Followed Companies',
+                      CustomText(
+                        text: followedCompaniesList.isEmpty
+                            ? 'All Companies'
+                            : 'Followed Companies',
                         fontSize: 16,
                         color: ElevateColor.gray,
                         fontWeight: FontWeight.w700,
@@ -384,7 +463,7 @@ class JobScreenState extends ConsumerState<JobScreen> {
                         InkWell(
                           onTap: () => onSelectCompany(null),
                           child: const CustomText(
-                            text: 'Show All Companies',
+                            text: 'Show All',
                             fontSize: 11,
                             color: Colors.blue,
                             fontWeight: FontWeight.w600,
@@ -449,9 +528,11 @@ class JobScreenState extends ConsumerState<JobScreen> {
                         final company = displayCompanies[index - 1];
                         final isSelected =
                             selectedCompanyID == company.companyID;
-                        final companyJobsCount = allJobsList
-                            .where((j) => j.companyID == company.companyID)
-                            .length;
+                        // Count consistent with filteredJobs pool
+                        final companyJobsCount = _jobCountForCompany(
+                          company.companyID,
+                          filteredJobs,
+                        );
 
                         return GestureDetector(
                           onTap: () => onSelectCompany(company.companyID),
@@ -585,18 +666,73 @@ class JobScreenState extends ConsumerState<JobScreen> {
 
                   const SizedBox(height: 24),
 
-                  // 6. FILTERED JOBS VERTICAL LISTING + MORE JOBS HEADER BUTTON
+                  // 6. FILTERED JOBS VERTICAL LISTING + MORE JOBS + GUIDANCE BUTTONS
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      CustomText(
-                        text: selectedCompanyID != null
-                            ? '${companiesByID[selectedCompanyID]?.companyName ?? "Company"} Jobs (${filteredJobs.length})'
-                            : 'Matching Positions (${filteredJobs.length})',
-                        fontSize: 16,
-                        color: ElevateColor.gray,
-                        fontWeight: FontWeight.w700,
+                      Expanded(
+                        child: CustomText(
+                          text: selectedCompanyID != null
+                              ? '${companiesByID[selectedCompanyID]?.companyName ?? "Company"} Jobs (${filteredJobs.length})'
+                              : mySkills.isEmpty
+                              ? 'Explore Jobs (${filteredJobs.length})'
+                              : followedCompaniesList.isEmpty
+                              ? 'All Matching Jobs (${filteredJobs.length})'
+                              : 'Followed Companies — Matches (${filteredJobs.length})',
+                          fontSize: 14,
+                          color: ElevateColor.gray,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
+                      const SizedBox(width: 8),
+                      // GUIDANCE button
+                      InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: () {
+                          final jobSeeker = ref.read(authProvider).jobSeeker;
+                          if (jobSeeker != null) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => CareerGuidanceScreen(
+                                  jobSeekerID: jobSeeker.jobSeekerID,
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        child: Container(
+                          height: 32,
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF1A6B3C), Color(0xFF0D3D22)],
+                            ),
+                          ),
+                          child: const Center(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.auto_awesome,
+                                  size: 11,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(width: 4),
+                                CustomText(
+                                  text: 'GUIDANCE',
+                                  fontSize: 10,
+                                  color: ElevateColor.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      // MORE JOBS button
                       InkWell(
                         borderRadius: BorderRadius.circular(20),
                         onTap: () {

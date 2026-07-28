@@ -1,5 +1,6 @@
 import 'package:elevate_app/Custom_Widgets/Search_Bar/custom_search_bar.dart';
 import 'package:elevate_app/Custom_Widgets/Text/icon_text.dart';
+import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/employee_request_tile.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
@@ -19,56 +20,125 @@ class ComapanyEmployeeRequest extends StatefulWidget {
 class _ComapanyEmployeeRequestState extends State<ComapanyEmployeeRequest> {
   final FirebaseService _firebaseService = FirebaseService();
   final AuthService _authService = AuthService();
-  String _searchQuery = '';
-  
-  late Future<List<Map<String, dynamic>>> _pendingRequestsFuture;
+  final TextEditingController _searchController = TextEditingController();
+
+  List<Map<String, dynamic>> _allRequests = [];
+  List<Map<String, dynamic>> _visibleRequests = [];
+  bool _isLoading = true;
+  final Set<String> _processingIDs = {};
 
   @override
   void initState() {
     super.initState();
-    _pendingRequestsFuture = _fetchPendingRequests();
+    _loadRequests();
   }
 
-  void _reloadRequests() {
-    setState(() {
-      _pendingRequestsFuture = _fetchPendingRequests();
-    });
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
-  Future<List<Map<String, dynamic>>> _fetchPendingRequests() async {
+  Future<void> _loadRequests() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+
     final String companyId = _authService.currentUser?.uid ?? '';
-    if (companyId.isEmpty) return [];
+    if (companyId.isEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _allRequests = [];
+        _visibleRequests = [];
+        _isLoading = false;
+      });
+      return;
+    }
 
-    final List<CompanyEmployeeModel> allEmployees = 
-        await _firebaseService.getEmployeesByCompany(companyId);
+    try {
+      final List<CompanyEmployeeModel> allEmployees = 
+          await _firebaseService.getEmployeesByCompany(companyId);
 
-    final List<CompanyEmployeeModel> pendingEmployees = allEmployees
-        .where((emp) => emp.employeeStatus == 'Pending')
-        .toList();
+      final List<CompanyEmployeeModel> pendingEmployees = allEmployees
+          .where((emp) => emp.employeeStatus == 'Pending')
+          .toList();
 
-    List<Map<String, dynamic>> employeeData = [];
-    for (var emp in pendingEmployees) {
-      final JobSeekerModel? seeker = await _firebaseService.getJobSeeker(emp.jobSeekerID);
-      if (seeker != null) {
-        if (_searchQuery.isEmpty || seeker.name.toLowerCase().contains(_searchQuery.toLowerCase())) {
+      List<Map<String, dynamic>> employeeData = [];
+      for (var emp in pendingEmployees) {
+        final JobSeekerModel? seeker = await _firebaseService.getJobSeeker(emp.jobSeekerID);
+        if (seeker != null) {
           employeeData.add({
             'employeeModel': emp,
             'jobSeeker': seeker,
           });
         }
       }
+
+      if (!mounted) return;
+      setState(() {
+        _allRequests = employeeData;
+        _visibleRequests = _applySearch();
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint("Load employee requests failed: $e");
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error loading requests: $e")),
+      );
     }
-    return employeeData;
-  }
-  
-  Future<void> _acceptRequest(CompanyEmployeeModel emp) async {
-    await _firebaseService.acceptEmployeeRequest(emp.employeeID);
-    _reloadRequests();
   }
 
-  Future<void> _rejectRequest(CompanyEmployeeModel emp) async {
-    await _firebaseService.rejectEmployeeRequest(emp.employeeID, emp.jobSeekerID, emp.companyID);
-    _reloadRequests();
+  List<Map<String, dynamic>> _applySearch() {
+    final query = _searchController.text.trim().toLowerCase();
+    if (query.isEmpty) return _allRequests;
+    return _allRequests.where((item) {
+      final JobSeekerModel seeker = item['jobSeeker'];
+      return seeker.name.toLowerCase().contains(query);
+    }).toList();
+  }
+
+  void _onSearchChanged(String query) {
+    setState(() {
+      _visibleRequests = _applySearch();
+    });
+  }
+
+  Future<void> _respond(CompanyEmployeeModel emp, bool accept) async {
+    setState(() => _processingIDs.add(emp.employeeID));
+
+    try {
+      if (accept) {
+        await _firebaseService.acceptEmployeeRequest(emp.employeeID);
+      } else {
+        await _firebaseService.rejectEmployeeRequest(emp.employeeID, emp.jobSeekerID, emp.companyID);
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _allRequests.removeWhere((item) => (item['employeeModel'] as CompanyEmployeeModel).employeeID == emp.employeeID);
+        _visibleRequests.removeWhere((item) => (item['employeeModel'] as CompanyEmployeeModel).employeeID == emp.employeeID);
+        _processingIDs.remove(emp.employeeID);
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(accept ? "Employee request accepted" : "Employee request rejected"),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _processingIDs.remove(emp.employeeID));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            accept
+                ? "Couldn't accept request. Try again."
+                : "Couldn't reject request. Try again.",
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -77,72 +147,85 @@ class _ComapanyEmployeeRequestState extends State<ComapanyEmployeeRequest> {
       backgroundColor: const Color.fromARGB(255, 243, 243, 243),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 50),
+          padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              IconText(
+              // Back button
+              GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: Colors.black54),
+                    SizedBox(width: 6),
+                    Text('Back', style: TextStyle(fontSize: 14, color: Colors.black54, fontWeight: FontWeight.w500)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              const IconText(
                 text: "Explore Request",
                 iconData: Icons.people,
                 textWeight: FontWeight.w600,
                 iconSize: 25,
                 textSize: 17,
               ),
-              SizedBox(height: 25),
+              const SizedBox(height: 25),
               CustomSearchBar(
                 hintText: "Search requests",
                 backgroundColor: ElevateColor.white,
                 width: 330,
                 height: 50,
                 textSize: 15,
-                onChanged: (val) {
-                  setState(() {
-                    _searchQuery = val;
-                    _pendingRequestsFuture = _fetchPendingRequests();
-                  });
-                },
+                controller: _searchController,
+                onChanged: _onSearchChanged,
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               Expanded(
-                child: FutureBuilder<List<Map<String, dynamic>>>(
-                  future: _pendingRequestsFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    } else if (snapshot.hasError) {
-                      return Center(child: Text("Error: ${snapshot.error}"));
-                    } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                      return const Center(child: Text("No pending requests found"));
-                    }
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator(color: Colors.black))
+                    : _visibleRequests.isEmpty
+                        ? Center(
+                            child: CustomText(
+                              text: _allRequests.isEmpty
+                                  ? "No pending requests found."
+                                  : "No results found.",
+                              fontSize: 14,
+                              color: ElevateColor.gray,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          )
+                        : RefreshIndicator(
+                            onRefresh: _loadRequests,
+                            child: ListView.builder(
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              itemCount: _visibleRequests.length,
+                              itemBuilder: (context, index) {
+                                final data = _visibleRequests[index];
+                                final JobSeekerModel jobSeeker = data['jobSeeker'];
+                                final CompanyEmployeeModel employee = data['employeeModel'];
+                                final isBusy = _processingIDs.contains(employee.employeeID);
 
-                    final requests = snapshot.data!;
-                    return ListView.builder(
-                      itemCount: requests.length,
-                      itemBuilder: (context, index) {
-                        final data = requests[index];
-                        final JobSeekerModel jobSeeker = data['jobSeeker'];
-                        final CompanyEmployeeModel employee = data['employeeModel'];
-
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 5.0),
-                          child: EmployeeRequestTile(
-                            height: 120,
-                            width: 330,
-                            backgroundColor: ElevateColor.white,
-                            borderRadius: 20,
-                            imageURL: jobSeeker.profilePic.isNotEmpty
-                                ? jobSeeker.profilePic
-                                : 'lib/Resources/Images/Profile_Images/default_profile.png',
-                            name: jobSeeker.name.isNotEmpty ? jobSeeker.name : 'Unknown User',
-                            shortDescription: employee.position,
-                            acceptonTap: () => _acceptRequest(employee),
-                            rejectonTap: () => _rejectRequest(employee),
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 5.0),
+                                  child: EmployeeRequestTile(
+                                    height: 120,
+                                    width: 330,
+                                    backgroundColor: ElevateColor.white,
+                                    borderRadius: 20,
+                                    imageURL: jobSeeker.profilePic.isNotEmpty
+                                        ? jobSeeker.profilePic
+                                        : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(jobSeeker.name.isNotEmpty ? jobSeeker.name : "User")}&background=random&color=fff&size=128&bold=true',
+                                    name: jobSeeker.name.isNotEmpty ? jobSeeker.name : 'Unknown User',
+                                    shortDescription: employee.position,
+                                    acceptonTap: isBusy ? null : () => _respond(employee, true),
+                                    rejectonTap: isBusy ? null : () => _respond(employee, false),
+                                  ),
+                                );
+                              },
+                            ),
                           ),
-                        );
-                      }
-                    );
-                  }
-                ),
               ),
             ],
           ),

@@ -68,6 +68,7 @@ class AdminViewCompany extends StatelessWidget {
                     skills: 0,
                     followers: company.followersCount,
                     followings: 0,
+                    showSkills: false,
                   ),
                 ),
 

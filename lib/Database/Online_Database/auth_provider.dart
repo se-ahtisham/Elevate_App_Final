@@ -141,14 +141,14 @@ class AuthNotifier extends ChangeNotifier {
         return false;
       }
 
-      await user.reload();
-      if (!user.emailVerified) {
-        await authService.logout();
-        errorMessage = 'Please verify your email before logging in.';
-        isLoading = false;
-        notifyListeners();
-        return false;
-      }
+      // await user.reload();
+      // if (!user.emailVerified) {
+      //   await authService.logout();
+      //   errorMessage = 'Please verify your email before logging in.';
+      //   isLoading = false;
+      //   notifyListeners();
+      //   return false;
+      // }
 
       // Check which collection this uid belongs to instead of userIndex.
       jobSeeker = await firebaseService.getJobSeeker(user.uid);

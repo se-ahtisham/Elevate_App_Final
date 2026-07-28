@@ -31,6 +31,7 @@ class OtherPlatformJobsState extends ConsumerState<OtherPlatformJobs> {
   List<ApiJobModel> filteredJobs = [];
   List<String> passedSkillNames = [];
   List<Map<String, String>> passedSkillDetails = [];
+  bool hasPassedSkills = false; // tracks if user has any passed skills
 
   bool isLoading = true;
   bool hasError = false;
@@ -79,21 +80,92 @@ class OtherPlatformJobsState extends ConsumerState<OtherPlatformJobs> {
         }
       }
 
-      String searchTarget = skillNames.isNotEmpty
-          ? skillNames.join(" ")
-          : "Software Developer";
-
       List<ApiJobModel> fetchedJobs = [];
-      try {
-        fetchedJobs = await jobService.fetchAllJobs(searchTarget);
-      } catch (_) {
-        fetchedJobs = await jobService.fetchAllJobs("Developer");
+
+      if (skillNames.isNotEmpty) {
+        // ── Skills passed: search by skill names (existing behaviour) ──────────────
+        final searchTarget = skillNames.join(" ");
+        try {
+          fetchedJobs = await jobService.fetchAllJobs(searchTarget);
+        } catch (_) {
+          fetchedJobs = await jobService.fetchAllJobs("Developer");
+        }
+      } else {
+        // ── No skills passed: fetch broad multi-domain results then apply
+        //    10 Bronze (Intern/Junior/Entry) + 10 Silver (Mid/Intermediate)
+        //    + 10 Gold (Senior/Lead) random tier sampling ─────────────────────
+        List<ApiJobModel> allFetched = [];
+        try {
+          // Broad query covering multiple domains to get diverse tier results
+          allFetched = await jobService.fetchAllJobs(
+            "Software Developer Designer Engineer Analyst",
+          );
+        } catch (_) {
+          try {
+            allFetched = await jobService.fetchAllJobs("Developer");
+          } catch (_) {
+            allFetched = [];
+          }
+        }
+
+        // Tier detection from job title for ApiJobModel
+        String _apiJobTier(ApiJobModel job) {
+          final t = job.title.toLowerCase();
+          if (t.contains('senior') ||
+              t.contains('lead') ||
+              t.contains('principal') ||
+              t.contains('staff') ||
+              t.contains('director') ||
+              t.contains('head of')) {
+            return 'Gold';
+          }
+          if (t.contains('mid') ||
+              t.contains('intermediate') ||
+              t.contains('associate') ||
+              t.contains('ii') ||
+              t.contains(' 2 ') ||
+              t.contains('level 2')) {
+            return 'Silver';
+          }
+          // Junior / Intern / Entry → Bronze
+          if (t.contains('junior') ||
+              t.contains('intern') ||
+              t.contains('entry') ||
+              t.contains('graduate') ||
+              t.contains('fresher') ||
+              t.contains('trainee') ||
+              t.contains('apprentice')) {
+            return 'Bronze';
+          }
+          // Default unclassified titles → Silver (mid-level)
+          return 'Silver';
+        }
+
+        final bronzePool =
+            allFetched.where((j) => _apiJobTier(j) == 'Bronze').toList();
+        final silverPool =
+            allFetched.where((j) => _apiJobTier(j) == 'Silver').toList();
+        final goldPool =
+            allFetched.where((j) => _apiJobTier(j) == 'Gold').toList();
+
+        List<T> _sample<T>(List<T> src, int n) {
+          if (src.length <= n) return List.from(src);
+          final s = List<T>.from(src)..shuffle();
+          return s.take(n).toList();
+        }
+
+        fetchedJobs = [
+          ..._sample(bronzePool, 10),
+          ..._sample(silverPool, 10),
+          ..._sample(goldPool, 10),
+        ];
       }
 
       if (!mounted) return;
       setState(() {
         passedSkillNames = skillNames;
         passedSkillDetails = skillDetails;
+        hasPassedSkills = skillNames.isNotEmpty;
         jobs = fetchedJobs;
         isLoading = false;
       });
@@ -469,7 +541,6 @@ class OtherPlatformJobsState extends ConsumerState<OtherPlatformJobs> {
     );
   }
 }*/
-
 import 'package:elevate_app/Custom_Widgets/Buttons/icon_text_button_gradient.dart';
 import 'package:elevate_app/Custom_Widgets/Drop_Down_Menu/custom_drop_down.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';

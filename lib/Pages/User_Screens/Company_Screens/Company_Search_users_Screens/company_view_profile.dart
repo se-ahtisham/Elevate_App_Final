@@ -7,7 +7,10 @@ import "package:elevate_app/Custom_Widgets/User_Widgets/user_education.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_socialMedia.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_work.dart";
 import "package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_seeker_model.dart";
-import "package:elevate_app/Pages/User_Screens/Company_Screens/Company_Dashboard_Screens/company_message_screen.dart";
+import "package:elevate_app/Database/Online_Database/auth_service.dart";
+import "package:elevate_app/Database/Online_Database/chat_service.dart";
+import "package:elevate_app/Database/Online_Database/firebase_service.dart";
+import "package:elevate_app/Pages/Shared_Screens/chat_room_screen.dart";
 import "package:elevate_app/Pages/User_Screens/Company_Screens/Company_Dashboard_Screens/company_portfolio_check.dart";
 import "package:elevate_app/Pages/User_Screens/Company_Screens/Company_Dashboard_Screens/company_view_user_post.dart";
 import "package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart";
@@ -39,7 +42,7 @@ class CompanyViewProfile extends StatelessWidget {
                   child: UserDescription(
                     imageURL: seeker.profilePic.isNotEmpty
                         ? seeker.profilePic
-                        : 'https://avatars.githubusercontent.com/u/159082885?v=4',
+                        : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(seeker.name.isNotEmpty ? seeker.name : "User")}&background=random&color=fff&size=128',
                     name: seeker.name,
                     shortDescription: seeker.shortDescription,
                     skills: seeker.skillCount,
@@ -67,17 +70,44 @@ class CompanyViewProfile extends StatelessWidget {
                               backgroundColor: Colors.transparent,
                               borderColor: ElevateColor.gray,
                               borderWidth: 1,
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => CompanyMessageScreen(
-                                      receiverId: seeker.jobSeekerID,
-                                      receiverName: seeker.name,
-                                      receiverImage: seeker.profilePic,
+                              onTap: () async {
+                                final authService = AuthService();
+                                final companyID = authService.currentUser?.uid ?? '';
+                                final firebaseService = FirebaseService();
+                                final company = await firebaseService.getCompany(companyID);
+                                final companyName = company?.companyName ?? 'Company';
+                                final companyAvatar = company?.logo.isNotEmpty == true
+                                    ? company!.logo
+                                    : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(companyName)}&background=random&color=fff&size=128';
+                                final seekerAvatar = seeker.profilePic.isNotEmpty
+                                    ? seeker.profilePic
+                                    : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(seeker.name)}&background=random&color=fff&size=128';
+                                try {
+                                  final chatID = await ChatService().getOrCreateChat(
+                                    myID: companyID,
+                                    myName: companyName,
+                                    myAvatar: companyAvatar,
+                                    otherID: seeker.jobSeekerID,
+                                    otherName: seeker.name,
+                                    otherAvatar: seekerAvatar,
+                                  );
+                                  if (!context.mounted) return;
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => ChatRoomScreen(
+                                        chatID: chatID,
+                                        otherUserName: seeker.name,
+                                        otherUserAvatar: seekerAvatar,
+                                      ),
                                     ),
-                                  ),
-                                );
+                                  );
+                                } catch (_) {
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Could not open chat.')),
+                                  );
+                                }
                               },
                             ),
                           ),

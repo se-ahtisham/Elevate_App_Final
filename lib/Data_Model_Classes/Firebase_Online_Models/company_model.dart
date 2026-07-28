@@ -3,8 +3,6 @@ class CompanyModel {
   final String email;
   final String password;
   final String userType; // 'Company'
-  final String securityQuestion;
-  final String securityAnswer;
   final String companyName;
   final String industry;
   final String website;
@@ -28,8 +26,6 @@ class CompanyModel {
     this.email = '',
     this.password = '',
     this.userType = 'Company',
-    this.securityQuestion = '',
-    this.securityAnswer = '',
     this.companyName = '',
     this.industry = '',
     this.website = '',
@@ -55,8 +51,6 @@ class CompanyModel {
       'email': email,
       'password': password,
       'userType': userType,
-      'securityQuestion': securityQuestion,
-      'securityAnswer': securityAnswer,
       'companyName': companyName,
       'industry': industry,
       'website': website,
@@ -83,8 +77,6 @@ class CompanyModel {
       email: map['email'] ?? '',
       password: map['password'] ?? '',
       userType: map['userType'] ?? 'Company',
-      securityQuestion: map['securityQuestion'] ?? '',
-      securityAnswer: map['securityAnswer'] ?? '',
       companyName: map['companyName'] ?? '',
       industry: map['industry'] ?? '',
       website: map['website'] ?? '',
@@ -130,8 +122,6 @@ class CompanyModel {
       companyID: companyID,
       email: email,
       userType: userType,
-      securityQuestion: securityQuestion,
-      securityAnswer: securityAnswer,
       companyName: companyName ?? this.companyName,
       industry: industry ?? this.industry,
       website: website ?? this.website,

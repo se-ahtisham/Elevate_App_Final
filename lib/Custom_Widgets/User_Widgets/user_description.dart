@@ -36,6 +36,7 @@ class UserDescription extends StatelessWidget {
   final int skills;
   final int followings;
   final int followers;
+  final bool showSkills;
 
   const UserDescription({
     super.key,
@@ -45,6 +46,7 @@ class UserDescription extends StatelessWidget {
     this.skills = 0,
     this.followings = 0,
     this.followers = 0,
+    this.showSkills = true,
   });
 
   ImageProvider? _getImageProvider(String path) {
@@ -109,22 +111,24 @@ class UserDescription extends StatelessWidget {
               SizedBox(height: 10),
               Row(
                 children: [
-                  // Skill Column
-                  Column(
-                    children: [
-                      CustomText(
-                        text: skills.toString(),
-                        fontSize: 15,
-                        lineHeight: 1,
-                        fontWeight: FontWeight.w600,
-                        color: ElevateColor.gray,
-                      ),
-                      CustomText(text: "SKILLS", fontSize: 10),
-                    ],
-                  ),
-                  SizedBox(width: 20),
-                  Container(width: 1, height: 35, color: ElevateColor.gray),
-                  SizedBox(width: 20),
+                  if (showSkills) ...[
+                    // Skill Column
+                    Column(
+                      children: [
+                        CustomText(
+                          text: skills.toString(),
+                          fontSize: 15,
+                          lineHeight: 1,
+                          fontWeight: FontWeight.w600,
+                          color: ElevateColor.gray,
+                        ),
+                        CustomText(text: "SKILLS", fontSize: 10),
+                      ],
+                    ),
+                    SizedBox(width: 20),
+                    Container(width: 1, height: 35, color: ElevateColor.gray),
+                    SizedBox(width: 20),
+                  ],
                   // Followers Column
                   Column(
                     children: [

@@ -1,7 +1,7 @@
 import "package:elevate_app/Animation/slide_left_route.dart";
 import "package:elevate_app/Custom_Widgets/Buttons/icon_text_button.dart";
 import "package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart";
-import "package:elevate_app/Custom_Widgets/Header/elevate_header.dart";
+
 import "package:elevate_app/Custom_Widgets/Text/custom_text.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_description.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_education.dart";
@@ -16,6 +16,7 @@ import "package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart";
 import "package:flutter/material.dart";
 import 'package:flutter/services.dart';
 import "package:flutter_riverpod/flutter_riverpod.dart";
+import "package:elevate_app/Custom_Widgets/Header/elevate_header.dart";
 
 class JobSeekerProfileScreen extends ConsumerStatefulWidget {
   const JobSeekerProfileScreen({super.key});
@@ -86,7 +87,7 @@ class _JobSeekerProfileScreenState
                 child: UserDescription(
                   imageURL: jobSeeker.profilePic.isNotEmpty
                       ? jobSeeker.profilePic
-                      : 'https://avatars.githubusercontent.com/u/159082885?v=4',
+                      : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(jobSeeker.name.isNotEmpty ? jobSeeker.name : "User")}&background=random&color=fff&size=128',
                   name: jobSeeker.name,
                   shortDescription: jobSeeker.about.isNotEmpty
                       ? jobSeeker.about
@@ -325,7 +326,6 @@ class _JobSeekerProfileScreenState
 
                     const SizedBox(height: 40),
 
-                    // ── Log Out ────────────────────────────────
                     TexxtButton(
                       text: "Log Out",
                       textSize: 13,

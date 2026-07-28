@@ -6,6 +6,7 @@ import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Test_Fields/custom_Text_Field.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Database/Online_Database/auth_provider.dart';
+import 'package:elevate_app/Database/Mock_Data/demo_data_seeder.dart';
 import 'package:elevate_app/Navigations/admin_bottom_navigation.dart';
 import 'package:elevate_app/Navigations/company_bottom_navigation.dart';
 import 'package:elevate_app/Navigations/job_seeker_bottom_navigation.dart';
@@ -341,6 +342,35 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             context,
                             SlideLeftRoute(page: SignUpScreen()),
                           );
+                        },
+                      ),
+                      SizedBox(height: 20),
+                      TexxtButton(
+                        text: "Seed Demo Data (TESTING)",
+                        textSize: 13,
+                        textColor: Colors.white,
+                        textWeight: FontWeight.w500,
+                        textAlign: TextAlign.center,
+                        backgroundColor: Colors.red,
+                        height: 50,
+                        onTap: () async {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Seeding data... Please wait.')),
+                          );
+                          try {
+                            await DemoDataSeeder().seedAllData();
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Demo Data Seeded Successfully!')),
+                              );
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Error: $e')),
+                              );
+                            }
+                          }
                         },
                       ),
                     ],
