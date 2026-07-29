@@ -1,8 +1,9 @@
 import 'package:elevate_app/Custom_Widgets/Search_Bar/custom_search_bar.dart';
-import 'package:elevate_app/Custom_Widgets/Text/icon_text.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/user_Comment_tile.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 
 import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/post_model.dart';
@@ -46,35 +47,38 @@ class _CompanyViewUserPostState extends State<CompanyViewUserPost> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: ElevateColor.white,
-      body: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 30),
+      body: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle.light,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            IconText(
-              text: "Candidate Post's",
-              iconData: Icons.people_alt_outlined,
-              textWeight: FontWeight.w600,
-              textSize: 17,
+            ElevateHeader(
+              title: "Candidate Posts",
+              subTitle: "Explore posts shared by candidate",
+              showBackButton: true,
             ),
-            SizedBox(height: 30),
-            CustomSearchBar(
-              hintText: "Explore Posts",
-              iconData: Icons.search,
-              iconColor: const Color(0xFF1C1C3A),
-              controller: searchPostController,
-              width: 350,
-              height: 50,
-              textSize: 15,
-              backgroundColor: const Color.fromARGB(255, 241, 241, 241),
-              onChanged: (val) {
-                setState(() {
-                  _searchQuery = val;
-                  _postsFuture = _fetchPosts();
-                });
-              },
-            ),
-            SizedBox(height: 10),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CustomSearchBar(
+                      hintText: "Explore Posts",
+                      iconData: Icons.search,
+                      iconColor: const Color(0xFF1C1C3A),
+                      controller: searchPostController,
+                      width: 350,
+                      height: 50,
+                      textSize: 15,
+                      backgroundColor: const Color.fromARGB(255, 241, 241, 241),
+                      onChanged: (val) {
+                        setState(() {
+                          _searchQuery = val;
+                          _postsFuture = _fetchPosts();
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 10),
             Expanded(
               child: FutureBuilder<List<PostModel>>(
                 future: _postsFuture,
@@ -118,6 +122,10 @@ class _CompanyViewUserPostState extends State<CompanyViewUserPost> {
                     },
                   );
                 }
+              ),
+            ),
+                  ],
+                ),
               ),
             ),
           ],

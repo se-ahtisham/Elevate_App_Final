@@ -1,9 +1,10 @@
 import 'package:elevate_app/Custom_Widgets/Search_Bar/custom_search_bar.dart';
-import 'package:elevate_app/Custom_Widgets/Text/icon_text.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/employee_request_tile.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 
 import 'package:elevate_app/Database/Online_Database/auth_service.dart';
 import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
@@ -14,7 +15,8 @@ class ComapanyEmployeeRequest extends StatefulWidget {
   const ComapanyEmployeeRequest({super.key});
 
   @override
-  State<ComapanyEmployeeRequest> createState() => _ComapanyEmployeeRequestState();
+  State<ComapanyEmployeeRequest> createState() =>
+      _ComapanyEmployeeRequestState();
 }
 
 class _ComapanyEmployeeRequestState extends State<ComapanyEmployeeRequest> {
@@ -55,8 +57,8 @@ class _ComapanyEmployeeRequestState extends State<ComapanyEmployeeRequest> {
     }
 
     try {
-      final List<CompanyEmployeeModel> allEmployees = 
-          await _firebaseService.getEmployeesByCompany(companyId);
+      final List<CompanyEmployeeModel> allEmployees = await _firebaseService
+          .getEmployeesByCompany(companyId);
 
       final List<CompanyEmployeeModel> pendingEmployees = allEmployees
           .where((emp) => emp.employeeStatus == 'Pending')
@@ -64,12 +66,11 @@ class _ComapanyEmployeeRequestState extends State<ComapanyEmployeeRequest> {
 
       List<Map<String, dynamic>> employeeData = [];
       for (var emp in pendingEmployees) {
-        final JobSeekerModel? seeker = await _firebaseService.getJobSeeker(emp.jobSeekerID);
+        final JobSeekerModel? seeker = await _firebaseService.getJobSeeker(
+          emp.jobSeekerID,
+        );
         if (seeker != null) {
-          employeeData.add({
-            'employeeModel': emp,
-            'jobSeeker': seeker,
-          });
+          employeeData.add({'employeeModel': emp, 'jobSeeker': seeker});
         }
       }
 
@@ -83,9 +84,9 @@ class _ComapanyEmployeeRequestState extends State<ComapanyEmployeeRequest> {
       debugPrint("Load employee requests failed: $e");
       if (!mounted) return;
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error loading requests: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error loading requests: $e")));
     }
   }
 
@@ -111,19 +112,33 @@ class _ComapanyEmployeeRequestState extends State<ComapanyEmployeeRequest> {
       if (accept) {
         await _firebaseService.acceptEmployeeRequest(emp.employeeID);
       } else {
-        await _firebaseService.rejectEmployeeRequest(emp.employeeID, emp.jobSeekerID, emp.companyID);
+        await _firebaseService.rejectEmployeeRequest(
+          emp.employeeID,
+          emp.jobSeekerID,
+          emp.companyID,
+        );
       }
 
       if (!mounted) return;
       setState(() {
-        _allRequests.removeWhere((item) => (item['employeeModel'] as CompanyEmployeeModel).employeeID == emp.employeeID);
-        _visibleRequests.removeWhere((item) => (item['employeeModel'] as CompanyEmployeeModel).employeeID == emp.employeeID);
+        _allRequests.removeWhere(
+          (item) =>
+              (item['employeeModel'] as CompanyEmployeeModel).employeeID ==
+              emp.employeeID,
+        );
+        _visibleRequests.removeWhere(
+          (item) =>
+              (item['employeeModel'] as CompanyEmployeeModel).employeeID ==
+              emp.employeeID,
+        );
         _processingIDs.remove(emp.employeeID);
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(accept ? "Employee request accepted" : "Employee request rejected"),
+          content: Text(
+            accept ? "Employee request accepted" : "Employee request rejected",
+          ),
         ),
       );
     } catch (e) {
@@ -145,90 +160,92 @@ class _ComapanyEmployeeRequestState extends State<ComapanyEmployeeRequest> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 243, 243, 243),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Back button
-              GestureDetector(
-                onTap: () => Navigator.pop(context),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
+      body: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle.light,
+        child: Column(
+          children: [
+            ElevateHeader(
+              title: "Explore Request",
+              subTitle: "Manage incoming employee requests",
+              showBackButton: true,
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: Colors.black54),
-                    SizedBox(width: 6),
-                    Text('Back', style: TextStyle(fontSize: 14, color: Colors.black54, fontWeight: FontWeight.w500)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              const IconText(
-                text: "Explore Request",
-                iconData: Icons.people,
-                textWeight: FontWeight.w600,
-                iconSize: 25,
-                textSize: 17,
-              ),
-              const SizedBox(height: 25),
-              CustomSearchBar(
-                hintText: "Search requests",
-                backgroundColor: ElevateColor.white,
-                width: 330,
-                height: 50,
-                textSize: 15,
-                controller: _searchController,
-                onChanged: _onSearchChanged,
-              ),
+                    CustomSearchBar(
+                      hintText: "Search requests",
+                      backgroundColor: ElevateColor.white,
+                      width: 330,
+                      height: 50,
+                      textSize: 15,
+                      controller: _searchController,
+                      onChanged: _onSearchChanged,
+                    ),
               const SizedBox(height: 10),
               Expanded(
                 child: _isLoading
-                    ? const Center(child: CircularProgressIndicator(color: Colors.black))
+                    ? const Center(
+                        child: CircularProgressIndicator(color: Colors.black),
+                      )
                     : _visibleRequests.isEmpty
-                        ? Center(
-                            child: CustomText(
-                              text: _allRequests.isEmpty
-                                  ? "No pending requests found."
-                                  : "No results found.",
-                              fontSize: 14,
-                              color: ElevateColor.gray,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          )
-                        : RefreshIndicator(
-                            onRefresh: _loadRequests,
-                            child: ListView.builder(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              itemCount: _visibleRequests.length,
-                              itemBuilder: (context, index) {
-                                final data = _visibleRequests[index];
-                                final JobSeekerModel jobSeeker = data['jobSeeker'];
-                                final CompanyEmployeeModel employee = data['employeeModel'];
-                                final isBusy = _processingIDs.contains(employee.employeeID);
+                    ? Center(
+                        child: CustomText(
+                          text: _allRequests.isEmpty
+                              ? "No pending requests found."
+                              : "No results found.",
+                          fontSize: 14,
+                          color: ElevateColor.gray,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      )
+                    : RefreshIndicator(
+                        onRefresh: _loadRequests,
+                        child: ListView.builder(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          itemCount: _visibleRequests.length,
+                          itemBuilder: (context, index) {
+                            final data = _visibleRequests[index];
+                            final JobSeekerModel jobSeeker = data['jobSeeker'];
+                            final CompanyEmployeeModel employee =
+                                data['employeeModel'];
+                            final isBusy = _processingIDs.contains(
+                              employee.employeeID,
+                            );
 
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 5.0),
-                                  child: EmployeeRequestTile(
-                                    height: 120,
-                                    width: 330,
-                                    backgroundColor: ElevateColor.white,
-                                    borderRadius: 20,
-                                    imageURL: jobSeeker.profilePic.isNotEmpty
-                                        ? jobSeeker.profilePic
-                                        : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(jobSeeker.name.isNotEmpty ? jobSeeker.name : "User")}&background=random&color=fff&size=128&bold=true',
-                                    name: jobSeeker.name.isNotEmpty ? jobSeeker.name : 'Unknown User',
-                                    shortDescription: employee.position,
-                                    acceptonTap: isBusy ? null : () => _respond(employee, true),
-                                    rejectonTap: isBusy ? null : () => _respond(employee, false),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 5.0),
+                              child: EmployeeRequestTile(
+                                height: 120,
+                                width: 330,
+                                backgroundColor: ElevateColor.white,
+                                borderRadius: 20,
+                                imageURL: jobSeeker.profilePic.isNotEmpty
+                                    ? jobSeeker.profilePic
+                                    : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(jobSeeker.name.isNotEmpty ? jobSeeker.name : "User")}&background=random&color=fff&size=128&bold=true',
+                                name: jobSeeker.name.isNotEmpty
+                                    ? jobSeeker.name
+                                    : 'Unknown User',
+                                shortDescription: employee.position,
+                                acceptonTap: isBusy
+                                    ? null
+                                    : () => _respond(employee, true),
+                                rejectonTap: isBusy
+                                    ? null
+                                    : () => _respond(employee, false),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
               ),
-            ],
-          ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

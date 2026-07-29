@@ -7,6 +7,7 @@ import 'package:elevate_app/Custom_Widgets/Test_Fields/custom_Text_Field.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Database/Online_Database/auth_provider.dart';
 import 'package:elevate_app/Database/Mock_Data/demo_data_seeder.dart';
+import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
 import 'package:elevate_app/Navigations/admin_bottom_navigation.dart';
 import 'package:elevate_app/Navigations/company_bottom_navigation.dart';
 import 'package:elevate_app/Navigations/job_seeker_bottom_navigation.dart';
@@ -355,21 +356,38 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         height: 50,
                         onTap: () async {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Seeding data... Please wait.')),
+                            const SnackBar(
+                              content: Text('Step 1/2 — Seeding users, jobs & skills...'),
+                              duration: Duration(seconds: 4),
+                            ),
                           );
                           try {
+                            // Step 1: Seed general demo data (users, skills, jobs, posts)
                             await DemoDataSeeder().seedAllData();
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Demo Data Seeded Successfully!')),
-                              );
-                            }
+
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Step 2/2 — Seeding portfolio demo project...'),
+                                duration: Duration(seconds: 4),
+                              ),
+                            );
+
+                            // Step 2: Seed the demo portfolio project with .txt download file
+                            await FirebaseService().seedDemoProject();
+
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('✅ Demo Data Seeded Successfully!'),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
                           } catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Error: $e')),
-                              );
-                            }
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error: $e')),
+                            );
                           }
                         },
                       ),

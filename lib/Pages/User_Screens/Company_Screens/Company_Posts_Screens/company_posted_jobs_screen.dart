@@ -32,7 +32,6 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
 
   final TextEditingController _postTitleCtrl = TextEditingController();
   final TextEditingController _postContentCtrl = TextEditingController();
-  bool _isPosting = false;
 
   @override
   void initState() {
@@ -52,7 +51,10 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
     final String currentUserId = _authService.currentUser?.uid ?? '';
     if (currentUserId.isEmpty) return;
     try {
-      final doc = await FirebaseFirestore.instance.collection('companies').doc(currentUserId).get();
+      final doc = await FirebaseFirestore.instance
+          .collection('companies')
+          .doc(currentUserId)
+          .get();
       if (doc.exists && mounted) {
         setState(() {
           _company = CompanyModel.fromMap(doc.data()!);
@@ -79,8 +81,6 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
       return;
     }
 
-    setState(() => _isPosting = true);
-
     try {
       final postID = FirebaseFirestore.instance.collection("posts").doc().id;
       final createdPost = PostModel(
@@ -95,7 +95,7 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
       );
 
       await FirebaseService().createPost(createdPost);
-      
+
       _postTitleCtrl.clear();
       _postContentCtrl.clear();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -103,12 +103,12 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
       );
     } catch (e) {
       debugPrint("createPost failed: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to create post: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Failed to create post: $e")));
     } finally {
       if (mounted) {
-        setState(() => _isPosting = false);
+        // Removed undefined variable usage
       }
     }
   }
@@ -203,8 +203,11 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
                             .orderBy('postedAt', descending: true)
                             .snapshots(),
                         builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
-                            return const Center(child: CircularProgressIndicator());
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
                           }
                           if (snapshot.hasError) {
                             return StreamBuilder<QuerySnapshot>(
@@ -213,11 +216,16 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
                                   .where('companyID', isEqualTo: currentUserId)
                                   .snapshots(),
                               builder: (context, snap2) {
-                                if (snap2.connectionState == ConnectionState.waiting) {
-                                  return const Center(child: CircularProgressIndicator());
+                                if (snap2.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return const Center(
+                                    child: CircularProgressIndicator(),
+                                  );
                                 }
                                 if (snap2.hasError) {
-                                  return Center(child: Text("Error: ${snap2.error}"));
+                                  return Center(
+                                    child: Text("Error: ${snap2.error}"),
+                                  );
                                 }
                                 return _buildJobList(snap2.data?.docs ?? []);
                               },
@@ -278,13 +286,18 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
               if (docs.isEmpty) {
                 return const Center(child: Text("No community posts yet."));
               }
-              final posts = docs.map((d) => PostModel.fromMap(d.data() as Map<String, dynamic>)).toList();
+              final posts = docs
+                  .map(
+                    (d) => PostModel.fromMap(d.data() as Map<String, dynamic>),
+                  )
+                  .toList();
               posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
               final filteredPosts = posts.where((p) {
                 final q = _query.trim().toLowerCase();
                 if (q.isEmpty) return true;
-                return p.title.toLowerCase().contains(q) || p.content.toLowerCase().contains(q);
+                return p.title.toLowerCase().contains(q) ||
+                    p.content.toLowerCase().contains(q);
               }).toList();
 
               if (filteredPosts.isEmpty) {
@@ -310,11 +323,16 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
                     imageURL: post.authorProfilePic.isNotEmpty
                         ? post.authorProfilePic
                         : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(post.authorName.isNotEmpty ? post.authorName : "Company")}&background=random&color=fff&size=128&bold=true',
-                    name: post.authorName.isNotEmpty ? post.authorName : 'Company',
+                    name: post.authorName.isNotEmpty
+                        ? post.authorName
+                        : 'Company',
                     shortDescription: 'Company',
                     onLikeTap: () async {
                       try {
-                        await FirebaseService().likePost(post.postID, currentUserId);
+                        await FirebaseService().likePost(
+                          post.postID,
+                          currentUserId,
+                        );
                       } catch (e) {
                         debugPrint("Like post failed: $e");
                       }
@@ -323,7 +341,9 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
                       try {
                         await FirebaseService().deletePost(post.postID);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Post deleted successfully")),
+                          const SnackBar(
+                            content: Text("Post deleted successfully"),
+                          ),
                         );
                       } catch (e) {
                         debugPrint("Delete post failed: $e");
@@ -344,7 +364,9 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
       return const Center(child: Text("No jobs posted yet."));
     }
 
-    final jobs = docs.map((d) => JobPostModel.fromMap(d.data() as Map<String, dynamic>)).toList();
+    final jobs = docs
+        .map((d) => JobPostModel.fromMap(d.data() as Map<String, dynamic>))
+        .toList();
     final filteredJobs = _getFilteredJobs(jobs);
 
     if (filteredJobs.isEmpty) {
@@ -435,7 +457,9 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const CompanyUploadJobScreen()),
+              MaterialPageRoute(
+                builder: (context) => const CompanyUploadJobScreen(),
+              ),
             );
           },
         ),
@@ -497,8 +521,14 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
   }
 
   Widget _jobCard(JobPostModel job) {
-    final initials = job.title.isNotEmpty ? job.title.substring(0, 1).toUpperCase() : 'J';
-    final tags = [job.jobType, job.location, job.salary].where((e) => e.isNotEmpty).toList();
+    final initials = job.title.isNotEmpty
+        ? job.title.substring(0, 1).toUpperCase()
+        : 'J';
+    final tags = [
+      job.jobType,
+      job.location,
+      job.salary,
+    ].where((e) => e.isNotEmpty).toList();
 
     return Row(
       children: [

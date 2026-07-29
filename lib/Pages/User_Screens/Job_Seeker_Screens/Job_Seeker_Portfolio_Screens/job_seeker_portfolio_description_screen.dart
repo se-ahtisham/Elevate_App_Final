@@ -7,14 +7,18 @@ import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/project_mo
 import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Portfolio_Screens/portfolio_update_screen.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:elevate_app/Utils/file_downloader.dart';
 
 class JobSeekerPortfolioDescriptionScreen extends StatelessWidget {
   final ProjectModel? project;
 
   const JobSeekerPortfolioDescriptionScreen({super.key, this.project});
 
-  Future<void> downloadOrWarn(BuildContext context, String url) async {
+  Future<void> downloadOrWarn(
+    BuildContext context,
+    String url,
+    String fileName,
+  ) async {
     if (url.isEmpty) {
       showDialog(
         context: context,
@@ -25,14 +29,15 @@ class JobSeekerPortfolioDescriptionScreen extends StatelessWidget {
       );
       return;
     }
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else if (context.mounted) {
-      showDialog(
-        context: context,
-        builder: (_) => const Messagebox(message: "Couldn't open this file."),
-      );
+    try {
+      await saveOrDownloadFile(url, fileName);
+    } catch (_) {
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          builder: (_) => const Messagebox(message: "Couldn't open this file."),
+        );
+      }
     }
   }
 
@@ -144,14 +149,16 @@ class JobSeekerPortfolioDescriptionScreen extends StatelessWidget {
                       )
                     else
                       ...List.generate(p.techStack.length, (i) {
+                        final fileName = p.techStack[i];
                         final url = i < p.techFileUrls.length
                             ? p.techFileUrls[i]
                             : '';
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: _FilePill(
-                            fileName: p.techStack[i],
-                            onDownload: () => downloadOrWarn(context, url),
+                            fileName: fileName,
+                            onDownload: () =>
+                                downloadOrWarn(context, url, fileName),
                           ),
                         );
                       }),

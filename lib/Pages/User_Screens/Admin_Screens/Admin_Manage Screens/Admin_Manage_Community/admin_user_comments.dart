@@ -126,8 +126,7 @@ class _AdminUserCommentsState extends State<AdminUserComments> {
                           return AdminCommentTile(
                             title: "",
                             text: comment.commentText,
-                            imageURL:
-                                "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg",
+                            imageURL: 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(comment.authorName.isNotEmpty ? comment.authorName : "User")}&background=E0E0E0&color=757575&size=128&bold=true',
                             name: comment.authorName,
                             shortDescription: "Commenter",
                             onTap: () => deleteComment(comment),

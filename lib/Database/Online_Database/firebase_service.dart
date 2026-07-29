@@ -494,6 +494,10 @@ class FirebaseService {
           .get();
       results.addAll(snap.docs.map((d) => PostModel.fromMap(d.data())));
     }
+
+    final seen = <String>{};
+    results.retainWhere((p) => seen.add(p.postID)); // <-- ADD THIS
+
     results.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return results;
   }
@@ -504,12 +508,14 @@ class FirebaseService {
         .where('authorID', isEqualTo: authorID)
         .get();
     final posts = snap.docs.map((d) => PostModel.fromMap(d.data())).toList();
+
+    final seen = <String>{};
+    posts.retainWhere((p) => seen.add(p.postID)); // <-- ADD THIS
+
     posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return posts;
   }
 
-  // Explore feed: every company's posts + posts from job seekers the
-  // current user follows + the current user's own posts.
   Future<List<PostModel>> getCommunityFeed(String userID) async {
     final seeker = await getJobSeeker(userID);
     final following = <String>{...(seeker?.following ?? []), userID}.toList();
@@ -534,6 +540,9 @@ class FirebaseService {
           .get();
       posts.addAll(snap.docs.map((d) => PostModel.fromMap(d.data())));
     }
+
+    final seen = <String>{};
+    posts.retainWhere((p) => seen.add(p.postID)); // <-- ADD THIS
 
     posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return posts;
@@ -640,6 +649,10 @@ class FirebaseService {
     final comments = snap.docs
         .map((d) => CommentModel.fromMap(d.data()))
         .toList();
+
+    final seen = <String>{};
+    comments.retainWhere((c) => seen.add(c.commentID));
+
     comments.sort((a, b) => a.createdAt.compareTo(b.createdAt));
     return comments;
   }
@@ -1466,10 +1479,7 @@ class FirebaseService {
 
   /// Save a new AI-generated or manually created guidance task.
   Future<void> saveGuidanceTask(CareerGuidanceTaskModel task) async {
-    await db
-        .collection('careerGuidance')
-        .doc(task.taskID)
-        .set(task.toMap());
+    await db.collection('careerGuidance').doc(task.taskID).set(task.toMap());
   }
 
   /// Fetch all guidance tasks for a specific job seeker, ordered by creation date.
@@ -1498,5 +1508,149 @@ class FirebaseService {
   /// Permanently delete a guidance task.
   Future<void> deleteGuidanceTask(String taskID) async {
     await db.collection('careerGuidance').doc(taskID).delete();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // DEMO ONLY — all IDs are prefixed with "DEMO_" so they are instantly
+  // distinguishable from real data and can be safely bulk-deleted.
+  // No existing jobSeeker, company, or employee documents are ever touched.
+  // ─────────────────────────────────────────────────────────────────────────
+
+  static const String _demoJobSeekerID = 'DEMO_jobSeeker_Ahmad';
+  static const String _demoProjectID = 'DEMO_project_SampleTestFile';
+  static const String _demoCompanyID = 'DEMO_company_Elevate';
+  static const String _demoEmployeeID = 'DEMO_employee_Ahmad';
+
+  // Permanently uploaded to Firebase Storage — no seed script needed.
+  static const String _demoFileDownloadUrl =
+      'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app'
+      '/o/demo_files%2Fsample_test_file.txt?alt=media&token=afd007ca-77e8-4b9f-b08f-59dc6b36dd59';
+
+  /// Seeds a fully self-contained demo dataset:
+  ///   • A demo JobSeeker  (collection: jobSeekers, doc: DEMO_jobSeeker_Ahmad)
+  ///   • A demo Project    (collection: projects,   doc: DEMO_project_SampleTestFile)
+  ///   • A demo Company    (collection: companies,  doc: DEMO_company_Elevate)
+  ///   • A demo Employee   (collection: employees,  doc: DEMO_employee_Ahmad)
+  ///
+  /// Uses the permanently uploaded sample_test_file.txt from Firebase Storage.
+  /// Safe to call multiple times — overwrites only DEMO_ documents.
+  Future<void> seedDemoProject({String? fileDownloadUrl}) async {
+    final String url = fileDownloadUrl ?? _demoFileDownloadUrl;
+    final batch = db.batch();
+
+    // 1 ── Demo JobSeeker
+    final jobSeekerRef = db.collection('jobSeekers').doc(_demoJobSeekerID);
+    batch.set(jobSeekerRef, {
+      'jobSeekerID': _demoJobSeekerID,
+      'name': 'Ahmad (Demo)',
+      'email': 'demo.ahmad@elevate.demo',
+      'password': '',
+      'userType': 'JobSeeker',
+      'profilePic': '',
+      'location': 'Lahore, Pakistan',
+      'about': 'This is a demo account created for testing purposes only.',
+      'shortDescription': 'Demo Job Seeker',
+      'experienceLevel': 'Mid',
+      'skillCount': 1,
+      'passedResultIDs': <String>[],
+      'following': <String>[],
+      'followers': <String>[],
+      'followRequests': <String>[],
+      'followedCompanies': <String>[],
+      'postList': <String>[],
+      'portfolio': [_demoProjectID],
+      'mySkillTestsResultList': <String>[],
+      'totalTestsTaken': 0,
+      'appliedJobRequests': <String>[],
+      'becomeEmployee': [_demoEmployeeID],
+      'careerGuidanceTasks': <String>[],
+      'earnedBadges': <String>[],
+      'totalBadgesEarned': 0,
+      'education': [
+        {'title': 'BS Computer Science', 'school': 'FAST-NUCES'},
+      ],
+      'jobExperience': [
+        {
+          'jobTitle': 'Flutter Developer',
+          'company': 'Elevate Demo Corp',
+          'from': '2024',
+          'to': '',
+        },
+      ],
+      // ── demo marker ──────────────────────────────────────────────────────
+      'isDemo': true,
+    });
+
+    // 2 ── Demo Project (with the uploaded file)
+    final projectRef = db.collection('projects').doc(_demoProjectID);
+    batch.set(projectRef, {
+      'projectID': _demoProjectID,
+      'jobSeekerID': _demoJobSeekerID,
+      'projectTitle': 'Project Test File',
+      'projectDescription':
+          'A sample test file created for demo purposes. '
+          'Contains random data, names, numbers and special characters. '
+          'Click the download icon to download sample_test_file.txt.',
+      'projectURL': '',
+      'techStack': ['sample_test_file.txt'],
+      'techFileUrls': [url],
+      'mediaFiles': <String>[],
+      'createdAt': DateTime.now().toIso8601String(),
+      // ── demo marker ──────────────────────────────────────────────────────
+      'isDemo': true,
+    });
+
+    // 3 ── Demo Company
+    final companyRef = db.collection('companies').doc(_demoCompanyID);
+    batch.set(companyRef, {
+      'companyID': _demoCompanyID,
+      'email': 'demo.company@elevate.demo',
+      'password': '',
+      'userType': 'Company',
+      'companyName': 'Elevate Demo Corp',
+      'industry': 'Technology',
+      'website': 'https://elevate.demo',
+      'logo': '',
+      'description': 'Demo company account — for testing only.',
+      'location': 'Lahore, Pakistan',
+      'companySize': 10,
+      'activeJobs': 0,
+      'followersCount': 0,
+      'followers': <String>[],
+      'followRequests': <String>[],
+      'employeeList': [_demoEmployeeID],
+      'companyWeaknessList': <String>[],
+      'companyStrengthList': <String>[],
+      'achievementList': <String>[],
+      'receivedApplications': <String>[],
+      'postedJobs': <String>[],
+      // ── demo marker ──────────────────────────────────────────────────────
+      'isDemo': true,
+    });
+
+    // 4 ── Demo Employee link (company ↔ job seeker)
+    final employeeRef = db.collection('employees').doc(_demoEmployeeID);
+    batch.set(employeeRef, {
+      'employeeID': _demoEmployeeID,
+      'jobSeekerID': _demoJobSeekerID,
+      'companyID': _demoCompanyID,
+      'position': 'Demo Flutter Developer',
+      'employeeStatus': 'Active',
+      // ── demo marker ──────────────────────────────────────────────────────
+      'isDemo': true,
+    });
+
+    await batch.commit();
+  }
+
+  /// Removes ALL demo documents created by [seedDemoProject].
+  /// Call this to clean up the demo dataset without touching any real data.
+  Future<void> deleteDemoData() async {
+    final batch = db.batch();
+    batch.delete(db.collection('jobSeekers').doc(_demoJobSeekerID));
+    batch.delete(db.collection('projects').doc(_demoProjectID));
+    batch.delete(db.collection('companies').doc(_demoCompanyID));
+    batch.delete(db.collection('employees').doc(_demoEmployeeID));
+    await batch.commit();
   }
 }

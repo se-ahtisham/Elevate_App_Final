@@ -202,7 +202,7 @@ class JobSeekerFollowRequestsState
                                 borderRadius: 20,
                                 imageURL: (r['imageURL'] ?? '').isNotEmpty
                                     ? r['imageURL']!
-                                    : 'lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg',
+                                    : 'https://ui-avatars.com/api/?name=User&background=E0E0E0&color=757575&size=128&bold=true',
                                 name: r['name'] ?? '',
                                 shortDescription: r['shortDescription'] ?? '',
                                 acceptonTap: isBusy

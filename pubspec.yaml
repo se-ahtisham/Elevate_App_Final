@@ -110,6 +110,7 @@ flutter:
     - lib/Animation/QR_Scan.gif
     - lib/Animation/Welcome.gif
     - .env
+    - sample_test_file.txt
      
 
   # An image asset can refer to one or more resolution-specific "variants", see

@@ -172,7 +172,7 @@ class _AdminSearchJobSeekersState extends State<AdminSearchJobSeekers> {
                             child: ExperienceWhiteBlackFull(
                               imageURL: seeker.profilePic.isNotEmpty
                                   ? seeker.profilePic
-                                  : "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg",
+                                  : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(seeker.name.isNotEmpty ? seeker.name : "User")}&background=E0E0E0&color=757575&size=128&bold=true',
                               name: seeker.name,
                               shortDescription: seeker.about.isNotEmpty
                                   ? seeker.about
