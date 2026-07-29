@@ -55,7 +55,7 @@ class CommunitySearchState extends ConsumerState<CommunitySearch> {
           : 'Job Seeker',
       'imageUrl': seeker.profilePic.isNotEmpty
           ? seeker.profilePic
-          : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(seeker.name.isNotEmpty ? seeker.name : "User")}&background=E0E0E0&color=757575&size=128&bold=true',
+          : 'lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg',
       'type': 'JobSeeker',
     };
   }
@@ -67,7 +67,7 @@ class CommunitySearchState extends ConsumerState<CommunitySearch> {
       'subtitle': company.industry.isNotEmpty ? company.industry : 'Company',
       'imageUrl': company.logo.isNotEmpty
           ? company.logo
-          : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(company.companyName.isNotEmpty ? company.companyName : "Company")}&background=E0E0E0&color=757575&size=128&bold=true',
+          : 'lib/Resources/Images/Profile_Images/Company_Logo.jpg',
       'type': 'Company',
     };
   }

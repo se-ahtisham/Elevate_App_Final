@@ -205,7 +205,7 @@ class UserCommunityMypostState extends ConsumerState<UserCommunityMypost>
               hintText: "Post Description",
               imageURL: user.profilePic.isNotEmpty
                   ? user.profilePic
-                  : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(user.name.isNotEmpty ? user.name : "User")}&background=E0E0E0&color=757575&size=128&bold=true',
+                  : "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg",
               name: user.name,
               shortDescription: "Job Seeker",
               titleController: titleController,
@@ -250,7 +250,9 @@ class UserCommunityMypostState extends ConsumerState<UserCommunityMypost>
                       isLiked: uid != null && post.likedByUserIDs.contains(uid),
                       imageURL: post.authorProfilePic.isNotEmpty
                           ? post.authorProfilePic
-                          : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(post.authorName.isNotEmpty ? post.authorName : "User")}&background=E0E0E0&color=757575&size=128&bold=true',
+                          : (post.authorType.toLowerCase() == 'company'
+                              ? "lib/Resources/Images/Profile_Images/Company_Logo.jpg"
+                              : "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg"),
                       name: post.authorName,
                       shortDescription: "Job Seeker",
                       onDeleteTap: () => deletePost(post),

@@ -20,10 +20,7 @@ class UserCommunityExploreScreen extends ConsumerStatefulWidget {
 enum ExploreFilter { all, jobSeekers, companies }
 
 class UserCommunityExploreScreenState
-    extends ConsumerState<UserCommunityExploreScreen>
-    with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true;
+    extends ConsumerState<UserCommunityExploreScreen> {
   final firebaseService = FirebaseService();
   final searchController = TextEditingController();
 
@@ -61,11 +58,8 @@ class UserCommunityExploreScreenState
     }
     final fetched = await firebaseService.getCommunityFeed(uid);
     if (!mounted) return;
-    // Deduplicate by postID to prevent Flutter "Duplicate keys found" error
-    final seen = <String>{};
-    final unique = fetched.where((p) => seen.add(p.postID)).toList();
     setState(() {
-      allPosts = unique;
+      allPosts = fetched;
       visiblePosts = applyFilterAndSearch();
       isLoading = false;
     });
@@ -153,9 +147,7 @@ class UserCommunityExploreScreenState
           postTitle: post.title,
         ),
       ),
-    ).then((_) {
-      if (mounted) loadFeed();
-    });
+    ).then((value) => loadFeed());
   }
 
   Widget filterChip(String label, ExploreFilter filter) {
@@ -184,7 +176,6 @@ class UserCommunityExploreScreenState
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // required by AutomaticKeepAliveClientMixin
     final uid = myID;
 
     return SingleChildScrollView(
@@ -252,7 +243,9 @@ class UserCommunityExploreScreenState
                 usershortDescription: post.authorType,
                 image: post.authorProfilePic.isNotEmpty
                     ? post.authorProfilePic
-                    : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(post.authorName.isNotEmpty ? post.authorName : "User")}&background=E0E0E0&color=757575&size=128&bold=true',
+                    : (post.authorType.toLowerCase() == 'company'
+                        ? "lib/Resources/Images/Profile_Images/Company_Logo.jpg"
+                        : "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg"),
                 postTitle: post.title,
                 postText: post.content,
                 textSize: 13,

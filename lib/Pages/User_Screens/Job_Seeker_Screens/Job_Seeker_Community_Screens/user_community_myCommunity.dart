@@ -184,7 +184,9 @@ class UserCommunityMycommunityScreenState
                         child: WhiteBlackUser(
                           imageURL: imageUrl.isNotEmpty
                               ? imageUrl
-                              : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent((member['name']?.toString() ?? 'User').isNotEmpty ? (member['name']?.toString() ?? 'User') : 'User')}&background=E0E0E0&color=757575&size=128&bold=true',
+                              : (member['type'] == 'Company'
+                                  ? "lib/Resources/Images/Profile_Images/Company_Logo.jpg"
+                                  : "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg"),
                           name: member['name'] ?? '',
                           shortDescription: member['subtitle'] ?? '',
                           experience: member['type'] ?? '',
