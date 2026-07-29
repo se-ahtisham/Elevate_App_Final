@@ -38,7 +38,7 @@ class _AdminDeleteJobSeekersState extends State<AdminDeleteJobSeekers> {
     super.dispose();
   }
 
- Future<void> loadAllJobSeekers() async {
+  Future<void> loadAllJobSeekers() async {
     if (!mounted) return;
     setState(() => isLoading = true);
 
@@ -77,7 +77,7 @@ class _AdminDeleteJobSeekersState extends State<AdminDeleteJobSeekers> {
     );
   }
 
-Future<void> deleteJobSeeker(JobSeekerModel seeker) async {
+  Future<void> deleteJobSeeker(JobSeekerModel seeker) async {
     try {
       await firebaseService.deleteJobSeeker(seeker.jobSeekerID);
 
@@ -102,10 +102,12 @@ Future<void> deleteJobSeeker(JobSeekerModel seeker) async {
       if (!mounted) return;
       showDialog(
         context: context,
-        builder: (_) => const Messagebox(message: "Failed to delete job seeker."),
+        builder: (_) =>
+            const Messagebox(message: "Failed to delete job seeker."),
       );
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -120,6 +122,7 @@ Future<void> deleteJobSeeker(JobSeekerModel seeker) async {
               subTitle: "Job Seekers",
               titleSize: 40,
               subtitleSize: 25,
+              showBackButton: true,
             ),
             Expanded(
               child: SingleChildScrollView(
@@ -153,7 +156,7 @@ Future<void> deleteJobSeeker(JobSeekerModel seeker) async {
                       const Center(
                         child: Padding(
                           padding: EdgeInsets.symmetric(vertical: 40),
-                          child: CircularProgressIndicator(color: Colors.black,),
+                          child: CircularProgressIndicator(color: Colors.black),
                         ),
                       )
                     else if (visibleJobSeekers.isEmpty)

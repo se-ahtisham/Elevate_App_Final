@@ -174,6 +174,7 @@ class _AdminBadgesManagementState extends State<AdminBadgesManagement> {
               subTitle: "Badges",
               titleSize: 40,
               subtitleSize: 25,
+              showBackButton: true,
             ),
 
             Expanded(

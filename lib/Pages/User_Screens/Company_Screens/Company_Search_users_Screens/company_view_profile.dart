@@ -36,6 +36,7 @@ class CompanyViewProfile extends StatelessWidget {
                 const ElevateHeader(
                   title: "User Digital Identity",
                   subTitle: "Account Control Center",
+                  showBackButton: true,
                 ),
                 Padding(
                   padding: const EdgeInsets.only(left: 10.0, right: 20),
@@ -52,7 +53,10 @@ class CompanyViewProfile extends StatelessWidget {
                 ),
 
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 40),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 30,
+                    horizontal: 40,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -72,25 +76,31 @@ class CompanyViewProfile extends StatelessWidget {
                               borderWidth: 1,
                               onTap: () async {
                                 final authService = AuthService();
-                                final companyID = authService.currentUser?.uid ?? '';
+                                final companyID =
+                                    authService.currentUser?.uid ?? '';
                                 final firebaseService = FirebaseService();
-                                final company = await firebaseService.getCompany(companyID);
-                                final companyName = company?.companyName ?? 'Company';
-                                final companyAvatar = company?.logo.isNotEmpty == true
+                                final company = await firebaseService
+                                    .getCompany(companyID);
+                                final companyName =
+                                    company?.companyName ?? 'Company';
+                                final companyAvatar =
+                                    company?.logo.isNotEmpty == true
                                     ? company!.logo
                                     : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(companyName)}&background=random&color=fff&size=128';
-                                final seekerAvatar = seeker.profilePic.isNotEmpty
+                                final seekerAvatar =
+                                    seeker.profilePic.isNotEmpty
                                     ? seeker.profilePic
                                     : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(seeker.name)}&background=random&color=fff&size=128';
                                 try {
-                                  final chatID = await ChatService().getOrCreateChat(
-                                    myID: companyID,
-                                    myName: companyName,
-                                    myAvatar: companyAvatar,
-                                    otherID: seeker.jobSeekerID,
-                                    otherName: seeker.name,
-                                    otherAvatar: seekerAvatar,
-                                  );
+                                  final chatID = await ChatService()
+                                      .getOrCreateChat(
+                                        myID: companyID,
+                                        myName: companyName,
+                                        myAvatar: companyAvatar,
+                                        otherID: seeker.jobSeekerID,
+                                        otherName: seeker.name,
+                                        otherAvatar: seekerAvatar,
+                                      );
                                   if (!context.mounted) return;
                                   Navigator.push(
                                     context,
@@ -105,7 +115,9 @@ class CompanyViewProfile extends StatelessWidget {
                                 } catch (_) {
                                   if (!context.mounted) return;
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Could not open chat.')),
+                                    const SnackBar(
+                                      content: Text('Could not open chat.'),
+                                    ),
                                   );
                                 }
                               },
@@ -124,7 +136,9 @@ class CompanyViewProfile extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       CustomText(
-                        text: seeker.about.isNotEmpty ? seeker.about : "No bio available.",
+                        text: seeker.about.isNotEmpty
+                            ? seeker.about
+                            : "No bio available.",
                         fontSize: 13,
                         color: ElevateColor.whitegray,
                         fontWeight: FontWeight.w400,
@@ -189,16 +203,20 @@ class CompanyViewProfile extends StatelessWidget {
                         children: seeker.education.isEmpty
                             ? [const Text("No education listed.")]
                             : seeker.education
-                                .map((edu) => Padding(
-                                      padding: const EdgeInsets.only(bottom: 15.0),
+                                  .map(
+                                    (edu) => Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: 15.0,
+                                      ),
                                       child: UserEducation(
                                         text: edu.title,
                                         subText: edu.school,
                                         iconData: Icons.school_outlined,
                                         iconSize: 25,
                                       ),
-                                    ))
-                                .toList(),
+                                    ),
+                                  )
+                                  .toList(),
                       ),
 
                       const SizedBox(height: 22),
@@ -215,17 +233,23 @@ class CompanyViewProfile extends StatelessWidget {
                         children: seeker.jobExperience.isEmpty
                             ? [const Text("No work experience listed.")]
                             : seeker.jobExperience
-                                .map((exp) => Padding(
-                                      padding: const EdgeInsets.only(bottom: 15.0),
+                                  .map(
+                                    (exp) => Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: 15.0,
+                                      ),
                                       child: UserWork(
                                         title: exp.jobTitle,
                                         subtitle: exp.company,
                                         iconData: Icons.work_outline,
                                         startDate: exp.from,
-                                        endDate: exp.to.isNotEmpty ? exp.to : "Present",
+                                        endDate: exp.to.isNotEmpty
+                                            ? exp.to
+                                            : "Present",
                                       ),
-                                    ))
-                                .toList(),
+                                    ),
+                                  )
+                                  .toList(),
                       ),
 
                       const SizedBox(height: 40),

@@ -263,7 +263,7 @@ class _AdminUpdateJobSeekerState extends State<AdminUpdateJobSeeker> {
                       borderColor: Colors.black,
                       onTap: () => Navigator.pop(context),
                     ),
-
+                    const SizedBox(height: 20),
                     // Only show the rest of the form once a user is found.
                     if (foundJobSeeker != null) ...[
                       CustomText(
@@ -589,18 +589,7 @@ class _AdminUpdateJobSeekerState extends State<AdminUpdateJobSeeker> {
                               textWeight: FontWeight.w400,
                               onTap: updateJobSeeker,
                             ),
-                      const SizedBox(height: 20),
-                      TexxtButton(
-                        text: "Cancel",
-                        height: 50,
-                        textSize: 14,
-                        textWeight: FontWeight.w400,
-                        textColor: Colors.black,
-                        backgroundColor: Colors.transparent,
-                        borderRadius: 50,
-                        borderColor: Colors.black,
-                        onTap: () => Navigator.pop(context),
-                      ),
+
                       const SizedBox(height: 30),
                     ],
                   ],

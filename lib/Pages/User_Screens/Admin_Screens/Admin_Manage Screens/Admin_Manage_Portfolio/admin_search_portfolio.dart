@@ -97,6 +97,7 @@ class AdminSearchPortfolioState extends State<AdminSearchPortfolio> {
               subTitle: "Job Seeker",
               titleSize: 35,
               subtitleSize: 20,
+              showBackButton: true,
             ),
             Expanded(
               child: Container(

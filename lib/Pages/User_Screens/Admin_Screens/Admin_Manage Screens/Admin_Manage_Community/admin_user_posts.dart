@@ -119,33 +119,12 @@ class _AdminUserPostsState extends State<AdminUserPosts> {
         value: SystemUiOverlayStyle.light,
         child: Column(
           children: [
-            Stack(
-              children: [
-                ElevateHeader(
-                  title: widget.jobSeeker.name,
-                  subTitle: "Posts",
-                  titleSize: 32,
-                  subtitleSize: 20,
-                  showBackButton: true,
-                ),
-                Positioned(
-                  top: 170,
-                  right: 120,
-                  child: TexxtButton(
-                    text: "Back",
-                    width: 120,
-                    height: 50,
-                    textSize: 12,
-                    textWeight: FontWeight.w500,
-                    textColor: const Color.fromARGB(255, 255, 255, 255),
-                    backgroundColor: const Color.fromARGB(224, 114, 114, 114),
-                    borderColor: const Color(0xFF8B8B8B),
-                    borderRadius: 80,
-                    borderWidth: 1,
-                    onTap: () => Navigator.pop(context),
-                  ),
-                ),
-              ],
+            ElevateHeader(
+              title: widget.jobSeeker.name,
+              subTitle: "Posts",
+              titleSize: 32,
+              subtitleSize: 20,
+              showBackButton: true,
             ),
 
             Padding(
@@ -182,29 +161,32 @@ class _AdminUserPostsState extends State<AdminUserPosts> {
                     )
                   : RefreshIndicator(
                       onRefresh: loadPosts,
-                      child: SingleChildScrollView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        child: Column(
-                          children: visiblePosts.map((post) {
-                            return AdminPostTile(
-                              key: ValueKey(post.postID),
-                              title: post.title,
-                              text: post.content,
-                              commentCount: post.totalCommentCount,
-                              comments: const [],
-                              imageURL: post.authorProfilePic,
-                              name: post.authorName.isNotEmpty
-                                  ? post.authorName
-                                  : widget.jobSeeker.name,
-                              shortDescription:
-                                  widget.jobSeeker.experienceLevel.isNotEmpty
-                                  ? widget.jobSeeker.experienceLevel
-                                  : "Job Seeker",
-                              deleteonTap: () => deletePost(post),
-                              viewCommentonTap: () => openComments(post),
-                            );
-                          }).toList(),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 30.0),
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          child: Column(
+                            children: visiblePosts.map((post) {
+                              return AdminPostTile(
+                                key: ValueKey(post.postID),
+                                title: post.title,
+                                text: post.content,
+                                commentCount: post.totalCommentCount,
+                                comments: const [],
+                                imageURL: post.authorProfilePic,
+                                name: post.authorName.isNotEmpty
+                                    ? post.authorName
+                                    : widget.jobSeeker.name,
+                                shortDescription:
+                                    widget.jobSeeker.experienceLevel.isNotEmpty
+                                    ? widget.jobSeeker.experienceLevel
+                                    : "Job Seeker",
+                                deleteonTap: () => deletePost(post),
+                                viewCommentonTap: () => openComments(post),
+                              );
+                            }).toList(),
+                          ),
                         ),
                       ),
                     ),
