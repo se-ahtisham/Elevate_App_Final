@@ -42,8 +42,9 @@ class _JobSeekerProfileScreenState
     setState(() => isLoading = false);
   }
 
-  void _handleLogout() {
-    ref.read(authProvider.notifier).logout();
+  void _handleLogout() async {
+    await ref.read(authProvider.notifier).logout();
+    if (!mounted) return;
     Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginScreen()),
       (route) => false,

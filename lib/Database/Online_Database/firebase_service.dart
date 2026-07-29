@@ -1511,7 +1511,7 @@ class FirebaseService {
   // Permanently uploaded to Firebase Storage — no seed script needed.
   static const String _demoFileDownloadUrl =
       'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app'
-      '/o/demo_files%2Fsample_test_file.txt?alt=media&token=8d505597-cdc0-4153-9320-a4eb5c0129b2';
+      '/o/demo_files%2Fsample_test_file.txt?alt=media&token=afd007ca-77e8-4b9f-b08f-59dc6b36dd59';
 
   /// Seeds a fully self-contained demo dataset:
   ///   • A demo JobSeeker  (collection: jobSeekers, doc: DEMO_jobSeeker_Ahmad)

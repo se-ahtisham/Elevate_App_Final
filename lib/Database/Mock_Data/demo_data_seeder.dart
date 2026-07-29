@@ -21,7 +21,7 @@ class DemoDataSeeder {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   static const String _demoFileDownloadUrl =
-      'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/demo_files%2Fsample_test_file.txt?alt=media&token=8d505597-cdc0-4153-9320-a4eb5c0129b2';
+      'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/demo_files%2Fsample_test_file.txt?alt=media&token=afd007ca-77e8-4b9f-b08f-59dc6b36dd59';
 
   Future<void> seedAllData() async {
     debugPrint("Clearing old demo data first...");
@@ -54,7 +54,8 @@ class DemoDataSeeder {
       SkillModel(
         skillID: 'skill_flutter',
         skillName: 'Flutter Development',
-        skillDescription: 'Cross-platform mobile & web development with Dart & Flutter.',
+        skillDescription:
+            'Cross-platform mobile & web development with Dart & Flutter.',
         skillImage: 'https://ui-avatars.com/api/?name=Flutter',
         category: 'Mobile Development',
       ),
@@ -68,14 +69,16 @@ class DemoDataSeeder {
       SkillModel(
         skillID: 'skill_uiux',
         skillName: 'UI/UX Design',
-        skillDescription: 'User research, wireframing, Figma prototyping, and design systems.',
+        skillDescription:
+            'User research, wireframing, Figma prototyping, and design systems.',
         skillImage: 'https://ui-avatars.com/api/?name=UIUX',
         category: 'Design',
       ),
       SkillModel(
         skillID: 'skill_data',
         skillName: 'Data Science',
-        skillDescription: 'Data engineering, Machine Learning, Pandas, and Analytics.',
+        skillDescription:
+            'Data engineering, Machine Learning, Pandas, and Analytics.',
         skillImage: 'https://ui-avatars.com/api/?name=Data',
         category: 'Data Science',
       ),
@@ -103,13 +106,19 @@ class DemoDataSeeder {
           QuestionModel(
             questionID: 'q_f1',
             questionText: 'What is a StatefulWidget in Flutter?',
-            options: ['Widget with mutable state', 'Stateless widget', 'Function', 'Constant'],
+            options: [
+              'Widget with mutable state',
+              'Stateless widget',
+              'Function',
+              'Constant',
+            ],
             correctAnswer: 'Widget with mutable state',
             marks: 50,
           ),
           QuestionModel(
             questionID: 'q_f2',
-            questionText: 'Which keyword handles asynchronous operations in Dart?',
+            questionText:
+                'Which keyword handles asynchronous operations in Dart?',
             options: ['async / await', 'thread', 'promise', 'sync'],
             correctAnswer: 'async / await',
             marks: 50,
@@ -127,7 +136,8 @@ class DemoDataSeeder {
         questions: [
           QuestionModel(
             questionID: 'q_p1',
-            questionText: 'What decorator is used for GET endpoints in FastAPI?',
+            questionText:
+                'What decorator is used for GET endpoints in FastAPI?',
             options: ['@app.get()', '@get()', '@route()', '@api()'],
             correctAnswer: '@app.get()',
             marks: 50,
@@ -153,14 +163,24 @@ class DemoDataSeeder {
           QuestionModel(
             questionID: 'q_u1',
             questionText: 'What does UX stand for?',
-            options: ['User Experience', 'User Extension', 'Universal Execution', 'Unit eXperience'],
+            options: [
+              'User Experience',
+              'User Extension',
+              'Universal Execution',
+              'Unit eXperience',
+            ],
             correctAnswer: 'User Experience',
             marks: 50,
           ),
           QuestionModel(
             questionID: 'q_u2',
             questionText: 'What is wireframing used for?',
-            options: ['Structural visual blueprint', 'Color palette picker', 'Database modeling', 'Code syntax'],
+            options: [
+              'Structural visual blueprint',
+              'Color palette picker',
+              'Database modeling',
+              'Code syntax',
+            ],
             correctAnswer: 'Structural visual blueprint',
             marks: 50,
           ),
@@ -185,7 +205,12 @@ class DemoDataSeeder {
           QuestionModel(
             questionID: 'q_d2',
             questionText: 'What is supervised learning?',
-            options: ['Training with labeled data', 'Unlabeled data clustering', 'Manual coding', 'Rule engine'],
+            options: [
+              'Training with labeled data',
+              'Unlabeled data clustering',
+              'Manual coding',
+              'Rule engine',
+            ],
             correctAnswer: 'Training with labeled data',
             marks: 50,
           ),
@@ -207,26 +232,26 @@ class DemoDataSeeder {
         "email": "company99@test.com",
         "name": "TechCorp Innovations",
         "industry": "Software Development",
-        "logo": "https://ui-avatars.com/api/?name=TC"
+        "logo": "https://ui-avatars.com/api/?name=TC",
       },
       {
         "email": "company98@test.com",
         "name": "Creative Studio",
         "industry": "Design & UI/UX",
-        "logo": "https://ui-avatars.com/api/?name=CS"
+        "logo": "https://ui-avatars.com/api/?name=CS",
       },
       {
         "email": "company3@test.com",
         "name": "DataGen Analytics",
         "industry": "Data & AI",
-        "logo": "https://ui-avatars.com/api/?name=DA"
+        "logo": "https://ui-avatars.com/api/?name=DA",
       },
       // ── Review-test company (fresh, never reviewed) ──────────────
       {
         "email": "reviewco@test.com",
         "name": "ReviewTest Co",
         "industry": "Technology",
-        "logo": "https://ui-avatars.com/api/?name=RT"
+        "logo": "https://ui-avatars.com/api/?name=RT",
       },
     ];
 
@@ -314,7 +339,8 @@ class DemoDataSeeder {
           email: sData["email"] as String,
           password: "Test@123",
           userType: "JobSeeker",
-          profilePic: "https://ui-avatars.com/api/?name=${(sData["name"] as String)[0]}",
+          profilePic:
+              "https://ui-avatars.com/api/?name=${(sData["name"] as String)[0]}",
           location: "New York, USA",
           about: "Passionate developer looking for new opportunities.",
           shortDescription: sData["desc"] as String,
@@ -333,10 +359,19 @@ class DemoDataSeeder {
           earnedBadges: [],
           totalBadgesEarned: 0,
           education: [
-            EducationModel(year: "2023", title: "BSc Computer Science", school: "Tech University")
+            EducationModel(
+              year: "2023",
+              title: "BSc Computer Science",
+              school: "Tech University",
+            ),
           ],
           jobExperience: [
-            JobExperienceModel(jobTitle: "Developer", company: "Tech Startup", from: "2023", to: "2025")
+            JobExperienceModel(
+              jobTitle: "Developer",
+              company: "Tech Startup",
+              from: "2023",
+              to: "2025",
+            ),
           ],
         );
         await _firestore.collection('jobSeekers').doc(uid).set(seeker.toMap());
@@ -409,7 +444,8 @@ class DemoDataSeeder {
         {
           "seekerId": jobSeekerIds[0],
           "title": "Elevate E-Learning Mobile App",
-          "desc": "A full-featured mobile app built with Flutter and Firebase featuring AI skill assessments.",
+          "desc":
+              "A full-featured mobile app built with Flutter and Firebase featuring AI skill assessments.",
           "url": "https://github.com/example/elevate_app",
           "techStack": ["sample_test_file.txt"],
           "techFileUrls": [_demoFileDownloadUrl],
@@ -417,23 +453,30 @@ class DemoDataSeeder {
         {
           "seekerId": jobSeekerIds[0],
           "title": "Crypto Wallet UI Kit",
-          "desc": "Modern clean crypto wallet design system with dynamic dark mode and custom interactive charts.",
+          "desc":
+              "Modern clean crypto wallet design system with dynamic dark mode and custom interactive charts.",
           "url": "https://github.com/example/crypto_ui",
           "techStack": ["sample_test_file.txt"],
           "techFileUrls": [_demoFileDownloadUrl],
         },
         {
-          "seekerId": jobSeekerIds.length > 1 ? jobSeekerIds[1] : jobSeekerIds[0],
+          "seekerId": jobSeekerIds.length > 1
+              ? jobSeekerIds[1]
+              : jobSeekerIds[0],
           "title": "FastAPI Microservices Infrastructure",
-          "desc": "Scalable RESTful API gateway integrated with Redis caching and Dockerized deployments.",
+          "desc":
+              "Scalable RESTful API gateway integrated with Redis caching and Dockerized deployments.",
           "url": "https://github.com/example/fastapi_gateway",
           "techStack": ["sample_test_file.txt"],
           "techFileUrls": [_demoFileDownloadUrl],
         },
         {
-          "seekerId": jobSeekerIds.length > 2 ? jobSeekerIds[2] : jobSeekerIds[0],
+          "seekerId": jobSeekerIds.length > 2
+              ? jobSeekerIds[2]
+              : jobSeekerIds[0],
           "title": "Automated Stock Sentiment Analysis",
-          "desc": "Python ML pipeline fetching financial news and rendering real-time sentiment metrics.",
+          "desc":
+              "Python ML pipeline fetching financial news and rendering real-time sentiment metrics.",
           "url": "https://github.com/example/stock_sentiment",
           "techStack": ["sample_test_file.txt"],
           "techFileUrls": [_demoFileDownloadUrl],
@@ -442,7 +485,8 @@ class DemoDataSeeder {
           {
             "seekerId": jobSeekerIds[3],
             "title": "UI/UX Design Systems & Kit",
-            "desc": "Figma design prototypes, wireframes, and design spec documentation for mobile & web apps.",
+            "desc":
+                "Figma design prototypes, wireframes, and design spec documentation for mobile & web apps.",
             "url": "https://github.com/example/uiux_portfolio",
             "techStack": ["sample_test_file.txt"],
             "techFileUrls": [_demoFileDownloadUrl],
@@ -451,7 +495,8 @@ class DemoDataSeeder {
           {
             "seekerId": jobSeekerIds[4],
             "title": "Flutter Cross-Platform Architecture",
-            "desc": "Clean architecture template with state management and comprehensive test suite.",
+            "desc":
+                "Clean architecture template with state management and comprehensive test suite.",
             "url": "https://github.com/example/flutter_architecture",
             "techStack": ["sample_test_file.txt"],
             "techFileUrls": [_demoFileDownloadUrl],
@@ -472,9 +517,12 @@ class DemoDataSeeder {
         await projRef.set(project.toMap());
 
         // Update seeker portfolio array
-        await _firestore.collection('jobSeekers').doc(p["seekerId"] as String).update({
-          'portfolio': FieldValue.arrayUnion([projRef.id]),
-        });
+        await _firestore
+            .collection('jobSeekers')
+            .doc(p["seekerId"] as String)
+            .update({
+              'portfolio': FieldValue.arrayUnion([projRef.id]),
+            });
       }
     }
 
@@ -487,15 +535,19 @@ class DemoDataSeeder {
           "pic": "https://ui-avatars.com/api/?name=Ahmad+Raza",
           "type": "JobSeeker",
           "title": "Excited to share my latest Flutter project!",
-          "content": "Just published a complete open-source design kit for Flutter apps. Check out my portfolio!",
+          "content":
+              "Just published a complete open-source design kit for Flutter apps. Check out my portfolio!",
         },
         {
-          "authorId": jobSeekerIds.length > 1 ? jobSeekerIds[1] : jobSeekerIds[0],
+          "authorId": jobSeekerIds.length > 1
+              ? jobSeekerIds[1]
+              : jobSeekerIds[0],
           "name": "Usman Tariq",
           "pic": "https://ui-avatars.com/api/?name=Usman+Tariq",
           "type": "JobSeeker",
           "title": "Python 3.12 Performance Tweaks",
-          "content": "Here are 5 tips to speed up your FastAPI async endpoints by 40% using connection pooling.",
+          "content":
+              "Here are 5 tips to speed up your FastAPI async endpoints by 40% using connection pooling.",
         },
       ];
 
@@ -506,7 +558,8 @@ class DemoDataSeeder {
           "pic": "https://ui-avatars.com/api/?name=TC",
           "type": "Company",
           "title": "We are Hiring Mobile & Backend Engineers!",
-          "content": "TechCorp is expanding rapidly! Check our active job listings and apply directly on Elevate.",
+          "content":
+              "TechCorp is expanding rapidly! Check our active job listings and apply directly on Elevate.",
         });
       }
 
@@ -525,9 +578,12 @@ class DemoDataSeeder {
         await postRef.set(postModel.toMap());
 
         if (post["type"] == "JobSeeker") {
-          await _firestore.collection('jobSeekers').doc(post["authorId"] as String).update({
-            'postList': FieldValue.arrayUnion([postRef.id]),
-          });
+          await _firestore
+              .collection('jobSeekers')
+              .doc(post["authorId"] as String)
+              .update({
+                'postList': FieldValue.arrayUnion([postRef.id]),
+              });
         }
       }
     }
@@ -581,7 +637,9 @@ class DemoDataSeeder {
           "salary": "\$85,000 - \$110,000",
           "compId": companyIds[1],
           "type": "Full-time",
-          "applicants": jobSeekerIds.length > 2 ? [jobSeekerIds[1], jobSeekerIds[2]] : [],
+          "applicants": jobSeekerIds.length > 2
+              ? [jobSeekerIds[1], jobSeekerIds[2]]
+              : [],
         },
 
         // ── UI/UX Jobs (skill_uiux) ──
@@ -609,13 +667,16 @@ class DemoDataSeeder {
 
       for (var jData in jobsToSeed) {
         final jobRef = _firestore.collection('jobs').doc();
-        final List<String> applicants = List<String>.from(jData["applicants"] as List);
+        final List<String> applicants = List<String>.from(
+          jData["applicants"] as List,
+        );
 
         final jobPost = JobPostModel(
           jobID: jobRef.id,
           companyID: jData["compId"] as String,
           title: jData["title"] as String,
-          description: "Join our dynamic team for this exciting position. Require proficiency in ${jData["title"]}.",
+          description:
+              "Join our dynamic team for this exciting position. Require proficiency in ${jData["title"]}.",
           requiredSkills: [jData["skill"] as String],
           requiredBadges: [],
           salary: jData["salary"] as String,
@@ -639,7 +700,8 @@ class DemoDataSeeder {
             jobSeekerID: seekerId,
             companyID: jData["compId"] as String,
             status: "Pending",
-            coldEmail: "Hello, I am very interested in the ${jData["title"]} role and believe my skills align well with your team.",
+            coldEmail:
+                "Hello, I am very interested in the ${jData["title"]} role and believe my skills align well with your team.",
             resumeUrl: _demoFileDownloadUrl,
           );
           await appRef.set(appModel.toMap());
@@ -650,10 +712,13 @@ class DemoDataSeeder {
         }
 
         // Update company active jobs count & array & receivedApplications
-        await _firestore.collection('companies').doc(jData["compId"] as String).update({
-          'activeJobs': FieldValue.increment(1),
-          'postedJobs': FieldValue.arrayUnion([jobRef.id]),
-        });
+        await _firestore
+            .collection('companies')
+            .doc(jData["compId"] as String)
+            .update({
+              'activeJobs': FieldValue.increment(1),
+              'postedJobs': FieldValue.arrayUnion([jobRef.id]),
+            });
       }
     }
 
@@ -731,12 +796,18 @@ class DemoDataSeeder {
         await empRef.set(empModel.toMap());
 
         if (req["status"] == "Active") {
-          await _firestore.collection('companies').doc(req["companyId"] as String).update({
-            'employeeList': FieldValue.arrayUnion([empRef.id]),
-          });
-          await _firestore.collection('jobSeekers').doc(req["seekerId"] as String).update({
-            'becomeEmployee': FieldValue.arrayUnion([empRef.id]),
-          });
+          await _firestore
+              .collection('companies')
+              .doc(req["companyId"] as String)
+              .update({
+                'employeeList': FieldValue.arrayUnion([empRef.id]),
+              });
+          await _firestore
+              .collection('jobSeekers')
+              .doc(req["seekerId"] as String)
+              .update({
+                'becomeEmployee': FieldValue.arrayUnion([empRef.id]),
+              });
         }
       }
     }
@@ -811,45 +882,69 @@ class DemoDataSeeder {
 
       // Delete associated user data
       try {
-        final projectsSnap = await _firestore.collection('projects').where('jobSeekerID', isEqualTo: uid).get();
+        final projectsSnap = await _firestore
+            .collection('projects')
+            .where('jobSeekerID', isEqualTo: uid)
+            .get();
         for (var doc in projectsSnap.docs) {
           await doc.reference.delete();
         }
       } catch (_) {}
       try {
-        final postsSnap = await _firestore.collection('posts').where('authorID', isEqualTo: uid).get();
+        final postsSnap = await _firestore
+            .collection('posts')
+            .where('authorID', isEqualTo: uid)
+            .get();
         for (var doc in postsSnap.docs) {
           await doc.reference.delete();
         }
       } catch (_) {}
       try {
-        final appsSnap1 = await _firestore.collection('applications').where('jobSeekerID', isEqualTo: uid).get();
+        final appsSnap1 = await _firestore
+            .collection('applications')
+            .where('jobSeekerID', isEqualTo: uid)
+            .get();
         for (var doc in appsSnap1.docs) {
           await doc.reference.delete();
         }
-        final appsSnap2 = await _firestore.collection('applications').where('companyID', isEqualTo: uid).get();
+        final appsSnap2 = await _firestore
+            .collection('applications')
+            .where('companyID', isEqualTo: uid)
+            .get();
         for (var doc in appsSnap2.docs) {
           await doc.reference.delete();
         }
       } catch (_) {}
       try {
-        final empSnap1 = await _firestore.collection('employees').where('jobSeekerID', isEqualTo: uid).get();
+        final empSnap1 = await _firestore
+            .collection('employees')
+            .where('jobSeekerID', isEqualTo: uid)
+            .get();
         for (var doc in empSnap1.docs) {
           await doc.reference.delete();
         }
-        final empSnap2 = await _firestore.collection('employees').where('companyID', isEqualTo: uid).get();
+        final empSnap2 = await _firestore
+            .collection('employees')
+            .where('companyID', isEqualTo: uid)
+            .get();
         for (var doc in empSnap2.docs) {
           await doc.reference.delete();
         }
       } catch (_) {}
       try {
-        final resSnap = await _firestore.collection('results').where('jobSeekerID', isEqualTo: uid).get();
+        final resSnap = await _firestore
+            .collection('results')
+            .where('jobSeekerID', isEqualTo: uid)
+            .get();
         for (var doc in resSnap.docs) {
           await doc.reference.delete();
         }
       } catch (_) {}
       try {
-        final jobsSnap = await _firestore.collection('jobs').where('companyID', isEqualTo: uid).get();
+        final jobsSnap = await _firestore
+            .collection('jobs')
+            .where('companyID', isEqualTo: uid)
+            .get();
         for (var doc in jobsSnap.docs) {
           await doc.reference.delete();
         }
@@ -873,7 +968,9 @@ class DemoDataSeeder {
           );
           return uc.user!.uid;
         } catch (signInErr) {
-          debugPrint("Existing user $email password mismatch, using fixed ID...");
+          debugPrint(
+            "Existing user $email password mismatch, using fixed ID...",
+          );
           // Fallback to deterministic UID so doc creation in Firestore succeeds
           return "demo_${email.replaceAll('@', '_').replaceAll('.', '_')}";
         }
@@ -884,4 +981,3 @@ class DemoDataSeeder {
     }
   }
 }
-
