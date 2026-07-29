@@ -188,8 +188,8 @@ class UserCommunityMycommunityScreenState
                           imageURL: imageUrl.isNotEmpty
                               ? imageUrl
                               : (member['type'] == 'Company'
-                                    ? "lib/Resources/Images/Profile_Images/Company_Logo.jpg"
-                                    : "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg"),
+                                    ? 'https://ui-avatars.com/api/?name=${Uri.encodeComponent((member['name'] ?? 'Company').isNotEmpty ? (member['name'] ?? 'Company') : "Company")}&background=E0E0E0&color=757575&size=128&bold=true'
+                                    : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent((member['name'] ?? 'User').isNotEmpty ? (member['name'] ?? 'User') : "User")}&background=E0E0E0&color=757575&size=128&bold=true'),
                           name: member['name'] ?? '',
                           shortDescription: member['subtitle'] ?? '',
                           experience: member['type'] ?? '',

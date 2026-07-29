@@ -74,7 +74,7 @@ class NewSkillCard extends StatelessWidget {
               backgroundColor: Colors.white,
               backgroundImage: imagePath != null && imagePath!.isNotEmpty
                   ? NetworkImage(imagePath!)
-                  : null,
+                  : const NetworkImage('https://ui-avatars.com/api/?name=Skill&background=E0E0E0&color=757575&size=128&bold=true') as ImageProvider,
               child: imagePath == null || imagePath!.isEmpty
                   ? const Icon(Icons.add, color: Colors.black, size: 30)
                   : null,

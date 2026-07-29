@@ -318,6 +318,34 @@ class ApiStatusChecker {
     return results;
   }
 
+  // ── JobSeeker model payloads ────────────────────────────────────────────────
+  static const Map<String, dynamic> createJobSeekerPayload = {
+    'jobSeekerID': 'admin_ping_test',
+    'name': 'Ping Test User',
+    'email': 'ping@test.com',
+    'password': 'test_only',
+    'niche': 'Engineering',
+    'experience': 'Junior',
+  };
+
+  static const Map<String, dynamic> updateJobSeekerPayload = {
+    'name': 'Updated Ping Test User',
+  };
+
+  // ── Company model payloads ───────────────────────────────────────────────────
+  static const Map<String, dynamic> createCompanyPayload = {
+    'companyID': 'admin_ping_company',
+    'companyName': 'Ping Corp',
+    'email': 'ping@company.com',
+    'password': 'test_only',
+    'industry': 'Technology',
+    'location': 'Remote',
+  };
+
+  static const Map<String, dynamic> updateCompanyPayload = {
+    'companyName': 'Updated Ping Corp',
+  };
+
   static Future<List<ApiEndpointStatus>> checkAllEndpoints() async {
     final independentResults = await Future.wait([
       pingEndpoint('Health Check', '$liveBaseUrl/health', 'GET'),
@@ -353,6 +381,64 @@ class ApiStatusChecker {
       ),
       pingEndpoint('AI Logs', '$liveBaseUrl/ai-logs', 'GET'),
       pingEndpoint('Interactive Docs (Swagger)', '$liveBaseUrl/docs', 'GET'),
+      // ── JobSeeker model endpoints ────────────────────────────────────────────
+      pingEndpoint(
+        'List Job Seekers',
+        '$liveBaseUrl/jobseekers',
+        'GET',
+      ),
+      pingEndpoint(
+        'Create Job Seeker',
+        '$liveBaseUrl/jobseekers',
+        'POST',
+        createJobSeekerPayload,
+      ),
+      pingEndpoint(
+        'Get Job Seeker by ID',
+        '$liveBaseUrl/jobseekers/admin_ping_test',
+        'GET',
+      ),
+      pingEndpoint(
+        'Update Job Seeker',
+        '$liveBaseUrl/jobseekers/admin_ping_test',
+        'POST',
+        updateJobSeekerPayload,
+      ),
+      pingEndpoint(
+        'Delete Job Seeker',
+        '$liveBaseUrl/jobseekers/admin_ping_test',
+        'POST',
+        {'_method': 'DELETE'},
+      ),
+      // ── Company model endpoints ──────────────────────────────────────────────
+      pingEndpoint(
+        'List Companies',
+        '$liveBaseUrl/companies',
+        'GET',
+      ),
+      pingEndpoint(
+        'Create Company',
+        '$liveBaseUrl/companies',
+        'POST',
+        createCompanyPayload,
+      ),
+      pingEndpoint(
+        'Get Company by ID',
+        '$liveBaseUrl/companies/admin_ping_company',
+        'GET',
+      ),
+      pingEndpoint(
+        'Update Company',
+        '$liveBaseUrl/companies/admin_ping_company',
+        'POST',
+        updateCompanyPayload,
+      ),
+      pingEndpoint(
+        'Delete Company',
+        '$liveBaseUrl/companies/admin_ping_company',
+        'POST',
+        {'_method': 'DELETE'},
+      ),
     ]);
 
     final testFlowResults = await _checkTestFlow();
@@ -360,3 +446,4 @@ class ApiStatusChecker {
     return [...independentResults, ...testFlowResults];
   }
 }
+

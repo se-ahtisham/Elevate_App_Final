@@ -45,10 +45,13 @@ class AdminSearchPortfolioState extends State<AdminSearchPortfolio> {
       error = null;
     });
     try {
-      final projects = await service.listAllProjects();
+      final fetched = await service.listAllProjects();
+      final seen = <String>{};
+      final unique = fetched.where((p) => seen.add(p.projectID)).toList();
+      
       setState(() {
-        allProjects = projects;
-        filteredProjects = projects;
+        allProjects = unique;
+        filteredProjects = unique;
         isLoading = false;
       });
     } catch (e) {

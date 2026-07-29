@@ -60,7 +60,7 @@ class AdminViewCompany extends StatelessWidget {
                   child: UserDescription(
                     imageURL: company.logo.isNotEmpty
                         ? company.logo
-                        : 'https://mir-s3-cdn-cf.behance.net/projects/404/e87f90243740647.Y3JvcCwxNTM0LDEyMDAsMzQsMA.jpg',
+                        : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(company.companyName.isNotEmpty ? company.companyName : "Company")}&background=E0E0E0&color=757575&size=128&bold=true',
                     name: company.companyName,
                     shortDescription: company.industry.isNotEmpty
                         ? company.industry
@@ -107,52 +107,7 @@ class AdminViewCompany extends StatelessWidget {
                         web: company.website,
                       ),
 
-                      const SizedBox(height: 30),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CustomText(
-                            text: "Company Strengths",
-                            fontSize: 20,
-                            color: ElevateColor.lightgray,
-                            fontWeight: FontWeight.bold,
-                            textAlign: TextAlign.left,
-                            lineHeight: 1.0,
-                          ),
-                          const SizedBox(height: 8),
-                          CustomText(
-                            text: company.companyStrengthList.isNotEmpty
-                                ? company.companyStrengthList.join(" • ")
-                                : "No strengths listed yet.",
-                            fontSize: 12,
-                            color: ElevateColor.lightgray,
-                            fontWeight: FontWeight.w400,
-                            textAlign: TextAlign.left,
-                            lineHeight: 1.2,
-                          ),
 
-                          const SizedBox(height: 30),
-                          CustomText(
-                            text: "Company Weaknesses",
-                            fontSize: 20,
-                            color: ElevateColor.lightgray,
-                            fontWeight: FontWeight.bold,
-                            textAlign: TextAlign.left,
-                            lineHeight: 1.0,
-                          ),
-                          const SizedBox(height: 8),
-                          CustomText(
-                            text: company.companyWeaknessList.isNotEmpty
-                                ? company.companyWeaknessList.join(" • ")
-                                : "No weaknesses listed yet.",
-                            fontSize: 12,
-                            color: ElevateColor.lightgray,
-                            fontWeight: FontWeight.w400,
-                            textAlign: TextAlign.left,
-                            lineHeight: 1.2,
-                          ),
-                        ],
-                      ),
                     ],
                   ),
                 ),

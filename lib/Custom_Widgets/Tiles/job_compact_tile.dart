@@ -31,13 +31,6 @@ class JobCompactTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFFF7F7F7),
           borderRadius: BorderRadius.circular(22),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x12000000),
-              blurRadius: 12,
-              offset: Offset(0, 5),
-            ),
-          ],
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(22),

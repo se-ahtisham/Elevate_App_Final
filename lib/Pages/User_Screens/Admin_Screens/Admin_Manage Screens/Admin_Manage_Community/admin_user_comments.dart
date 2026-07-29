@@ -40,9 +40,12 @@ class _AdminUserCommentsState extends State<AdminUserComments> {
 
     try {
       final fetched = await firebaseService.getComments(widget.postID);
+      final seen = <String>{};
+      final unique = fetched.where((c) => seen.add(c.commentID)).toList();
+
       if (!mounted) return;
       setState(() {
-        comments = fetched;
+        comments = unique;
         isLoading = false;
       });
     } catch (e) {

@@ -257,7 +257,7 @@ class AllTrendingSkillsScreen extends StatelessWidget {
               padding: const EdgeInsets.only(
                 left: 30,
                 right: 30,
-                bottom: 20,
+                bottom: 10,
                 top: 10,
               ),
               itemCount: dummySkills.length,
@@ -277,32 +277,31 @@ class AllTrendingSkillsScreen extends StatelessWidget {
               },
             ),
           ),
+          Padding(
+            padding: const EdgeInsets.only(
+              left: 30,
+              right: 30,
+              bottom: 30,
+              top: 10,
+            ),
+            child: IconTextButtonGradient(
+              text: "Refresh Skills",
+              iconData: Icons.refresh,
+              iconSize: 20,
+              iconColor: Colors.white,
+              textSize: 15,
+              textWeight: FontWeight.w600,
+              textColor: Colors.white,
+              borderRadius: 30,
+              height: 50,
+              startColor: const Color(0xFF595959),
+              endColor: const Color(0xFF111111),
+              onTap: () {},
+            ),
+          ),
         ],
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.only(
-            left: 30,
-            right: 30,
-            bottom: 20,
-            top: 10,
-          ),
-          child: IconTextButtonGradient(
-            text: "Refresh Skills",
-            iconData: Icons.refresh,
-            iconSize: 20,
-            iconColor: Colors.white,
-            textSize: 15,
-            textWeight: FontWeight.w600,
-            textColor: Colors.white,
-            borderRadius: 30,
-            height: 50,
-            startColor: const Color(0xFF595959),
-            endColor: const Color(0xFF111111),
-            onTap: () {},
-          ),
-        ),
       ),
     );
   }
 }
+

@@ -193,46 +193,59 @@ class CompanyProfile extends StatelessWidget {
                                 ),
 
                               const SizedBox(height: 30),
-                              CustomText(
-                                text: "Company Strengths",
-                                fontSize: 20,
-                                color: ElevateColor.lightgray,
-                                fontWeight: FontWeight.bold,
-                                textAlign: TextAlign.left,
-                                lineHeight: 1.0,
-                              ),
-                              const SizedBox(height: 8),
-                              CustomText(
-                                text: company.companyStrengthList.isNotEmpty
-                                    ? company.companyStrengthList.join(" • ")
-                                    : "No strengths listed.",
-                                fontSize: 12,
-                                color: ElevateColor.lightgray,
-                                fontWeight: FontWeight.w400,
-                                textAlign: TextAlign.left,
-                                lineHeight: 1.2,
-                              ),
-
                               const SizedBox(height: 30),
-                              CustomText(
-                                text: "Company Weaknesses",
-                                fontSize: 20,
-                                color: ElevateColor.lightgray,
-                                fontWeight: FontWeight.bold,
-                                textAlign: TextAlign.left,
-                                lineHeight: 1.0,
+                              SizedBox(
+                                width: double.infinity,
+                                child: OutlinedButton.icon(
+                                  onPressed: () async {
+                                    final confirm = await showDialog<bool>(
+                                      context: context,
+                                      builder: (ctx) => AlertDialog(
+                                        title: const Text("Logout"),
+                                        content: const Text(
+                                            "Are you sure you want to log out?"),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(ctx, false),
+                                            child: const Text("Cancel"),
+                                          ),
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(ctx, true),
+                                            child: const Text(
+                                              "Logout",
+                                              style: TextStyle(color: Colors.red),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+
+                                    if (confirm == true) {
+                                      await AuthService().logout();
+                                      if (!context.mounted) return;
+                                      Navigator.of(context, rootNavigator: true)
+                                          .pushNamedAndRemoveUntil(
+                                              '/', (route) => false);
+                                    }
+                                  },
+                                  icon: const Icon(Icons.logout, color: Colors.red),
+                                  label: const Text(
+                                    "Logout",
+                                    style: TextStyle(
+                                      color: Colors.red,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    side: const BorderSide(color: Colors.red),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(30),
+                                    ),
+                                  ),
+                                ),
                               ),
-                              const SizedBox(height: 8),
-                              CustomText(
-                                text: company.companyWeaknessList.isNotEmpty
-                                    ? company.companyWeaknessList.join(" • ")
-                                    : "No weaknesses listed.",
-                                fontSize: 12,
-                                color: ElevateColor.lightgray,
-                                fontWeight: FontWeight.w400,
-                                textAlign: TextAlign.left,
-                                lineHeight: 1.2,
-                              ),
+                              const SizedBox(height: 30),
                             ],
                           ),
                         ],

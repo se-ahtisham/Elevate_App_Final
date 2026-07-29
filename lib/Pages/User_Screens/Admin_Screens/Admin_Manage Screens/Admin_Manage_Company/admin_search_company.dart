@@ -44,10 +44,13 @@ class _AdminSearchCompanyState extends State<AdminSearchCompany> {
     setState(() => isLoading = true);
 
     try {
-      allCompanies = await firebaseService.listAllCompanies();
+      final fetched = await firebaseService.listAllCompanies();
       if (!mounted) return;
       setState(() {
-        visibleCompanies = allCompanies;
+        final seen = <String>{};
+        final unique = fetched.where((c) => seen.add(c.companyID)).toList();
+        allCompanies = unique;
+        visibleCompanies = unique;
         isLoading = false;
       });
     } catch (e) {

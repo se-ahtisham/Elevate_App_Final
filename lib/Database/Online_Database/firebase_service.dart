@@ -766,6 +766,10 @@ class FirebaseService {
     await db.collection('skills').doc(skill.skillID).set(skill.toMap());
   }
 
+  Future<void> deleteSkill(String skillID) async {
+    await db.collection('skills').doc(skillID).delete();
+  }
+
   Future<void> updateSkill(String skillID, Map<String, dynamic> newData) async {
     await db.collection('skills').doc(skillID).update(newData);
   }

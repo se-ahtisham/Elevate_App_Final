@@ -323,14 +323,15 @@ class _FilePill extends StatelessWidget {
       child: Row(
         children: [
           const SizedBox(width: 4),
-          CustomText(
-            text: fileName,
-            fontSize: 13.5,
-            fontWeight: FontWeight.w600,
-            color: ElevateColor.lightgray,
-            lineHeight: 1.2,
+          Expanded(
+            child: CustomText(
+              text: fileName,
+              fontSize: 13.5,
+              fontWeight: FontWeight.w600,
+              color: ElevateColor.lightgray,
+              lineHeight: 1.2,
+            ),
           ),
-          const Spacer(),
           InkWell(
             borderRadius: BorderRadius.circular(10),
             onTap: onDownload,

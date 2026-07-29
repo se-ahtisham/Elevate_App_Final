@@ -4,10 +4,12 @@ import "package:elevate_app/Custom_Widgets/Header/elevate_header.dart";
 import "package:elevate_app/Custom_Widgets/Text/custom_text.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_description.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_education.dart";
-import "package:elevate_app/Custom_Widgets/User_Widgets/user_skill.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_socialMedia.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_work.dart";
-import "package:elevate_app/Pages/User_Screens/Company_Screens/Company_Dashboard_Screens/company_message_screen.dart";
+import "package:elevate_app/Database/Online_Database/auth_service.dart";
+import "package:elevate_app/Database/Online_Database/chat_service.dart";
+import "package:elevate_app/Pages/Shared_Screens/chat_room_screen.dart";
+import "package:elevate_app/Pages/User_Screens/Company_Screens/Company_Dashboard_Screens/company_portfolio_check.dart";
 import "package:elevate_app/Pages/User_Screens/Company_Screens/Company_Dashboard_Screens/company_view_user_post.dart";
 import "package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart";
 import "package:flutter/material.dart";
@@ -34,7 +36,9 @@ class CompanyViewEmployeeProfile extends StatefulWidget {
 class _CompanyViewEmployeeProfileState
     extends State<CompanyViewEmployeeProfile> {
   final FirebaseService _firebaseService = FirebaseService();
+  final AuthService _authService = AuthService();
   late Future<JobSeekerModel?> _profileFuture;
+  bool _isRemoving = false;
 
   @override
   void initState() {
@@ -42,11 +46,74 @@ class _CompanyViewEmployeeProfileState
     _profileFuture = _firebaseService.getJobSeeker(widget.jobSeekerID);
   }
 
-  void _removeEmployee() async {
-    await _firebaseService.terminateEmployee(widget.employeeID);
-    if (mounted) {
-      Navigator.pop(context);
+  Future<void> _removeEmployee() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Remove Employee"),
+        content: const Text("Are you sure you want to remove this employee from your team?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text("Remove", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isRemoving = true);
+    try {
+      await _firebaseService.terminateEmployee(widget.employeeID);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Employee removed successfully.")),
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isRemoving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to remove employee: $e")),
+        );
+      }
     }
+  }
+
+  Future<void> _openChat(JobSeekerModel seeker) async {
+    final currentUserId = _authService.currentUser?.uid ?? '';
+    if (currentUserId.isEmpty) return;
+
+    final myCompany = await _firebaseService.getCompany(currentUserId);
+    final myName = myCompany?.companyName ?? 'Company';
+    final myAvatar = myCompany?.logo ?? '';
+
+    final chatID = await ChatService().getOrCreateChat(
+      myID: currentUserId,
+      myName: myName,
+      myAvatar: myAvatar,
+      otherID: seeker.jobSeekerID,
+      otherName: seeker.name,
+      otherAvatar: seeker.profilePic,
+    );
+
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChatRoomScreen(
+          chatID: chatID,
+          otherUserName: seeker.name,
+          otherUserAvatar: seeker.profilePic,
+        ),
+      ),
+    );
   }
 
   @override
@@ -74,9 +141,9 @@ class _CompanyViewEmployeeProfileState
               return SingleChildScrollView(
                 child: Column(
                   children: [
-                    ElevateHeader(
-                      title: "Your Digital Identity",
-                      subTitle: "Account Control Center",
+                    const ElevateHeader(
+                      title: "Employee Profile",
+                      subTitle: "Working Team Member",
                       showBackButton: true,
                     ),
                     Padding(
@@ -103,21 +170,10 @@ class _CompanyViewEmployeeProfileState
                         children: [
                           Row(
                             children: [
-                              TextButtonGradient(
-                                text: "Follow",
-                                height: 40,
-                                width: 160,
-                                textSize: 14,
-                                textWeight: FontWeight.w400,
-                                borderRadius: 50,
-                                onTap: () {},
-                              ),
-                              SizedBox(width: 20),
                               Expanded(
                                 child: TexxtButton(
                                   text: "Message",
                                   height: 40,
-                                  width: 80,
                                   textSize: 14,
                                   textColor: ElevateColor.gray,
                                   textWeight: FontWeight.w400,
@@ -125,58 +181,46 @@ class _CompanyViewEmployeeProfileState
                                   backgroundColor: Colors.transparent,
                                   borderColor: ElevateColor.gray,
                                   borderWidth: 1,
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) =>
-                                            CompanyMessageScreen(
-                                              receiverId: seeker.jobSeekerID,
-                                              receiverName: seeker.name,
-                                              receiverImage: seeker.profilePic,
-                                            ),
-                                      ),
-                                    );
-                                  },
+                                  onTap: () => _openChat(seeker),
                                 ),
                               ),
                             ],
                           ),
-                          SizedBox(height: 20),
+                          const SizedBox(height: 15),
                           TexxtButton(
-                            text: "Remove Employee",
+                            text: _isRemoving ? "Removing..." : "Remove Employee",
                             height: 40,
                             width: 350,
                             textSize: 14,
-                            textColor: ElevateColor.gray,
-                            textWeight: FontWeight.w400,
+                            textColor: Colors.red.shade700,
+                            textWeight: FontWeight.w600,
                             borderRadius: 50,
-                            backgroundColor: Colors.transparent,
-                            borderColor: ElevateColor.gray,
+                            backgroundColor: Colors.red.shade50,
+                            borderColor: Colors.red.shade200,
                             borderWidth: 1,
-                            onTap: _removeEmployee,
+                            onTap: _isRemoving ? () {} : _removeEmployee,
                           ),
-                          SizedBox(height: 30),
+                          const SizedBox(height: 30),
                           CustomText(
-                            text: "ABOUT ME",
+                            text: "ABOUT USER",
                             fontSize: 20,
                             color: ElevateColor.lightgray,
                             fontWeight: FontWeight.bold,
                             textAlign: TextAlign.left,
                             lineHeight: 1.0,
                           ),
-                          SizedBox(height: 12),
+                          const SizedBox(height: 12),
                           CustomText(
                             text: seeker.about.isNotEmpty
                                 ? seeker.about
-                                : "No about info provided.",
+                                : "No bio available.",
                             fontSize: 13,
                             color: ElevateColor.whitegray,
                             fontWeight: FontWeight.w400,
                             textAlign: TextAlign.justify,
                             lineHeight: 1.3,
                           ),
-                          SizedBox(height: 22),
+                          const SizedBox(height: 22),
                           UserSocialmedia(
                             city: seeker.location,
                             country: "",
@@ -184,16 +228,20 @@ class _CompanyViewEmployeeProfileState
                             phone: "",
                           ),
 
-                          SizedBox(height: 22),
+                          const SizedBox(height: 22),
                           Container(
                             height: 80,
                             decoration: BoxDecoration(
-                              color: const Color.fromARGB(255, 233, 233, 233),
+                              color: const Color.fromARGB(255, 240, 240, 240),
                               borderRadius: BorderRadius.circular(15),
+                              border: Border.all(
+                                color: const Color.fromARGB(255, 173, 173, 173),
+                                width: 1,
+                              ),
                             ),
                             child: Center(
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   CustomText(
@@ -201,16 +249,18 @@ class _CompanyViewEmployeeProfileState
                                     fontSize: 20,
                                     color: ElevateColor.lightgray,
                                     fontWeight: FontWeight.bold,
-                                    textAlign: TextAlign.left,
+                                    textAlign: TextAlign.center,
                                     lineHeight: 1.0,
                                   ),
-                                  SizedBox(height: 8),
+                                  const SizedBox(height: 8),
                                   CustomText(
-                                    text: seeker.experienceLevel,
+                                    text: seeker.experienceLevel.isNotEmpty
+                                        ? seeker.experienceLevel
+                                        : "Not specified",
                                     fontSize: 12,
                                     color: ElevateColor.lightgray,
                                     fontWeight: FontWeight.w300,
-                                    textAlign: TextAlign.left,
+                                    textAlign: TextAlign.center,
                                     lineHeight: 1.0,
                                   ),
                                 ],
@@ -218,7 +268,7 @@ class _CompanyViewEmployeeProfileState
                             ),
                           ),
 
-                          SizedBox(height: 22),
+                          const SizedBox(height: 22),
                           if (seeker.education.isNotEmpty) ...[
                             CustomText(
                               text: "EDUCATION",
@@ -228,7 +278,7 @@ class _CompanyViewEmployeeProfileState
                               textAlign: TextAlign.left,
                               lineHeight: 1.0,
                             ),
-                            SizedBox(height: 15),
+                            const SizedBox(height: 15),
                             Column(
                               children: seeker.education.map((edu) {
                                 return Padding(
@@ -242,30 +292,8 @@ class _CompanyViewEmployeeProfileState
                                 );
                               }).toList(),
                             ),
-                            SizedBox(height: 22),
+                            const SizedBox(height: 22),
                           ],
-
-                          CustomText(
-                            text: "SKILL",
-                            fontSize: 20,
-                            color: ElevateColor.lightgray,
-                            fontWeight: FontWeight.bold,
-                            textAlign: TextAlign.left,
-                            lineHeight: 1.0,
-                          ),
-                          SizedBox(height: 15),
-                          Column(
-                            children: [
-                              UserSkill(
-                                title: 'Java Development',
-                                subtitle: 'Experienced Coding',
-                                imagePath:
-                                    'lib/Resources/Images/Coding_Badges/Pure/pure_hard.png',
-                                year: '2025',
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 22),
 
                           if (seeker.jobExperience.isNotEmpty) ...[
                             CustomText(
@@ -276,7 +304,7 @@ class _CompanyViewEmployeeProfileState
                               textAlign: TextAlign.left,
                               lineHeight: 1.0,
                             ),
-                            SizedBox(height: 15),
+                            const SizedBox(height: 15),
                             Column(
                               children: seeker.jobExperience.map((work) {
                                 return Padding(
@@ -286,12 +314,12 @@ class _CompanyViewEmployeeProfileState
                                     subtitle: work.company,
                                     iconData: Icons.work_outline,
                                     startDate: work.from,
-                                    endDate: work.to.isEmpty ? null : work.to,
+                                    endDate: work.to.isEmpty ? "Present" : work.to,
                                   ),
                                 );
                               }).toList(),
                             ),
-                            SizedBox(height: 40),
+                            const SizedBox(height: 40),
                           ],
 
                           TextButtonGradient(
@@ -300,9 +328,18 @@ class _CompanyViewEmployeeProfileState
                             textSize: 14,
                             textWeight: FontWeight.w400,
                             borderRadius: 50,
-                            onTap: () {},
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => CompanyPortfolioCheck(
+                                    jobSeekerID: seeker.jobSeekerID,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
-                          SizedBox(height: 15),
+                          const SizedBox(height: 15),
                           TexxtButton(
                             text: "View Posts",
                             height: 50,

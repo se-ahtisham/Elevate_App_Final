@@ -47,8 +47,10 @@ class _AdminSearchJobSeekersState extends State<AdminSearchJobSeekers> {
       final fetched = await firebaseService.listAllJobSeekers();
       if (!mounted) return;
       setState(() {
-        allJobSeekers = fetched;
-        visibleJobSeekers = allJobSeekers;
+        final seen = <String>{};
+        final unique = fetched.where((s) => seen.add(s.jobSeekerID)).toList();
+        allJobSeekers = unique;
+        visibleJobSeekers = unique;
         isLoading = false;
       });
     } catch (e) {

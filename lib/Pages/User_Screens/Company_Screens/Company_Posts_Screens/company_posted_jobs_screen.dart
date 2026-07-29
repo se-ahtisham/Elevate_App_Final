@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Database/Online_Database/auth_service.dart';
 import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_post_model.dart';
@@ -6,10 +7,12 @@ import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/post_model
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/company_model.dart';
 import 'package:elevate_app/Pages/User_Screens/Company_Screens/Company_Posts_Screens/company_upload_job_screen.dart';
 import 'package:elevate_app/Pages/User_Screens/Company_Screens/Company_Posts_Screens/show_applied_candidates_screen.dart';
+import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Community_Screens/community_comments.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/user_post_tile.dart';
 import 'package:elevate_app/Custom_Widgets/User_Widgets/user_post_new.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 enum PostTab { jobs, community }
 
@@ -98,18 +101,17 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
 
       _postTitleCtrl.clear();
       _postContentCtrl.clear();
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Post created successfully!")),
       );
+      setState(() {});
     } catch (e) {
       debugPrint("createPost failed: $e");
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text("Failed to create post: $e")));
-    } finally {
-      if (mounted) {
-        // Removed undefined variable usage
-      }
     }
   }
 
@@ -132,6 +134,38 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
         _tabButton("Jobs", PostTab.jobs),
         const SizedBox(width: 10),
         _tabButton("Community Posts", PostTab.community),
+        const Spacer(),
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const CompanyUploadJobScreen(),
+              ),
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.add, color: Colors.white, size: 16),
+                SizedBox(width: 4),
+                Text(
+                  "New Job",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -170,74 +204,87 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
     final String currentUserId = _authService.currentUser?.uid ?? '';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F4F4),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
-          child: Column(
-            children: [
-              _topHeader(),
-              const SizedBox(height: 18),
-              _searchBar(),
-              const SizedBox(height: 15),
-              _tabSwitcher(),
-              const SizedBox(height: 20),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  _activeTab == PostTab.jobs ? 'Posted Jobs' : 'Community Feed',
-                  style: TextStyle(
-                    color: ElevateColor.gray,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: _activeTab == PostTab.jobs
-                    ? StreamBuilder<QuerySnapshot>(
-                        stream: FirebaseFirestore.instance
-                            .collection('jobs')
-                            .where('companyID', isEqualTo: currentUserId)
-                            .orderBy('postedAt', descending: true)
-                            .snapshots(),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Center(
-                              child: CircularProgressIndicator(),
-                            );
-                          }
-                          if (snapshot.hasError) {
-                            return StreamBuilder<QuerySnapshot>(
+      backgroundColor: Colors.white,
+      extendBodyBehindAppBar: true,
+      body: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle.light,
+        child: Column(
+          children: [
+            const ElevateHeader(
+              title: "LETS UPLOAD",
+              subTitle: "Opportunity for others",
+              titleSize: 32,
+              subtitleSize: 18,
+              showBackButton: false,
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                child: Column(
+                  children: [
+                    _searchBar(),
+                    const SizedBox(height: 15),
+                    _tabSwitcher(),
+                    const SizedBox(height: 20),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        _activeTab == PostTab.jobs ? 'Posted Jobs' : 'Community Feed',
+                        style: TextStyle(
+                          color: ElevateColor.gray,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    Expanded(
+                      child: _activeTab == PostTab.jobs
+                          ? StreamBuilder<QuerySnapshot>(
                               stream: FirebaseFirestore.instance
                                   .collection('jobs')
                                   .where('companyID', isEqualTo: currentUserId)
+                                  .orderBy('postedAt', descending: true)
                                   .snapshots(),
-                              builder: (context, snap2) {
-                                if (snap2.connectionState ==
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState ==
                                     ConnectionState.waiting) {
                                   return const Center(
                                     child: CircularProgressIndicator(),
                                   );
                                 }
-                                if (snap2.hasError) {
-                                  return Center(
-                                    child: Text("Error: ${snap2.error}"),
+                                if (snapshot.hasError) {
+                                  return StreamBuilder<QuerySnapshot>(
+                                    stream: FirebaseFirestore.instance
+                                        .collection('jobs')
+                                        .where('companyID', isEqualTo: currentUserId)
+                                        .snapshots(),
+                                    builder: (context, snap2) {
+                                      if (snap2.connectionState ==
+                                          ConnectionState.waiting) {
+                                        return const Center(
+                                          child: CircularProgressIndicator(),
+                                        );
+                                      }
+                                      if (snap2.hasError) {
+                                        return Center(
+                                          child: Text("Error: ${snap2.error}"),
+                                        );
+                                      }
+                                      return _buildJobList(snap2.data?.docs ?? []);
+                                    },
                                   );
                                 }
-                                return _buildJobList(snap2.data?.docs ?? []);
+                                return _buildJobList(snapshot.data?.docs ?? []);
                               },
-                            );
-                          }
-                          return _buildJobList(snapshot.data?.docs ?? []);
-                        },
-                      )
-                    : _buildCommunityTab(currentUserId),
+                            )
+                          : _buildCommunityTab(currentUserId),
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -327,6 +374,18 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
                         ? post.authorName
                         : 'Company',
                     shortDescription: 'Company',
+                    onCommentsTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CommunityComments(
+                            postID: post.postID,
+                            postAuthorName: post.authorName,
+                            postTitle: post.title,
+                          ),
+                        ),
+                      );
+                    },
                     onLikeTap: () async {
                       try {
                         await FirebaseService().likePost(
@@ -340,11 +399,13 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
                     onDeleteTap: () async {
                       try {
                         await FirebaseService().deletePost(post.postID);
+                        if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text("Post deleted successfully"),
                           ),
                         );
+                        setState(() {});
                       } catch (e) {
                         debugPrint("Delete post failed: $e");
                       }
@@ -367,6 +428,8 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
     final jobs = docs
         .map((d) => JobPostModel.fromMap(d.data() as Map<String, dynamic>))
         .toList();
+    // Sort descending by postedAt
+    jobs.sort((a, b) => b.postedAt.compareTo(a.postedAt));
     final filteredJobs = _getFilteredJobs(jobs);
 
     if (filteredJobs.isEmpty) {
@@ -380,90 +443,6 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
       itemBuilder: (_, index) {
         return _jobCard(filteredJobs[index]);
       },
-    );
-  }
-
-  Widget _topHeader() {
-    return Row(
-      children: [
-        Container(
-          width: 52,
-          height: 52,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: Color(0xFFE7E7E7),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            'C',
-            style: TextStyle(
-              color: ElevateColor.gray,
-              fontWeight: FontWeight.w700,
-              fontSize: 32,
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "Let's Upload Opportunity",
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF9A9A9A),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'Company Portal',
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 22,
-                  color: ElevateColor.gray,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ),
-        InkWell(
-          child: Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                colors: [Color(0xFF555555), Color(0xFF111111)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.12),
-                  blurRadius: 12,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.ios_share_rounded,
-              size: 18,
-              color: Colors.white,
-            ),
-          ),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const CompanyUploadJobScreen(),
-              ),
-            );
-          },
-        ),
-      ],
     );
   }
 
@@ -538,13 +517,7 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
-                ),
-              ],
+              border: Border.all(color: const Color(0xFFE5E5E5)),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -635,25 +608,21 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.12),
-                blurRadius: 12,
-                offset: const Offset(0, 5),
-              ),
-            ],
           ),
           child: Material(
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(24),
-              onTap: () {
-                Navigator.push(
+              onTap: () async {
+                final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => ShowAppliedCandidatesScreen(job: job),
                   ),
                 );
+                if (result == true && mounted) {
+                  setState(() {});
+                }
               },
               child: const Center(
                 child: Icon(

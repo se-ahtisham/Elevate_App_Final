@@ -59,7 +59,7 @@ class UserCommunityExploreScreenState
     final fetched = await firebaseService.getCommunityFeed(uid);
     if (!mounted) return;
     setState(() {
-      allPosts = fetched;
+      allPosts = {for (final p in fetched) p.postID: p}.values.toList();
       visiblePosts = applyFilterAndSearch();
       isLoading = false;
     });
@@ -244,8 +244,8 @@ class UserCommunityExploreScreenState
                 image: post.authorProfilePic.isNotEmpty
                     ? post.authorProfilePic
                     : (post.authorType.toLowerCase() == 'company'
-                        ? "lib/Resources/Images/Profile_Images/Company_Logo.jpg"
-                        : "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg"),
+                        ? 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(post.authorName.isNotEmpty ? post.authorName : "Company")}&background=E0E0E0&color=757575&size=128&bold=true'
+                        : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(post.authorName.isNotEmpty ? post.authorName : "User")}&background=E0E0E0&color=757575&size=128&bold=true'),
                 postTitle: post.title,
                 postText: post.content,
                 textSize: 13,

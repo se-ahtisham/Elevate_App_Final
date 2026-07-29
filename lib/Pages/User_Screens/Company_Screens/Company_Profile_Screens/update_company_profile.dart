@@ -26,8 +26,6 @@ class _UpdateCompanyProfileState extends State<UpdateCompanyProfile> {
   late final TextEditingController emailController;
   late final TextEditingController websiteController;
   late final TextEditingController achievementsController;
-  late final TextEditingController strengthsController;
-  late final TextEditingController weaknessesController;
 
   static const _hintColor = Color(0xFF8E8E8E);
   static const _underlineColor = Color(0xFFE1E1E1);
@@ -57,8 +55,6 @@ class _UpdateCompanyProfileState extends State<UpdateCompanyProfile> {
     emailController = TextEditingController(text: widget.company.email);
     websiteController = TextEditingController(text: widget.company.website);
     achievementsController = TextEditingController(text: widget.company.achievementList.join(', '));
-    strengthsController = TextEditingController(text: widget.company.companyStrengthList.join(', '));
-    weaknessesController = TextEditingController(text: widget.company.companyWeaknessList.join(', '));
   }
 
   @override
@@ -68,8 +64,6 @@ class _UpdateCompanyProfileState extends State<UpdateCompanyProfile> {
     emailController.dispose();
     websiteController.dispose();
     achievementsController.dispose();
-    strengthsController.dispose();
-    weaknessesController.dispose();
     super.dispose();
   }
 
@@ -79,23 +73,21 @@ class _UpdateCompanyProfileState extends State<UpdateCompanyProfile> {
       String? uploadedLogoUrl;
       final userId = AuthService().currentUser?.uid ?? widget.company.companyID;
       if (selectedLogoImage != null && userId.isNotEmpty) {
-        uploadedLogoUrl = await storageService.uploadProfileImage(
-          userId: userId,
+        uploadedLogoUrl = await storageService.uploadCompanyImage(
+          companyId: userId,
           file: selectedLogoImage!,
           context: context,
         );
       }
 
-      final updateData = {
+      final updateData = <String, dynamic>{
         'description': aboutController.text.trim(),
         'location': locationController.text.trim(),
         'email': emailController.text.trim(),
         'website': websiteController.text.trim(),
         'achievementList': achievementsController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
-        'companyStrengthList': strengthsController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
-        'companyWeaknessList': weaknessesController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
       };
-      if (uploadedLogoUrl != null) {
+      if (uploadedLogoUrl != null && uploadedLogoUrl.isNotEmpty) {
         updateData['logo'] = uploadedLogoUrl;
       }
 
@@ -125,11 +117,12 @@ class _UpdateCompanyProfileState extends State<UpdateCompanyProfile> {
         value: SystemUiOverlayStyle.light,
         child: Column(
           children: [
-            ElevateHeader(
-              title: "Smarter Way to Grow",
-              subTitle: "Your journey to success starts here",
+            const ElevateHeader(
+              title: "Update Profile",
+              subTitle: "Manage Company Information",
               titleSize: 30,
               subtitleSize: 13,
+              showBackButton: true,
             ),
             Expanded(
               child: Padding(
@@ -195,7 +188,7 @@ class _UpdateCompanyProfileState extends State<UpdateCompanyProfile> {
                       const Align(
                         alignment: Alignment.center,
                         child: CustomText(
-                          text: "Tap to change logo",
+                          text: "Tap camera to change logo (< 1MB)",
                           fontSize: 12,
                           fontWeight: FontWeight.w400,
                           color: ElevateColor.gray,
@@ -260,32 +253,8 @@ class _UpdateCompanyProfileState extends State<UpdateCompanyProfile> {
                         underlineColor: _underlineColor,
                         contentPadding: const EdgeInsets.symmetric(vertical: 10),
                       ),
-                      
-                      const SizedBox(height: 30),
-
-                      CustomTextField(
-                        hintText: "Company Strengths (comma separated)",
-                        hintWeight: FontWeight.w700,
-                        hintColor: _hintColor,
-                        controller: strengthsController,
-                        cursorColor: ElevateColor.gray,
-                        underlineColor: _underlineColor,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                      ),
 
                       const SizedBox(height: 30),
-
-                      CustomTextField(
-                        hintText: "Company Weaknesses (comma separated)",
-                        hintWeight: FontWeight.w700,
-                        hintColor: _hintColor,
-                        controller: weaknessesController,
-                        cursorColor: ElevateColor.gray,
-                        underlineColor: _underlineColor,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                      ),
-
-                      const SizedBox(height: 18),
 
                       TextButtonGradient(
                         text: isSaving ? "SAVING..." : "UPDATE NOW",

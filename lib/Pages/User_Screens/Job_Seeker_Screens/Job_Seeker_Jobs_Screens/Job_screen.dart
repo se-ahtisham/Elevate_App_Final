@@ -77,10 +77,11 @@ class JobScreenState extends ConsumerState<JobScreen> {
         };
       }
 
-      final recommended = await firebaseService.getRecommendedJobs(
+      final recommendedRaw = await firebaseService.getRecommendedJobs(
         myID,
         limit: 10,
       );
+      final recommended = {for (final j in recommendedRaw) j.jobID: j}.values.toList();
 
       final companies = await firebaseService.listAllCompanies();
       final companyMap = {for (final c in companies) c.companyID: c};
@@ -95,9 +96,10 @@ class JobScreenState extends ConsumerState<JobScreen> {
           .where('isClosed', isEqualTo: false)
           .get();
 
-      final fetchedJobs = allJobsSnap.docs
+      final fetchedJobsRaw = allJobsSnap.docs
           .map((d) => JobPostModel.fromMap(d.data()))
           .toList();
+      final fetchedJobs = {for (final j in fetchedJobsRaw) j.jobID: j}.values.toList();
 
       // Build static 10 Bronze + 10 Silver + 10 Gold random pool for no-skills mode
       final bronzePool = fetchedJobs

@@ -1,5 +1,3 @@
-import 'package:elevate_app/Custom_Widgets/Tiles/badge_new_card.dart';
-import 'package:elevate_app/Custom_Widgets/Tiles/manage_white_black_full.dart';
 import 'package:elevate_app/Pages/User_Screens/Admin_Screens/Admin_Manage%20Screens/Admin_Manage_Badges/admin_update_badge.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Search_Bar/custom_search_bar.dart';
@@ -8,6 +6,7 @@ import 'package:elevate_app/Custom_Widgets/Text/icon_text.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/badge_model.dart';
 import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
+import 'package:elevate_app/constants/badge_constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -20,19 +19,10 @@ class AdminBadgesManagement extends StatefulWidget {
 
 class _AdminBadgesManagementState extends State<AdminBadgesManagement> {
   final FirebaseService firebaseService = FirebaseService();
-
   final searchController = TextEditingController();
 
   List<BadgeModel> allBadges = [];
   List<BadgeModel> visibleBadges = [];
-
-  final List<String> badgeLevels = ["Bronze", "Silver", "Gold"];
-  final List<String> scoreRanges = ["50-60", "60-90", "90-100"];
-
-  String selectedBadgeLevel = "Bronze";
-  String? selectedScoreRange;
-  String? newBadgeImagePath;
-
   bool isLoading = true;
 
   @override
@@ -52,10 +42,67 @@ class _AdminBadgesManagementState extends State<AdminBadgesManagement> {
     setState(() => isLoading = true);
 
     try {
-      allBadges = await firebaseService.listAllBadges();
+      final fetched = await firebaseService.listAllBadges();
+
+      // Deduplicate fetched badges by badgeName (Bronze, Silver, Gold)
+      final Map<String, BadgeModel> badgeMap = {};
+
+      for (var b in fetched) {
+        badgeMap[b.badgeName.toLowerCase().trim()] = b;
+      }
+
+      // Ensure default 3 badges exist
+      final defaultBadges = [
+        BadgeModel(
+          badgeID: 'bronze_badge',
+          badgeName: 'Bronze',
+          badgeLevel: 'Bronze',
+          minScore: 50,
+          maxScore: 60,
+          badgeImage: BadgeConstants.bronzeUrl,
+        ),
+        BadgeModel(
+          badgeID: 'silver_badge',
+          badgeName: 'Silver',
+          badgeLevel: 'Silver',
+          minScore: 60,
+          maxScore: 90,
+          badgeImage: BadgeConstants.silverUrl,
+        ),
+        BadgeModel(
+          badgeID: 'gold_badge',
+          badgeName: 'Gold',
+          badgeLevel: 'Gold',
+          minScore: 90,
+          maxScore: 100,
+          badgeImage: BadgeConstants.goldUrl,
+        ),
+      ];
+
+      for (var def in defaultBadges) {
+        final key = def.badgeName.toLowerCase();
+        if (!badgeMap.containsKey(key)) {
+          badgeMap[key] = def;
+          // Seed to firestore if missing
+          try {
+            await firebaseService.createNewBadge(def);
+          } catch (_) {}
+        }
+      }
+
+      final list = badgeMap.values.toList();
+      // Sort in standard order: Bronze, Silver, Gold
+      final order = {'bronze': 1, 'silver': 2, 'gold': 3};
+      list.sort((a, b) {
+        final oa = order[a.badgeName.toLowerCase()] ?? 99;
+        final ob = order[b.badgeName.toLowerCase()] ?? 99;
+        return oa.compareTo(ob);
+      });
+
       if (!mounted) return;
       setState(() {
-        visibleBadges = allBadges;
+        allBadges = list;
+        visibleBadges = list;
         isLoading = false;
       });
     } catch (e) {
@@ -69,84 +116,11 @@ class _AdminBadgesManagementState extends State<AdminBadgesManagement> {
 
   void onSearchChanged(String query) {
     query = query.toLowerCase();
-
     setState(() {
       visibleBadges = allBadges.where((badge) {
         return badge.badgeName.toLowerCase().contains(query);
       }).toList();
     });
-  }
-
-  Future<void> pickNewBadgeImage() async {
-    final images = ["bronze.png", "silver.png", "gold.png"];
-
-    showModalBottomSheet(
-      backgroundColor: Colors.white,
-      context: context,
-      builder: (_) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: GridView.builder(
-            shrinkWrap: true,
-            itemCount: images.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 20,
-              mainAxisSpacing: 20,
-            ),
-            itemBuilder: (_, index) {
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    newBadgeImagePath = images[index];
-                  });
-
-                  Navigator.pop(context);
-                },
-                child: Image.asset(
-                  "lib/Resources/Images/Badges/${images[index]}",
-                ),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> createBadge() async {
-    if (selectedScoreRange == null) return;
-
-    final parts = selectedScoreRange!.split('-');
-    final minScore = double.parse(parts[0]);
-    final maxScore = double.parse(parts[1]);
-
-    final badge = BadgeModel(
-      badgeID: firebaseService.db.collection("badges").doc().id,
-      badgeName: selectedBadgeLevel,
-      badgeLevel: selectedBadgeLevel,
-      minScore: minScore,
-      maxScore: maxScore,
-      badgeImage: newBadgeImagePath ?? "",
-    );
-
-    try {
-      await firebaseService.createNewBadge(badge);
-
-      if (!mounted) return;
-      setState(() {
-        selectedBadgeLevel = "Bronze";
-        selectedScoreRange = null;
-        newBadgeImagePath = null;
-      });
-
-      loadAllBadges();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Failed to create badge. Try again.")),
-      );
-    }
   }
 
   void openUpdateScreen(BadgeModel badge) async {
@@ -183,40 +157,19 @@ class _AdminBadgesManagementState extends State<AdminBadgesManagement> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    BadgeNewCard(
-                      imagePath: newBadgeImagePath,
-                      buttonText: "CREATE BADGE",
-                      onPickImage: pickNewBadgeImage,
-                      onButtonTap: createBadge,
-
-                      levels: badgeLevels,
-                      selectedLevel: selectedBadgeLevel,
-                      onLevelChanged: (value) {
-                        if (value != null) {
-                          setState(() {
-                            selectedBadgeLevel = value;
-                          });
-                        }
-                      },
-
-                      scoreRanges: scoreRanges,
-                      selectedScoreRange: selectedScoreRange,
-                      onScoreRangeChanged: (value) {
-                        setState(() {
-                          selectedScoreRange = value;
-                        });
-                      },
-                    ),
-
-                    const SizedBox(height: 25),
-
                     const IconText(
-                      text: "Explore Badges",
+                      text: "Manage App Badges",
                       iconData: Icons.workspace_premium_outlined,
                       textSize: 20,
                       textWeight: FontWeight.bold,
                       iconSize: 25,
                       iconTextSpacing: 10,
+                    ),
+                    const SizedBox(height: 5),
+                    const CustomText(
+                      text: "Only Bronze, Silver, and Gold badges are supported.",
+                      fontSize: 13,
+                      color: ElevateColor.gray,
                     ),
 
                     const SizedBox(height: 15),
@@ -256,26 +209,60 @@ class _AdminBadgesManagementState extends State<AdminBadgesManagement> {
                     else
                       Column(
                         children: visibleBadges.map((badge) {
+                          final imgUrl = badge.badgeImage.isNotEmpty
+                              ? (badge.badgeImage.startsWith('http')
+                                  ? badge.badgeImage
+                                  : BadgeConstants.getBadgeUrl(badge.badgeName))
+                              : BadgeConstants.getBadgeUrl(badge.badgeName);
+
                           return Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: ManageWhiteBlackFull(
-                              titleText: badge.badgeName,
-                              subtitleText:
-                                  "Score: ${badge.minScore.toInt()}-${badge.maxScore.toInt()}",
-
-                              tileHeight: 80,
-                              titleFontSize: 20,
-                              titleFontWeight: FontWeight.bold,
-                              subtitleFontSize: 14,
-                              subtitleFontWeight: FontWeight.normal,
-                              subtitleColor: ElevateColor.gray,
-
-                              firstContainerWidth: 280,
-                              secondContainerWidth: 70,
-
-                              sizedBetween: 3,
-
-                              onTap: () => openUpdateScreen(badge),
+                            padding: const EdgeInsets.only(bottom: 15),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 15,
+                                vertical: 12,
+                              ),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 25,
+                                    backgroundColor: Colors.grey.shade100,
+                                    backgroundImage: NetworkImage(imgUrl),
+                                  ),
+                                  const SizedBox(width: 15),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        CustomText(
+                                          text: "${badge.badgeName} Badge",
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        CustomText(
+                                          text:
+                                              "Required Score: ${badge.minScore.toInt()}-${badge.maxScore.toInt()}",
+                                          fontSize: 13,
+                                          color: ElevateColor.gray,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(
+                                      Icons.edit,
+                                      color: Colors.black,
+                                    ),
+                                    onPressed: () => openUpdateScreen(badge),
+                                  ),
+                                ],
+                              ),
                             ),
                           );
                         }).toList(),

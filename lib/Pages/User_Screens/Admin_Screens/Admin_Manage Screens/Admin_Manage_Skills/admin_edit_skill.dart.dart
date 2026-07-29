@@ -5,6 +5,9 @@ import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Test_Fields/custom_Text_Field.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Database/Online_Database/firebase_storage_service.dart';
+import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
+import 'package:elevate_app/Custom_Widgets/Message_Box/delete_box.dart';
+import 'package:elevate_app/Custom_Widgets/Message_Box/messageBox.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -32,6 +35,7 @@ class AdminEditSkill extends StatefulWidget {
 
 class AdminEditSkillState extends State<AdminEditSkill> {
   final FirebaseStorageService storageService = FirebaseStorageService();
+  final firebaseService = FirebaseService();
 
   late final TextEditingController titleController = TextEditingController(
     text: widget.initialTitle,
@@ -59,11 +63,16 @@ class AdminEditSkillState extends State<AdminEditSkill> {
     if (picked == null) return;
     if (!mounted) return;
 
+    final file = File(picked.path);
+    if (!storageService.validateFileSize(file, context)) {
+      return;
+    }
+
     setState(() => isUploadingImage = true);
     try {
       final url = await storageService.uploadSkillImage(
         skillId: widget.skillID,
-        file: File(picked.path),
+        file: file,
         context: context,
       );
       if (url != null && mounted) {
@@ -163,7 +172,7 @@ class AdminEditSkillState extends State<AdminEditSkill> {
                               ),
                               backgroundImage: skillImageUrl.isNotEmpty
                                   ? NetworkImage(skillImageUrl)
-                                  : null,
+                                  : const NetworkImage('https://ui-avatars.com/api/?name=Skill&background=E0E0E0&color=757575&size=128&bold=true') as ImageProvider,
                               child: skillImageUrl.isEmpty
                                   ? const Icon(
                                       Icons.add,
@@ -210,6 +219,48 @@ class AdminEditSkillState extends State<AdminEditSkill> {
                       borderWidth: 1,
                       height: 50,
                       onTap: () => Navigator.pop(context),
+                    ),
+                    const SizedBox(height: 15),
+                    TexxtButton(
+                      text: "Delete Skill",
+                      textSize: 13,
+                      textColor: Colors.red,
+                      textWeight: FontWeight.w500,
+                      textAlign: TextAlign.center,
+                      backgroundColor: Colors.white,
+                      borderColor: Colors.red,
+                      borderRadius: 30,
+                      borderWidth: 1,
+                      height: 50,
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (_) => Deletebox(
+                            name: titleController.text,
+                            onDelete: () async {
+                              try {
+                                await firebaseService.deleteSkill(widget.skillID);
+                                if (!context.mounted) return;
+                                showDialog(
+                                  context: context,
+                                  builder: (_) => Messagebox(
+                                    message: "Skill deleted successfully.",
+                                    onOkTap: () {
+                                      Navigator.pop(context); // Close dialog
+                                      Navigator.pop(context, true); // Pop edit screen
+                                    },
+                                  ),
+                                );
+                              } catch (e) {
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text("Failed to delete skill.")),
+                                );
+                              }
+                            },
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 20),
                   ],

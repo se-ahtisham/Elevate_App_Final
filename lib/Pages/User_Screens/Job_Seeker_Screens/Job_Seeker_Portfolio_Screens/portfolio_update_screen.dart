@@ -275,7 +275,13 @@ class _PortfolioUpdateScreenState extends ConsumerState<PortfolioUpdateScreen> {
         children: [
           const Icon(Icons.insert_drive_file, size: 14, color: Colors.black),
           const SizedBox(width: 6),
-          Text(name, style: const TextStyle(fontSize: 12, color: Colors.black)),
+          Flexible(
+            child: Text(
+              name,
+              style: const TextStyle(fontSize: 12, color: Colors.black),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
           if (onDownload != null) ...[
             const SizedBox(width: 6),
             GestureDetector(

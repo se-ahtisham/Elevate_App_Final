@@ -112,7 +112,7 @@ class _CompanyViewUserPostState extends State<CompanyViewUserPost> {
                               text: post.content,
                               imageURL: (seeker != null && seeker.profilePic.isNotEmpty)
                                   ? seeker.profilePic
-                                  : 'lib/Resources/Images/Profile_Images/default_profile.png',
+                                  : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(seeker?.name.isNotEmpty == true ? seeker!.name : "User")}&background=E0E0E0&color=757575&size=128&bold=true',
                               name: seeker != null ? seeker.name : 'Unknown User',
                               shortDescription: seeker != null ? seeker.shortDescription : 'Job Seeker',
                             ),

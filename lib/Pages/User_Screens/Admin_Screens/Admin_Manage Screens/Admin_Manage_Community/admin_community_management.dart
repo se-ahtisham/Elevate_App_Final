@@ -45,10 +45,13 @@ class _AdminCommunityManagementState extends State<AdminCommunityManagement> {
     setState(() => isLoading = true);
 
     try {
-      allJobSeekers = await firebaseService.listAllJobSeekers();
+      final fetched = await firebaseService.listAllJobSeekers();
       if (!mounted) return;
       setState(() {
-        visibleJobSeekers = allJobSeekers;
+        final seen = <String>{};
+        final unique = fetched.where((s) => seen.add(s.jobSeekerID)).toList();
+        allJobSeekers = unique;
+        visibleJobSeekers = unique;
         isLoading = false;
       });
     } catch (e) {

@@ -1,12 +1,16 @@
-import 'package:elevate_app/Custom_Widgets/Tiles/badge_new_card.dart';
+import 'dart:io';
 import 'package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Message_Box/messageBox.dart';
+import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/badge_model.dart';
 import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
+import 'package:elevate_app/Database/Online_Database/firebase_storage_service.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
+import 'package:elevate_app/constants/badge_constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AdminUpdateBadge extends StatefulWidget {
   final BadgeModel badge;
@@ -19,55 +23,51 @@ class AdminUpdateBadge extends StatefulWidget {
 
 class _AdminUpdateBadgeState extends State<AdminUpdateBadge> {
   final FirebaseService firebaseService = FirebaseService();
+  final FirebaseStorageService storageService = FirebaseStorageService();
+  final ImagePicker picker = ImagePicker();
 
-  String? newBadgeImagePath;
+  File? pickedImageFile;
+  String? currentImageUrl;
   bool isUpdating = false;
 
-  // Picks a badge image from the bundled assets (same as the create screen),
-  // instead of uploading a picked file to Firebase Storage.
+  @override
+  void initState() {
+    super.initState();
+    currentImageUrl = widget.badge.badgeImage.isNotEmpty
+        ? (widget.badge.badgeImage.startsWith('http')
+            ? widget.badge.badgeImage
+            : BadgeConstants.getBadgeUrl(widget.badge.badgeName))
+        : BadgeConstants.getBadgeUrl(widget.badge.badgeName);
+  }
+
   Future<void> pickNewBadgeImage() async {
-    final images = ["bronze.png", "silver.png", "gold.png"];
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      builder: (_) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: GridView.builder(
-            shrinkWrap: true,
-            itemCount: images.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 20,
-              mainAxisSpacing: 20,
-            ),
-            itemBuilder: (_, index) {
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    newBadgeImagePath = images[index];
-                  });
-
-                  Navigator.pop(context);
-                },
-                child: Image.asset(
-                  "lib/Resources/Images/Badges/${images[index]}",
-                ),
-              );
-            },
-          ),
-        );
-      },
-    );
+    try {
+      final picked = await picker.pickImage(source: ImageSource.gallery);
+      if (picked != null) {
+        final file = File(picked.path);
+        if (!storageService.validateFileSize(file, context)) {
+          return;
+        }
+        setState(() {
+          pickedImageFile = file;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (_) => Messagebox(message: "Failed to pick image: $e"),
+      );
+    }
   }
 
   Future<void> updateBadge() async {
-    if (newBadgeImagePath == null || newBadgeImagePath!.isEmpty) {
+    if (pickedImageFile == null) {
       showDialog(
         context: context,
-        builder: (_) =>
-            const Messagebox(message: "Please select a badge image."),
+        builder: (_) => const Messagebox(
+          message: "Please select a new image file to update badge.",
+        ),
       );
       return;
     }
@@ -75,18 +75,28 @@ class _AdminUpdateBadgeState extends State<AdminUpdateBadge> {
     setState(() => isUpdating = true);
 
     try {
-      await firebaseService.updateBadge(widget.badge.badgeID, {
-        "badgeImage": newBadgeImagePath,
-      });
+      final uploadedUrl = await storageService.uploadBadgeImage(
+        badgeId: widget.badge.badgeID,
+        file: pickedImageFile!,
+        context: context,
+      );
 
-      if (!mounted) return;
-      Navigator.pop(context, true);
+      if (uploadedUrl != null && uploadedUrl.isNotEmpty) {
+        await firebaseService.updateBadge(widget.badge.badgeID, {
+          "badgeImage": uploadedUrl,
+        });
+
+        if (!mounted) return;
+        Navigator.pop(context, true);
+      } else {
+        setState(() => isUpdating = false);
+      }
     } catch (_) {
       setState(() => isUpdating = false);
       if (!mounted) return;
       showDialog(
         context: context,
-        builder: (_) => const Messagebox(message: "Failed to update badge."),
+        builder: (_) => const Messagebox(message: "Failed to update badge image."),
       );
     }
   }
@@ -102,20 +112,92 @@ class _AdminUpdateBadgeState extends State<AdminUpdateBadge> {
           children: [
             const ElevateHeader(
               title: "Elevate",
-              subTitle: "Badges",
-              titleSize: 40,
-              subtitleSize: 25,
+              subTitle: "Update Badge Image",
+              titleSize: 32,
+              subtitleSize: 20,
+              showBackButton: true,
             ),
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(30),
                 child: Column(
                   children: [
-                    BadgeNewCard(
-                      imagePath: newBadgeImagePath ?? widget.badge.badgeImage,
-                      buttonText: isUpdating ? "UPDATING..." : "UPDATE BADGE",
-                      onPickImage: pickNewBadgeImage,
-                      onButtonTap: isUpdating ? () {} : updateBadge,
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(25),
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Column(
+                        children: [
+                          CustomText(
+                            text: "${widget.badge.badgeName} Badge",
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(height: 8),
+                          CustomText(
+                            text:
+                                "Required Score: ${widget.badge.minScore.toInt()} - ${widget.badge.maxScore.toInt()}",
+                            fontSize: 14,
+                            color: Colors.white70,
+                          ),
+                          const SizedBox(height: 25),
+                          GestureDetector(
+                            onTap: pickNewBadgeImage,
+                            child: CircleAvatar(
+                              radius: 50,
+                              backgroundColor: Colors.white12,
+                              backgroundImage: pickedImageFile != null
+                                  ? FileImage(pickedImageFile!)
+                                  : NetworkImage(currentImageUrl!) as ImageProvider,
+                              child: pickedImageFile == null
+                                  ? const Align(
+                                      alignment: Alignment.bottomRight,
+                                      child: CircleAvatar(
+                                        radius: 16,
+                                        backgroundColor: Colors.white,
+                                        child: Icon(
+                                          Icons.camera_alt,
+                                          size: 18,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                          ),
+                          const SizedBox(height: 15),
+                          const CustomText(
+                            text: "Tap circle to pick image under 1MB",
+                            fontSize: 12,
+                            color: Colors.white54,
+                          ),
+                          const SizedBox(height: 30),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 50,
+                            child: ElevatedButton(
+                              onPressed: isUpdating ? null : updateBadge,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: Colors.black,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(50),
+                                ),
+                              ),
+                              child: CustomText(
+                                text: isUpdating ? "UPLOADING..." : "UPDATE IMAGE",
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 20),
                     TexxtButton(

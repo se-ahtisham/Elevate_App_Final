@@ -1,4 +1,3 @@
-import 'package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Search_Bar/custom_search_bar.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
@@ -54,10 +53,13 @@ class _AdminUserPostsState extends State<AdminUserPosts> {
           .map((d) => PostModel.fromMap(d.data()))
           .toList();
       fetched.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      
+      final seen = <String>{};
+      final unique = fetched.where((p) => seen.add(p.postID)).toList();
 
       if (!mounted) return;
       setState(() {
-        allPosts = fetched;
+        allPosts = unique;
         visiblePosts = applySearch();
         isLoading = false;
       });

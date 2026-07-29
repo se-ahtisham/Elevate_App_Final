@@ -1,4 +1,5 @@
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
+import 'package:elevate_app/constants/badge_constants.dart';
 import 'package:flutter/material.dart';
 
 class BadgeNewCard extends StatelessWidget {
@@ -46,10 +47,14 @@ class BadgeNewCard extends StatelessWidget {
               radius: 40,
               backgroundColor: Colors.white,
               backgroundImage: imagePath != null && imagePath!.isNotEmpty
-                  ? AssetImage("lib/Resources/Images/Badges/$imagePath")
+                  ? NetworkImage(
+                      imagePath!.startsWith('http')
+                          ? imagePath!
+                          : BadgeConstants.getBadgeUrl(imagePath!),
+                    )
                   : null,
               child: imagePath == null || imagePath!.isEmpty
-                  ? const Icon(Icons.add, color: Colors.black, size: 30)
+                  ? const Icon(Icons.workspace_premium, color: Colors.amber, size: 40)
                   : null,
             ),
           ),

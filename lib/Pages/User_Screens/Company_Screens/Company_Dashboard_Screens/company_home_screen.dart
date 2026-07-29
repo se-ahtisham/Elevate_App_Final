@@ -93,20 +93,21 @@ class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
                             iconData: Icons.person_add,
                             circleSize: 50,
                             circleColor: ElevateColor.lightgray,
-                            onTap: () {
-                              Navigator.push(
+                            onTap: () async {
+                              await Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) =>
-                                      ComapanyEmployeeRequest(),
+                                      const ComapanyEmployeeRequest(),
                                 ),
                               );
+                              if (mounted) setState(() {});
                             },
                           ),
                         ),
                       ],
                     ),
-                    SizedBox(height: 20),
+                    const SizedBox(height: 20),
                     CustomText(
                       text: "WORKING EMPLOYEE",
                       fontSize: 22,
@@ -115,7 +116,7 @@ class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
                       textAlign: TextAlign.left,
                       lineHeight: 1.3,
                     ),
-                    SizedBox(height: 20),
+                    const SizedBox(height: 20),
                     Expanded(
                       child: FutureBuilder<List<Map<String, dynamic>>>(
                         future: _fetchActiveEmployees(),
@@ -129,11 +130,18 @@ class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
                           }
 
                           final employees = snapshot.data!;
+                          // Deduplicate employees by employeeID
+                          final seen = <String>{};
+                          final uniqueEmployees = employees.where((e) {
+                            final emp = e['employeeModel'] as CompanyEmployeeModel;
+                            return seen.add(emp.employeeID);
+                          }).toList();
+
                           return ListView.builder(
                             padding: EdgeInsets.zero,
-                            itemCount: employees.length,
+                            itemCount: uniqueEmployees.length,
                             itemBuilder: (context, index) {
-                              final data = employees[index];
+                              final data = uniqueEmployees[index];
                               final JobSeekerModel jobSeeker = data['jobSeeker'];
                               final CompanyEmployeeModel employee = data['employeeModel'];
 
@@ -146,7 +154,7 @@ class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
                                   borderRadius: 12,
                                   imageURL: jobSeeker.profilePic.isNotEmpty
                                       ? jobSeeker.profilePic
-                                      : 'lib/Resources/Images/Profile_Images/default_profile.png',
+                                      : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(jobSeeker.name.isNotEmpty ? jobSeeker.name : "User")}&background=random&color=fff&size=128&bold=true',
                                   name: jobSeeker.name.isNotEmpty ? jobSeeker.name : 'Unknown User',
                                   shortDescription: employee.position,
                                   iconData: Icons.arrow_forward,
@@ -156,8 +164,8 @@ class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
                                   circleColor: ElevateColor.lightgray,
                                   borderWidth: 2,
                                   borderColor: ElevateColor.lightgray,
-                                  onTap: () {
-                                    Navigator.push(
+                                  onTap: () async {
+                                    await Navigator.push(
                                       context,
                                       MaterialPageRoute(
                                         builder: (context) =>
@@ -167,6 +175,7 @@ class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
                                             ),
                                       ),
                                     );
+                                    if (mounted) setState(() {});
                                   },
                                 ),
                               );

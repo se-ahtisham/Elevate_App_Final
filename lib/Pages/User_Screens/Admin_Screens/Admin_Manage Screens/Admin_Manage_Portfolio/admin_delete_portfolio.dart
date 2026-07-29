@@ -1,4 +1,5 @@
 import 'package:elevate_app/Custom_Widgets/Buttons/circle_icon_button.dart';
+import 'package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/project_model.dart';
@@ -21,26 +22,6 @@ class AdminDeletePortfolioState extends State<AdminDeletePortfolio> {
   bool isDeleting = false;
 
   Future<void> deleteProject() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Delete Project"),
-        content: const Text("This cannot be undone. Delete this project?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel"),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text("Delete", style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
     setState(() => isDeleting = true);
     try {
       await service.deleteProject(
@@ -72,7 +53,17 @@ class AdminDeletePortfolioState extends State<AdminDeletePortfolio> {
             children: [
               Stack(
                 children: [
-                  const ElevateHeader(),
+                  ElevateHeader(
+                    title: project.projectTitle.isNotEmpty
+                        ? project.projectTitle
+                        : "Project Details",
+                    subTitle: project.techStack.isNotEmpty
+                        ? project.techStack.join(', ')
+                        : "Developer",
+                    titleSize: 24,
+                    subtitleSize: 14,
+                    showBackButton: true,
+                  ),
                   Positioned(
                     top: 60,
                     right: 20,
@@ -200,6 +191,21 @@ class AdminDeletePortfolioState extends State<AdminDeletePortfolio> {
                               ),
                             );
                           }),
+                        const SizedBox(height: 30),
+                        TexxtButton(
+                          text: "Back",
+                          textSize: 13,
+                          textColor: Colors.black,
+                          textWeight: FontWeight.w500,
+                          textAlign: TextAlign.center,
+                          backgroundColor: Colors.white,
+                          borderColor: Colors.black,
+                          borderRadius: 30,
+                          borderWidth: 1,
+                          height: 50,
+                          onTap: () => Navigator.pop(context),
+                        ),
+                        const SizedBox(height: 40),
                       ],
                     ),
                   ),
@@ -207,50 +213,7 @@ class AdminDeletePortfolioState extends State<AdminDeletePortfolio> {
               ),
             ],
           ),
-          Padding(
-            padding: const EdgeInsets.only(left: 18, right: 18, top: 150),
-            child: Container(
-              width: double.infinity,
-              height: 140,
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 22),
-              decoration: BoxDecoration(
-                color: ElevateColor.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    blurRadius: 18,
-                    color: Colors.black.withValues(alpha: 0.12),
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CustomText(
-                    text: project.projectTitle.isNotEmpty
-                        ? project.projectTitle
-                        : "Untitled Project",
-                    textAlign: TextAlign.center,
-                    fontSize: 26,
-                    fontWeight: FontWeight.w700,
-                    color: ElevateColor.lightgray,
-                    lineHeight: 1.15,
-                  ),
-                  if (project.projectURL.isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    CustomText(
-                      text: project.projectURL,
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w500,
-                      color: ElevateColor.whitegray,
-                      lineHeight: 1.2,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
+
         ],
       ),
     );

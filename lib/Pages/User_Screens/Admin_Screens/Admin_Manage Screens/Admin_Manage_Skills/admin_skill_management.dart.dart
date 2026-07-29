@@ -74,14 +74,17 @@ class AdminSkillManagementState extends State<AdminSkillManagement> {
       imageQuality: 85,
     );
     if (picked == null) return;
-    if (!mounted) return;
+    final file = File(picked.path);
+    if (!storageService.validateFileSize(file, context)) {
+      return;
+    }
 
     setState(() => isUploadingImage = true);
     try {
       final tempId = firebaseService.db.collection('skills').doc().id;
       final url = await storageService.uploadSkillImage(
         skillId: tempId,
-        file: File(picked.path),
+        file: file,
         context: context,
       );
       if (url != null && mounted) {

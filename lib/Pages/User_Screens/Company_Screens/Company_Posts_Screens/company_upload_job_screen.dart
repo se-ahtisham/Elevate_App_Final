@@ -24,18 +24,19 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
   late TextEditingController requiredSkillsController;
   late TextEditingController experienceLevelController;
   late TextEditingController benefitsController;
-  late TextEditingController salaryController;
+  late TextEditingController salaryMinController;
+  late TextEditingController salaryMaxController;
   late TextEditingController locationController;
 
-  // For Drop down
+  // Drop down options
   String? jobTypeselectedValue = "Full Time";
   List<String> jobTypeoptions = ["Full Time", "Part-Time", "Internship"];
   String? workModeselectedValue = "Remote";
   List<String> workModeoptions = ["Remote", "On-Site", "Hybrid"];
   String? testRequiredselectedValue = "Pure";
   List<String> testRequiredoptions = ["Pure", "Vibe", "Experienced"];
-  String? skillBadgeselectedValue = "Level-1";
-  List<String> skillBadgeoptions = ["Level-1", "Level-2", "Level-3"];
+  String? skillBadgeselectedValue = "Gold";
+  List<String> skillBadgeoptions = ["Gold", "Silver", "Bronze"];
 
   final AuthService _authService = AuthService();
   bool isPosting = false;
@@ -44,7 +45,8 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
   void initState() {
     super.initState();
     jobTitleController = TextEditingController();
-    salaryController = TextEditingController();
+    salaryMinController = TextEditingController();
+    salaryMaxController = TextEditingController();
     jobDescriptionController = TextEditingController();
     requiredSkillsController = TextEditingController();
     experienceLevelController = TextEditingController();
@@ -59,30 +61,36 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
     requiredSkillsController.dispose();
     experienceLevelController.dispose();
     benefitsController.dispose();
-    salaryController.dispose();
+    salaryMinController.dispose();
+    salaryMaxController.dispose();
     locationController.dispose();
     super.dispose();
   }
 
   Future<void> _postJob() async {
+    final minSal = salaryMinController.text.trim();
+    final maxSal = salaryMaxController.text.trim();
+
     final isInvalid =
         jobTitleController.text.trim().isEmpty ||
         jobDescriptionController.text.trim().isEmpty ||
         locationController.text.trim().isEmpty ||
-        salaryController.text.trim().isEmpty;
+        minSal.isEmpty;
 
     if (isInvalid) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Please fill all required fields (title, description, location, salary).',
+              'Please fill all required fields (title, description, location, starting salary).',
             ),
           ),
         );
       }
       return;
     }
+
+    final formattedSalary = maxSal.isNotEmpty ? '\$$minSal - \$$maxSal' : '\$$minSal';
 
     setState(() {
       isPosting = true;
@@ -101,9 +109,10 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
             .trim()
             .split(',')
             .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
             .toList(),
-        requiredBadges: [skillBadgeselectedValue ?? ''],
-        salary: salaryController.text.trim(),
+        requiredBadges: [skillBadgeselectedValue ?? 'Bronze'],
+        salary: formattedSalary,
         jobType: jobTypeselectedValue ?? 'Full Time',
         location: locationController.text.trim(),
         experienceLevel: experienceLevelController.text.trim(),
@@ -144,7 +153,7 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
         value: SystemUiOverlayStyle.light,
         child: Column(
           children: [
-            ElevateHeader(
+            const ElevateHeader(
               title: "CREATING BEST",
               subTitle: "Opportunity For Others",
               showBackButton: true,
@@ -165,7 +174,7 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
                         cursorColor: ElevateColor.black,
                         underlineColor: ElevateColor.black,
                       ),
-                      SizedBox(height: 30),
+                      const SizedBox(height: 30),
 
                       CustomTextField(
                         hintText: "Job Description",
@@ -174,7 +183,7 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
                         cursorColor: ElevateColor.black,
                         underlineColor: ElevateColor.black,
                       ),
-                      SizedBox(height: 30),
+                      const SizedBox(height: 30),
 
                       CustomTextField(
                         hintText: "Location",
@@ -183,7 +192,7 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
                         cursorColor: ElevateColor.black,
                         underlineColor: ElevateColor.black,
                       ),
-                      SizedBox(height: 30),
+                      const SizedBox(height: 30),
 
                       CustomTextField(
                         hintText: "Required Skill (comma separated)",
@@ -192,7 +201,7 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
                         cursorColor: ElevateColor.black,
                         underlineColor: ElevateColor.black,
                       ),
-                      SizedBox(height: 30),
+                      const SizedBox(height: 30),
                       CustomTextField(
                         hintText: "Experience Level",
                         hintWeight: FontWeight.bold,
@@ -200,16 +209,32 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
                         cursorColor: ElevateColor.black,
                         underlineColor: ElevateColor.black,
                       ),
-                      SizedBox(height: 30),
-                      CustomTextField(
-                        hintText: "Salary Per Month",
-                        hintWeight: FontWeight.bold,
-                        controller: salaryController,
-                        cursorColor: ElevateColor.black,
-                        underlineColor: ElevateColor.black,
+                      const SizedBox(height: 30),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CustomTextField(
+                              hintText: "Starting Salary",
+                              hintWeight: FontWeight.bold,
+                              controller: salaryMinController,
+                              cursorColor: ElevateColor.black,
+                              underlineColor: ElevateColor.black,
+                            ),
+                          ),
+                          const SizedBox(width: 15),
+                          Expanded(
+                            child: CustomTextField(
+                              hintText: "Ending Salary",
+                              hintWeight: FontWeight.bold,
+                              controller: salaryMaxController,
+                              cursorColor: ElevateColor.black,
+                              underlineColor: ElevateColor.black,
+                            ),
+                          ),
+                        ],
                       ),
 
-                      SizedBox(height: 30),
+                      const SizedBox(height: 30),
                       CustomTextField(
                         hintText: "Benefits",
                         hintWeight: FontWeight.bold,
@@ -218,17 +243,17 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
                         underlineColor: ElevateColor.black,
                       ),
 
-                      SizedBox(height: 30),
+                      const SizedBox(height: 30),
                       Row(
                         children: [
-                          CustomText(
+                          const CustomText(
                             text: "JOB TYPE",
                             fontSize: 18,
-                            color: const Color.fromARGB(255, 165, 165, 165),
+                            color: Color.fromARGB(255, 165, 165, 165),
                             fontWeight: FontWeight.w700,
                             textAlign: TextAlign.left,
                           ),
-                          SizedBox(width: 79),
+                          const SizedBox(width: 79),
                           CustomDropDown(
                             hintText: "Full Time",
                             items: jobTypeoptions,
@@ -249,17 +274,17 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
                           ),
                         ],
                       ),
-                      SizedBox(height: 30),
+                      const SizedBox(height: 30),
                       Row(
                         children: [
-                          CustomText(
+                          const CustomText(
                             text: "Work Mode",
                             fontSize: 18,
-                            color: const Color.fromARGB(255, 165, 165, 165),
+                            color: Color.fromARGB(255, 165, 165, 165),
                             fontWeight: FontWeight.w700,
                             textAlign: TextAlign.left,
                           ),
-                          SizedBox(width: 56),
+                          const SizedBox(width: 56),
                           CustomDropDown(
                             hintText: "Remote",
                             items: workModeoptions,
@@ -280,17 +305,17 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
                           ),
                         ],
                       ),
-                      SizedBox(height: 30),
+                      const SizedBox(height: 30),
                       Row(
                         children: [
-                          CustomText(
+                          const CustomText(
                             text: "Required Test",
                             fontSize: 18,
-                            color: const Color.fromARGB(255, 165, 165, 165),
+                            color: Color.fromARGB(255, 165, 165, 165),
                             fontWeight: FontWeight.w700,
                             textAlign: TextAlign.left,
                           ),
-                          SizedBox(width: 32),
+                          const SizedBox(width: 32),
                           CustomDropDown(
                             hintText: "Pure",
                             items: testRequiredoptions,
@@ -311,19 +336,19 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
                           ),
                         ],
                       ),
-                      SizedBox(height: 30),
+                      const SizedBox(height: 30),
                       Row(
                         children: [
-                          CustomText(
+                          const CustomText(
                             text: "Skill Badge",
                             fontSize: 18,
-                            color: const Color.fromARGB(255, 165, 165, 165),
+                            color: Color.fromARGB(255, 165, 165, 165),
                             fontWeight: FontWeight.w700,
                             textAlign: TextAlign.left,
                           ),
-                          SizedBox(width: 58),
+                          const SizedBox(width: 58),
                           CustomDropDown(
-                            hintText: "Level-1",
+                            hintText: "Bronze",
                             items: skillBadgeoptions,
                             value: skillBadgeselectedValue,
                             width: 200,
@@ -343,7 +368,7 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
                         ],
                       ),
 
-                      SizedBox(height: 30),
+                      const SizedBox(height: 30),
                       isPosting
                           ? const CircularProgressIndicator()
                           : TextButtonGradient(

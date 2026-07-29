@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart';
 import 'package:elevate_app/Custom_Widgets/Search_Bar/custom_search_bar.dart';
 import 'package:elevate_app/Custom_Widgets/Text/icon_text.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/job_black_tile.dart';
@@ -148,7 +149,7 @@ class ShowAppliedCandidatesScreenState
                         return ExperienceWhiteBlackFull(
                           imageURL: candidate.profilePic.isNotEmpty
                               ? candidate.profilePic
-                              : "lib/Resources/Images/Profile_Images/default_profile.png",
+                              : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(candidate.name.isNotEmpty ? candidate.name : "User")}&background=E0E0E0&color=757575&size=128&bold=true',
                           name: candidate.name,
                           shortDescription: candidate.shortDescription,
                           experience: candidate.experienceLevel,
@@ -176,6 +177,61 @@ class ShowAppliedCandidatesScreenState
               textWeight: FontWeight.w400,
               borderRadius: 50,
               onTap: () => Navigator.pop(context),
+            ),
+            const SizedBox(height: 12),
+            TexxtButton(
+              text: "DELETE JOB POST",
+              height: 50,
+              textSize: 14,
+              textColor: Colors.red.shade700,
+              textWeight: FontWeight.bold,
+              borderRadius: 50,
+              backgroundColor: Colors.red.shade50,
+              borderColor: Colors.red.shade300,
+              borderWidth: 1,
+              onTap: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text("Delete Job Post"),
+                    content: const Text(
+                        "Are you sure you want to delete this job post?"),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text("Cancel"),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: const Text(
+                          "Delete",
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirm == true) {
+                  try {
+                    await FirebaseFirestore.instance
+                        .collection('jobs')
+                        .doc(widget.job.jobID)
+                        .delete();
+
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Job post deleted.")),
+                    );
+                    Navigator.pop(context, true);
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Failed to delete job post: $e")),
+                    );
+                  }
+                }
+              },
             ),
           ],
         ),

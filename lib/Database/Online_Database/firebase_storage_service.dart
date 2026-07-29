@@ -210,6 +210,44 @@ class FirebaseStorageService {
     }
   }
 
+  Future<String?> uploadBadgeImage({
+    required String badgeId,
+    required File file,
+    required BuildContext context,
+  }) async {
+    if (!validateFileSize(file, context)) return null;
+    try {
+      final ext = file.path.split('.').last.toLowerCase();
+      final ref = storage.ref().child('badge_images').child('$badgeId.$ext');
+      final uploadTask = await ref.putFile(file);
+      return await uploadTask.ref.getDownloadURL();
+    } catch (e) {
+      if (context.mounted) {
+        _showMessage(context, "Failed to upload badge image: ${e.toString()}");
+      }
+      return null;
+    }
+  }
+
+  Future<String?> uploadCompanyImage({
+    required String companyId,
+    required File file,
+    required BuildContext context,
+  }) async {
+    if (!validateFileSize(file, context)) return null;
+    try {
+      final ext = file.path.split('.').last.toLowerCase();
+      final ref = storage.ref().child('company_logos').child('$companyId.$ext');
+      final uploadTask = await ref.putFile(file);
+      return await uploadTask.ref.getDownloadURL();
+    } catch (e) {
+      if (context.mounted) {
+        _showMessage(context, "Failed to upload company logo: ${e.toString()}");
+      }
+      return null;
+    }
+  }
+
   Future<bool> deleteFileFromStorage(String fileUrl) async {
     try {
       await storage.refFromURL(fileUrl).delete();
