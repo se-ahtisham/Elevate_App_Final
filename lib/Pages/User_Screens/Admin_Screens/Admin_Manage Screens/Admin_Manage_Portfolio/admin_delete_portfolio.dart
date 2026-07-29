@@ -5,7 +5,7 @@ import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/project_mo
 import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:elevate_app/Utils/file_downloader.dart';
 
 class AdminDeletePortfolio extends StatefulWidget {
   final ProjectModel project;
@@ -192,10 +192,9 @@ class AdminDeletePortfolioState extends State<AdminDeletePortfolio> {
                                 fileName: fileName,
                                 onDownload: () async {
                                   if (fileUrl.isNotEmpty) {
-                                    final uri = Uri.parse(fileUrl);
-                                    if (await canLaunchUrl(uri)) {
-                                      await launchUrl(uri);
-                                    }
+                                    try {
+                                      await saveOrDownloadFile(fileUrl, fileName);
+                                    } catch (_) {}
                                   }
                                 },
                               ),

@@ -9,7 +9,7 @@ import 'package:elevate_app/Database/Online_Database/firebase_storage_service.da
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:elevate_app/Utils/file_downloader.dart';
 
 const int maxFileSizeBytes = 1024 * 1024; // 1 MB
 const List<String> allowedImageExtensions = ['jpg', 'jpeg', 'png'];
@@ -120,11 +120,10 @@ class _PortfolioUpdateScreenState extends ConsumerState<PortfolioUpdateScreen> {
     setState(() => target.addAll(accepted));
   }
 
-  Future<void> _downloadFile(String url) async {
-    final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
+  Future<void> _downloadFile(String url, String fileName) async {
+    try {
+      await saveOrDownloadFile(url, fileName);
+    } catch (_) {
       _showMessage("Couldn't open this file.");
     }
   }
@@ -140,6 +139,7 @@ class _PortfolioUpdateScreenState extends ConsumerState<PortfolioUpdateScreen> {
 
       for (final img in newImages) {
         if (img.bytes == null) continue;
+        if (!mounted) return;
         final url = await storageService.uploadPortfolioImage(
           userId: project.jobSeekerID,
           projectId: project.projectID,
@@ -154,8 +154,8 @@ class _PortfolioUpdateScreenState extends ConsumerState<PortfolioUpdateScreen> {
       final techUrls = <String>[for (final t in existingTechFiles) t.url];
 
       for (final f in newTechFiles) {
-        if (!context.mounted) return;
         if (f.bytes == null) continue;
+        if (!mounted) return;
         final url = await storageService.uploadTechFile(
           userId: project.jobSeekerID,
           projectId: project.projectID,
@@ -498,8 +498,10 @@ class _PortfolioUpdateScreenState extends ConsumerState<PortfolioUpdateScreen> {
                               name: existingTechFiles[i].name,
                               onDownload: existingTechFiles[i].url.isEmpty
                                   ? null
-                                  : () =>
-                                        _downloadFile(existingTechFiles[i].url),
+                                  : () => _downloadFile(
+                                        existingTechFiles[i].url,
+                                        existingTechFiles[i].name,
+                                      ),
                               onRemove: () => setState(() {
                                 if (existingTechFiles[i].url.isNotEmpty) {
                                   removedTechUrls.add(existingTechFiles[i].url);

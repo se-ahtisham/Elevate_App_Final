@@ -20,6 +20,9 @@ class DemoDataSeeder {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  static const String _demoFileDownloadUrl =
+      'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/demo_files%2Fsample_test_file.txt?alt=media&token=8d505597-cdc0-4153-9320-a4eb5c0129b2';
+
   Future<void> seedAllData() async {
     debugPrint("Clearing old demo data first...");
     await clearDemoData();
@@ -218,6 +221,13 @@ class DemoDataSeeder {
         "industry": "Data & AI",
         "logo": "https://ui-avatars.com/api/?name=DA"
       },
+      // ── Review-test company (fresh, never reviewed) ──────────────
+      {
+        "email": "reviewco@test.com",
+        "name": "ReviewTest Co",
+        "industry": "Technology",
+        "logo": "https://ui-avatars.com/api/?name=RT"
+      },
     ];
 
     List<String> companyIds = [];
@@ -283,6 +293,13 @@ class DemoDataSeeder {
         "name": "Hassan Ali",
         "level": "Junior",
         "desc": "Junior Flutter Developer",
+      },
+      // ── Review-test seeker (fresh, never reviewed anything) ──────────
+      {
+        "email": "reviewer@test.com",
+        "name": "Review Tester",
+        "level": "Mid",
+        "desc": "Dedicated review test account",
       },
     ];
 
@@ -387,8 +404,6 @@ class DemoDataSeeder {
         level: 'Intern',
       );
     }
-
-    // ── 7. Seed Projects for Job Seekers (Portfolios) ──────────────────────
     if (jobSeekerIds.isNotEmpty) {
       final sampleProjects = [
         {
@@ -396,25 +411,51 @@ class DemoDataSeeder {
           "title": "Elevate E-Learning Mobile App",
           "desc": "A full-featured mobile app built with Flutter and Firebase featuring AI skill assessments.",
           "url": "https://github.com/example/elevate_app",
+          "techStack": ["sample_test_file.txt"],
+          "techFileUrls": [_demoFileDownloadUrl],
         },
         {
           "seekerId": jobSeekerIds[0],
           "title": "Crypto Wallet UI Kit",
           "desc": "Modern clean crypto wallet design system with dynamic dark mode and custom interactive charts.",
           "url": "https://github.com/example/crypto_ui",
+          "techStack": ["sample_test_file.txt"],
+          "techFileUrls": [_demoFileDownloadUrl],
         },
         {
           "seekerId": jobSeekerIds.length > 1 ? jobSeekerIds[1] : jobSeekerIds[0],
           "title": "FastAPI Microservices Infrastructure",
           "desc": "Scalable RESTful API gateway integrated with Redis caching and Dockerized deployments.",
           "url": "https://github.com/example/fastapi_gateway",
+          "techStack": ["sample_test_file.txt"],
+          "techFileUrls": [_demoFileDownloadUrl],
         },
         {
           "seekerId": jobSeekerIds.length > 2 ? jobSeekerIds[2] : jobSeekerIds[0],
           "title": "Automated Stock Sentiment Analysis",
           "desc": "Python ML pipeline fetching financial news and rendering real-time sentiment metrics.",
           "url": "https://github.com/example/stock_sentiment",
+          "techStack": ["sample_test_file.txt"],
+          "techFileUrls": [_demoFileDownloadUrl],
         },
+        if (jobSeekerIds.length > 3)
+          {
+            "seekerId": jobSeekerIds[3],
+            "title": "UI/UX Design Systems & Kit",
+            "desc": "Figma design prototypes, wireframes, and design spec documentation for mobile & web apps.",
+            "url": "https://github.com/example/uiux_portfolio",
+            "techStack": ["sample_test_file.txt"],
+            "techFileUrls": [_demoFileDownloadUrl],
+          },
+        if (jobSeekerIds.length > 4)
+          {
+            "seekerId": jobSeekerIds[4],
+            "title": "Flutter Cross-Platform Architecture",
+            "desc": "Clean architecture template with state management and comprehensive test suite.",
+            "url": "https://github.com/example/flutter_architecture",
+            "techStack": ["sample_test_file.txt"],
+            "techFileUrls": [_demoFileDownloadUrl],
+          },
       ];
 
       for (var p in sampleProjects) {
@@ -425,7 +466,8 @@ class DemoDataSeeder {
           projectTitle: p["title"] as String,
           projectDescription: p["desc"] as String,
           projectURL: p["url"] as String,
-          techStack: ["Flutter", "Dart", "Firebase"],
+          techStack: List<String>.from(p["techStack"] as List),
+          techFileUrls: List<String>.from(p["techFileUrls"] as List),
         );
         await projRef.set(project.toMap());
 
@@ -598,6 +640,7 @@ class DemoDataSeeder {
             companyID: jData["compId"] as String,
             status: "Pending",
             coldEmail: "Hello, I am very interested in the ${jData["title"]} role and believe my skills align well with your team.",
+            resumeUrl: _demoFileDownloadUrl,
           );
           await appRef.set(appModel.toMap());
 
@@ -647,6 +690,14 @@ class DemoDataSeeder {
           "position": "Junior Flutter Developer",
           "status": "Pending",
         },
+        // ── Review-test: reviewer@test.com is Active at reviewco@test.com ──
+        if (companyIds.length > 3 && jobSeekerIds.length > 5)
+          {
+            "companyId": companyIds[3], // reviewco@test.com
+            "seekerId": jobSeekerIds[5], // reviewer@test.com
+            "position": "Senior Engineer",
+            "status": "Active",
+          },
         // --- Added pending requests for companyIds[1] (Creative Studio) ---
         {
           "companyId": companyIds[1],
@@ -737,32 +788,72 @@ class DemoDataSeeder {
     ];
 
     for (var email in emails) {
+      String? uid;
       try {
         UserCredential uc = await _auth.signInWithEmailAndPassword(
           email: email,
           password: "Test@123",
         );
-        String uid = uc.user!.uid;
+        uid = uc.user?.uid;
+      } catch (_) {}
 
-        try {
-          await _firestore.collection('admins').doc(uid).delete();
-        } catch (_) {}
-        try {
-          await _firestore.collection('companies').doc(uid).delete();
-        } catch (_) {}
-        try {
-          await _firestore.collection('jobSeekers').doc(uid).delete();
-        } catch (_) {}
+      uid ??= "demo_${email.replaceAll('@', '_').replaceAll('.', '_')}";
 
-        try {
-          await uc.user!.delete();
-          debugPrint("Deleted auth user $email");
-        } catch (e) {
-          debugPrint("Could not delete auth user $email: $e");
+      try {
+        await _firestore.collection('admins').doc(uid).delete();
+      } catch (_) {}
+      try {
+        await _firestore.collection('companies').doc(uid).delete();
+      } catch (_) {}
+      try {
+        await _firestore.collection('jobSeekers').doc(uid).delete();
+      } catch (_) {}
+
+      // Delete associated user data
+      try {
+        final projectsSnap = await _firestore.collection('projects').where('jobSeekerID', isEqualTo: uid).get();
+        for (var doc in projectsSnap.docs) {
+          await doc.reference.delete();
         }
-      } catch (e) {
-        debugPrint("Could not sign in/delete $email (may not exist): $e");
-      }
+      } catch (_) {}
+      try {
+        final postsSnap = await _firestore.collection('posts').where('authorID', isEqualTo: uid).get();
+        for (var doc in postsSnap.docs) {
+          await doc.reference.delete();
+        }
+      } catch (_) {}
+      try {
+        final appsSnap1 = await _firestore.collection('applications').where('jobSeekerID', isEqualTo: uid).get();
+        for (var doc in appsSnap1.docs) {
+          await doc.reference.delete();
+        }
+        final appsSnap2 = await _firestore.collection('applications').where('companyID', isEqualTo: uid).get();
+        for (var doc in appsSnap2.docs) {
+          await doc.reference.delete();
+        }
+      } catch (_) {}
+      try {
+        final empSnap1 = await _firestore.collection('employees').where('jobSeekerID', isEqualTo: uid).get();
+        for (var doc in empSnap1.docs) {
+          await doc.reference.delete();
+        }
+        final empSnap2 = await _firestore.collection('employees').where('companyID', isEqualTo: uid).get();
+        for (var doc in empSnap2.docs) {
+          await doc.reference.delete();
+        }
+      } catch (_) {}
+      try {
+        final resSnap = await _firestore.collection('results').where('jobSeekerID', isEqualTo: uid).get();
+        for (var doc in resSnap.docs) {
+          await doc.reference.delete();
+        }
+      } catch (_) {}
+      try {
+        final jobsSnap = await _firestore.collection('jobs').where('companyID', isEqualTo: uid).get();
+        for (var doc in jobsSnap.docs) {
+          await doc.reference.delete();
+        }
+      } catch (_) {}
     }
   }
 

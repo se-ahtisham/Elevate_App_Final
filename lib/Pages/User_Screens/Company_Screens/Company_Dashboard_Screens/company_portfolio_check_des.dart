@@ -5,14 +5,14 @@ import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/project_model.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:elevate_app/Utils/file_downloader.dart';
 
 class CompanyPortfolioCheckDes extends StatelessWidget {
    final ProjectModel project;
 
    const CompanyPortfolioCheckDes({super.key, required this.project});
 
-  Future<void> downloadOrWarn(BuildContext context, String url) async {
+  Future<void> downloadOrWarn(BuildContext context, String url, String fileName) async {
     if (url.isEmpty) {
       showDialog(
         context: context,
@@ -22,9 +22,8 @@ class CompanyPortfolioCheckDes extends StatelessWidget {
       );
       return;
     }
-    final uri = Uri.parse(url);
     try {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      await saveOrDownloadFile(url, fileName);
     } catch (_) {
       if (context.mounted) {
         showDialog(
@@ -142,14 +141,15 @@ class CompanyPortfolioCheckDes extends StatelessWidget {
                       )
                     else
                       ...List.generate(project.techStack.length, (i) {
+                        final fileName = project.techStack[i];
                         final url = i < project.techFileUrls.length
                             ? project.techFileUrls[i]
                             : '';
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: _FilePill(
-                            fileName: project.techStack[i],
-                            onDownload: () => downloadOrWarn(context, url),
+                            fileName: fileName,
+                            onDownload: () => downloadOrWarn(context, url, fileName),
                           ),
                         );
                       }),
