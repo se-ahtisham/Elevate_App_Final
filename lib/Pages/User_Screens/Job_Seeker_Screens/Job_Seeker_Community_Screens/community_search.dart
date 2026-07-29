@@ -106,6 +106,9 @@ class CommunitySearchState extends ConsumerState<CommunitySearch> {
           .toList();
     }
 
+    final seen = <String>{};
+    results = results.where((m) => seen.add(m['id'] ?? '')).toList();
+
     return results;
   }
 

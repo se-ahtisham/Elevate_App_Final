@@ -494,6 +494,10 @@ class FirebaseService {
           .get();
       results.addAll(snap.docs.map((d) => PostModel.fromMap(d.data())));
     }
+
+    final seen = <String>{};
+    results.retainWhere((p) => seen.add(p.postID)); // <-- ADD THIS
+
     results.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return results;
   }
@@ -504,12 +508,14 @@ class FirebaseService {
         .where('authorID', isEqualTo: authorID)
         .get();
     final posts = snap.docs.map((d) => PostModel.fromMap(d.data())).toList();
+
+    final seen = <String>{};
+    posts.retainWhere((p) => seen.add(p.postID)); // <-- ADD THIS
+
     posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return posts;
   }
 
-  // Explore feed: every company's posts + posts from job seekers the
-  // current user follows + the current user's own posts.
   Future<List<PostModel>> getCommunityFeed(String userID) async {
     final seeker = await getJobSeeker(userID);
     final following = <String>{...(seeker?.following ?? []), userID}.toList();
@@ -534,6 +540,9 @@ class FirebaseService {
           .get();
       posts.addAll(snap.docs.map((d) => PostModel.fromMap(d.data())));
     }
+
+    final seen = <String>{};
+    posts.retainWhere((p) => seen.add(p.postID)); // <-- ADD THIS
 
     posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return posts;
@@ -640,6 +649,10 @@ class FirebaseService {
     final comments = snap.docs
         .map((d) => CommentModel.fromMap(d.data()))
         .toList();
+
+    final seen = <String>{};
+    comments.retainWhere((c) => seen.add(c.commentID));
+
     comments.sort((a, b) => a.createdAt.compareTo(b.createdAt));
     return comments;
   }

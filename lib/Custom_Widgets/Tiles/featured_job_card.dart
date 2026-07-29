@@ -4,8 +4,7 @@ import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 
 class FeaturedJobCard extends StatelessWidget {
-  final String
-  initials; // two-letter avatar text shown in the circular badge "TS" for "Tech Solutions Inc"
+  final String initials;
   final String title;
   final String companyAndLocation;
   final String description;
@@ -51,7 +50,7 @@ class FeaturedJobCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(height: 8),
+          const SizedBox(height: 4),
           // Avatar + title + company/location row
           Row(
             children: [
@@ -164,7 +163,7 @@ class FeaturedJobCard extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
 
           SizedBox(
             width: double.infinity,
