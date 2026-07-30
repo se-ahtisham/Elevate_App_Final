@@ -52,26 +52,42 @@ class ShortDescriptionRoundCircleIconTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(borderRadius),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-        child: Row(
-          children: [
-            Expanded(
-              child: UserDescriptionShort(
-                imageURL: imageURL,
-                name: name,
-                shortDescription: shortDescription,
-              ),
+        // height, width, and circleSize are all independently
+        // required parameters with no relationship enforced between
+        // them. If a caller passes a width smaller than circleSize
+        // plus padding, the fixed-size CircleIconButton can't shrink
+        // (only the Expanded sibling can), so the Row overflows
+        // horizontally. Wrapping in a horizontal
+        // SingleChildScrollView keeps it safe in that case.
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: const ClampingScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minWidth: width - 24, // account for horizontal padding
             ),
-            CircleIconButton(
-              iconData: iconData,
-              iconSize: iconSize,
-              iconColor: iconColor,
-              circleSize: circleSize,
-              circleColor: circleColor,
-              borderWidth: borderWidth,
-              borderColor: borderColor,
-              onTap: onTap,
+            child: Row(
+              children: [
+                Expanded(
+                  child: UserDescriptionShort(
+                    imageURL: imageURL,
+                    name: name,
+                    shortDescription: shortDescription,
+                  ),
+                ),
+                CircleIconButton(
+                  iconData: iconData,
+                  iconSize: iconSize,
+                  iconColor: iconColor,
+                  circleSize: circleSize,
+                  circleColor: circleColor,
+                  borderWidth: borderWidth,
+                  borderColor: borderColor,
+                  onTap: onTap,
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

@@ -179,8 +179,7 @@ class _NetworkPreviewCard extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: () {
-        Navigator.push(
-          context,
+        Navigator.of(context, rootNavigator: true).push(
           MaterialPageRoute(
             builder: (_) =>
                 _FullScreenNetworkImage(imageUrl: imageUrl, heroTag: heroTag),
@@ -313,3 +312,4 @@ class _FilePill extends StatelessWidget {
     );
   }
 }
+

@@ -64,27 +64,41 @@ class ExperienceWhiteBlackFull extends StatelessWidget {
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 10.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                UserDescriptionShort(
-                  imageURL: imageURL,
-                  name: name,
-                  shortDescription: shortDescription,
-                ),
-                SizedBox(height: 10),
-                CustomTextBox(
-                  text: experience,
-                  backgroundColor: const Color.fromARGB(92, 196, 196, 196),
-                  borderRadius: 50,
-                  textColor: const Color.fromARGB(255, 61, 61, 61),
-                  borderWidth: 0.8,
-                  borderColor: const Color.fromARGB(255, 190, 190, 190),
-                  width: experienceBoxWidth,
-                  textSize: 10,
-                  height: 30,
-                ),
-              ],
+            // tileHeight is caller-configurable (default 120), and
+            // after padding + spacing + the fixed 30px experience
+            // box, only a small budget remains for
+            // UserDescriptionShort. Wrapping in a
+            // SingleChildScrollView lets this column scroll instead
+            // of overflowing if a smaller tileHeight is passed or
+            // UserDescriptionShort needs more room than expected.
+            child: SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  UserDescriptionShort(
+                    imageURL: imageURL,
+                    name: name,
+                    shortDescription: shortDescription,
+                  ),
+                  SizedBox(height: 10),
+                  CustomTextBox(
+                    text: experience,
+                    backgroundColor: const Color.fromARGB(92, 196, 196, 196),
+                    borderRadius: 50,
+                    textColor: const Color.fromARGB(255, 61, 61, 61),
+                    borderWidth: 0.8,
+                    borderColor: const Color.fromARGB(255, 190, 190, 190),
+
+                    width: experienceBoxWidth > (firstContainerWidth - 16)
+                        ? (firstContainerWidth - 16)
+                        : experienceBoxWidth,
+                    textSize: 10,
+                    height: 30,
+                  ),
+                ],
+              ),
             ),
           ),
         ),

@@ -55,7 +55,7 @@ class CommunitySearchState extends ConsumerState<CommunitySearch> {
           : 'Job Seeker',
       'imageUrl': seeker.profilePic.isNotEmpty
           ? seeker.profilePic
-          : 'lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg',
+          : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(seeker.name)}&background=random&color=fff&size=128',
       'type': 'JobSeeker',
     };
   }
@@ -67,7 +67,7 @@ class CommunitySearchState extends ConsumerState<CommunitySearch> {
       'subtitle': company.industry.isNotEmpty ? company.industry : 'Company',
       'imageUrl': company.logo.isNotEmpty
           ? company.logo
-          : 'lib/Resources/Images/Profile_Images/Company_Logo.jpg',
+          : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(company.companyName)}&background=random&color=fff&size=128',
       'type': 'Company',
     };
   }
@@ -126,8 +126,7 @@ class CommunitySearchState extends ConsumerState<CommunitySearch> {
   void openProfile(Map<String, String> member) {
     final isCompany = member['type'] == 'Company';
 
-    Navigator.push(
-      context,
+    Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
         builder: (context) => isCompany
             ? CommunityViewCompanyProfile(companyID: member['id']!)
@@ -137,8 +136,7 @@ class CommunitySearchState extends ConsumerState<CommunitySearch> {
   }
 
   void openCommunityCenter() {
-    Navigator.push(
-      context,
+    Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(builder: (context) => const UserCommunityScreen()),
     );
   }
@@ -288,3 +286,4 @@ class CommunitySearchState extends ConsumerState<CommunitySearch> {
     );
   }
 }
+

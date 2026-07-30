@@ -101,8 +101,7 @@ class UserCommunityMycommunityScreenState
   void openProfile(Map<String, String> member) {
     final isCompany = member['type'] == 'Company';
 
-    Navigator.push(
-      context,
+    Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
         builder: (context) => isCompany
             ? CommunityViewCompanyProfile(companyID: member['id']!)
@@ -187,9 +186,7 @@ class UserCommunityMycommunityScreenState
                         child: WhiteBlackUser(
                           imageURL: imageUrl.isNotEmpty
                               ? imageUrl
-                              : (member['type'] == 'Company'
-                                    ? "lib/Resources/Images/Profile_Images/Company_Logo.jpg"
-                                    : "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg"),
+                              : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(member['name'] ?? 'User')}&background=random&color=fff&size=128',
                           name: member['name'] ?? '',
                           shortDescription: member['subtitle'] ?? '',
                           experience: member['type'] ?? '',
@@ -207,3 +204,4 @@ class UserCommunityMycommunityScreenState
     );
   }
 }
+

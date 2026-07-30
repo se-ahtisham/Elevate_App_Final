@@ -105,8 +105,7 @@ class CommunityViewJobseekerProfileState
         otherAvatar: otherAvatar,
       );
       if (!mounted) return;
-      Navigator.push(
-        context,
+      Navigator.of(context, rootNavigator: true).push(
         MaterialPageRoute(
           builder: (_) => ChatRoomScreen(
             chatID: chatID,
@@ -124,8 +123,7 @@ class CommunityViewJobseekerProfileState
   }
 
   void onPortfolioTap() {
-    Navigator.push(
-      context,
+    Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
         builder: (context) => PorfolioScreen(jobSeekerID: widget.jobSeekerID),
       ),

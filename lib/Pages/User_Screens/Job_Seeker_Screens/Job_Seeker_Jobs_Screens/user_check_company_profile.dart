@@ -114,8 +114,7 @@ class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfil
         const SnackBar(content: Text("Employee application submitted!")),
       );
 
-      Navigator.push(
-        context,
+      Navigator.of(context, rootNavigator: true).push(
         MaterialPageRoute(
           builder: (context) => UserRequestRatingCompany(
             company: widget.company,
@@ -277,8 +276,7 @@ class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfil
                                   otherAvatar: otherAvatar,
                                 );
                                 if (!mounted) return;
-                                Navigator.push(
-                                  context,
+                                Navigator.of(context, rootNavigator: true).push(
                                   MaterialPageRoute(
                                     builder: (_) => ChatRoomScreen(
                                       chatID: chatID,
@@ -411,3 +409,4 @@ class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfil
     );
   }
 }
+

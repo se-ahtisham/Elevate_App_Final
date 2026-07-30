@@ -133,8 +133,7 @@ class _JobSeekerProfileScreenState
                           height: 40,
                           width: 120,
                           onTap: () async {
-                            await Navigator.push(
-                              context,
+                            await Navigator.of(context, rootNavigator: true).push(
                               SlideLeftRoute(
                                 page: const JobSeekerFollowRequests(),
                               ),
@@ -156,8 +155,7 @@ class _JobSeekerProfileScreenState
                           height: 40,
                           width: 140,
                           onTap: () async {
-                            await Navigator.push(
-                              context,
+                            await Navigator.of(context, rootNavigator: true).push(
                               SlideLeftRoute(
                                 page: const JobSeekerUpdateProfile(),
                               ),
@@ -184,8 +182,7 @@ class _JobSeekerProfileScreenState
                       height: 40,
                       width: double.infinity,
                       onTap: () {
-                        Navigator.push(
-                          context,
+                        Navigator.of(context, rootNavigator: true).push(
                           SlideLeftRoute(
                             page: JobSeekerWorkingCompanies(
                               jobSeekerID: jobSeeker.jobSeekerID,
@@ -350,3 +347,4 @@ class _JobSeekerProfileScreenState
     );
   }
 }
+

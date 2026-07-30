@@ -92,8 +92,7 @@ class CompanyProfile extends StatelessWidget {
                                 height: 40,
                                 width: 130,
                                 onTap: () {
-                                  Navigator.push(
-                                    context,
+                                  Navigator.of(context, rootNavigator: true).push(
                                     MaterialPageRoute(
                                       builder: (context) => const CompanyFollowRequests(),
                                     ),
@@ -114,8 +113,7 @@ class CompanyProfile extends StatelessWidget {
                                 height: 40,
                                 width: 150,
                                 onTap: () {
-                                  Navigator.push(
-                                    context,
+                                  Navigator.of(context, rootNavigator: true).push(
                                     MaterialPageRoute(
                                       builder: (context) => UpdateCompanyProfile(company: company),
                                     ),
@@ -248,3 +246,4 @@ class CompanyProfile extends StatelessWidget {
     );
   }
 }
+

@@ -327,8 +327,7 @@ class JobScreenState extends ConsumerState<JobScreen> {
                                   jobType: job.jobType,
                                   salary: job.salary,
                                   onApplyTap: () {
-                                    Navigator.push(
-                                      context,
+                                    Navigator.of(context, rootNavigator: true).push(
                                       MaterialPageRoute(
                                         builder: (_) => JobSelection(
                                           jobPost: job,
@@ -691,8 +690,7 @@ class JobScreenState extends ConsumerState<JobScreen> {
                         onTap: () {
                           final jobSeeker = ref.read(authProvider).jobSeeker;
                           if (jobSeeker != null) {
-                            Navigator.push(
-                              context,
+                            Navigator.of(context, rootNavigator: true).push(
                               MaterialPageRoute(
                                 builder: (_) => CareerGuidanceScreen(
                                   jobSeekerID: jobSeeker.jobSeekerID,
@@ -736,8 +734,7 @@ class JobScreenState extends ConsumerState<JobScreen> {
                       InkWell(
                         borderRadius: BorderRadius.circular(20),
                         onTap: () {
-                          Navigator.push(
-                            context,
+                          Navigator.of(context, rootNavigator: true).push(
                             MaterialPageRoute(
                               builder: (context) => const OtherPlatformJobs(),
                             ),
@@ -795,8 +792,7 @@ class JobScreenState extends ConsumerState<JobScreen> {
                             ),
                             jobType: job.jobType,
                             onTap: () {
-                              Navigator.push(
-                                context,
+                              Navigator.of(context, rootNavigator: true).push(
                                 MaterialPageRoute(
                                   builder: (_) => JobSelection(
                                     jobPost: job,
@@ -822,3 +818,4 @@ class JobScreenState extends ConsumerState<JobScreen> {
     );
   }
 }
+

@@ -1521,6 +1521,32 @@ class FirebaseService {
   static const String _demoCompanyID = 'DEMO_company_Elevate';
   static const String _demoEmployeeID = 'DEMO_employee_Ahmad';
 
+  // ── Top-notch demo job seeker ─────────────────────────────────────────────
+  static const String _demoProJobSeekerID = 'DEMO_jobSeeker_Sara';
+  static const String _demoResult1ID = 'DEMO_result_Sara_Flutter';
+  static const String _demoResult2ID = 'DEMO_result_Sara_React';
+  static const String _demoResult3ID = 'DEMO_result_Sara_Python';
+  static const String _demoResult4ID = 'DEMO_result_Sara_ML';
+  static const String _demoResult5ID = 'DEMO_result_Sara_Cloud';
+  static const String _demoBadge1ID = 'DEMO_badge_Sara_Flutter_Gold';
+  static const String _demoBadge2ID = 'DEMO_badge_Sara_React_Gold';
+  static const String _demoBadge3ID = 'DEMO_badge_Sara_Python_Silver';
+  static const String _demoBadge4ID = 'DEMO_badge_Sara_ML_Gold';
+  static const String _demoBadge5ID = 'DEMO_badge_Sara_Cloud_Silver';
+  static const String _demoProProject1ID = 'DEMO_project_Sara_Elevate';
+  static const String _demoProProject2ID = 'DEMO_project_Sara_MLPipeline';
+  static const String _demoProProject3ID = 'DEMO_project_Sara_CloudDash';
+  static const String _demoProProject4ID = 'DEMO_project_Sara_ReactShop';
+  static const String _demoProPost1ID = 'DEMO_post_Sara_1';
+
+  // ── Top-notch demo company ────────────────────────────────────────────────
+  static const String _demoProCompanyID = 'DEMO_company_NexCore';
+  static const String _demoProEmployee1ID = 'DEMO_employee_Sara';
+  static const String _demoProEmployee2ID = 'DEMO_employee_Ahmad2';
+  static const String _demoProJob1ID = 'DEMO_job_NexCore_Flutter';
+  static const String _demoProJob2ID = 'DEMO_job_NexCore_ML';
+  static const String _demoProJob3ID = 'DEMO_job_NexCore_Cloud';
+
   // Permanently uploaded to Firebase Storage — no seed script needed.
   static const String _demoFileDownloadUrl =
       'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app'
@@ -1544,7 +1570,7 @@ class FirebaseService {
       'jobSeekerID': _demoJobSeekerID,
       'name': 'Ahmad (Demo)',
       'email': 'demo.ahmad@elevate.demo',
-      'password': '',
+      'password': 'Test@123',
       'userType': 'JobSeeker',
       'profilePic': '',
       'location': 'Lahore, Pakistan',
@@ -1605,7 +1631,7 @@ class FirebaseService {
     batch.set(companyRef, {
       'companyID': _demoCompanyID,
       'email': 'demo.company@elevate.demo',
-      'password': '',
+      'password': 'Test@123',
       'userType': 'Company',
       'companyName': 'Elevate Demo Corp',
       'industry': 'Technology',
@@ -1643,14 +1669,496 @@ class FirebaseService {
     await batch.commit();
   }
 
-  /// Removes ALL demo documents created by [seedDemoProject].
+  // ── Top-notch demo seed ────────────────────────────────────────────────────
+
+  Future<void> seedTopNotchDemo() async {
+    final batch = db.batch();
+    final now = DateTime.now();
+
+    // ── 1. Top-notch Job Seeker (Sara Khan) ──────────────────────────────────
+    batch.set(db.collection('jobSeekers').doc(_demoProJobSeekerID), {
+      'jobSeekerID': _demoProJobSeekerID,
+      'name': 'Sara Khan (Demo)',
+      'email': 'sara.demo@elevate.demo',
+      'password': 'Test@123',
+      'userType': 'JobSeeker',
+      'profilePic': 'https://ui-avatars.com/api/?name=Sara+Khan&background=6C63FF&color=fff&size=256',
+      'location': 'Karachi, Pakistan',
+      'about': 'Full-Stack & ML Engineer with 5+ years building production-grade mobile apps, '
+          'intelligent data pipelines, and cloud-native systems. '
+          'Gold-badge holder in Flutter, React, and Machine Learning. '
+          'Passionate about bridging elegant UI with powerful AI backends.',
+      'shortDescription': 'Full-Stack & ML Engineer',
+      'experienceLevel': 'Senior',
+      'skillCount': 5,
+      'passedResultIDs': [
+        _demoResult1ID, _demoResult2ID, _demoResult3ID,
+        _demoResult4ID, _demoResult5ID,
+      ],
+      'mySkillTestsResultList': [
+        _demoResult1ID, _demoResult2ID, _demoResult3ID,
+        _demoResult4ID, _demoResult5ID,
+      ],
+      'totalTestsTaken': 5,
+      'earnedBadges': [
+        _demoBadge1ID, _demoBadge2ID, _demoBadge3ID,
+        _demoBadge4ID, _demoBadge5ID,
+      ],
+      'totalBadgesEarned': 5,
+      'portfolio': [
+        _demoProProject1ID, _demoProProject2ID,
+        _demoProProject3ID, _demoProProject4ID,
+      ],
+      'postList': [_demoProPost1ID],
+      'following': <String>[],
+      'followers': <String>[],
+      'followRequests': <String>[],
+      'followedCompanies': [_demoProCompanyID],
+      'appliedJobRequests': <String>[],
+      'becomeEmployee': [_demoProEmployee1ID],
+      'careerGuidanceTasks': <String>[],
+      'education': [
+        {
+          'title': 'BS Computer Science',
+          'school': 'NED University of Engineering & Technology',
+        },
+        {
+          'title': 'MSc Artificial Intelligence',
+          'school': 'University of Karachi',
+        },
+      ],
+      'jobExperience': [
+        {
+          'jobTitle': 'Senior Flutter Developer',
+          'company': 'NexCore Technologies',
+          'from': '2023',
+          'to': '',
+        },
+        {
+          'jobTitle': 'ML Engineer',
+          'company': 'DataSpark Labs',
+          'from': '2021',
+          'to': '2023',
+        },
+        {
+          'jobTitle': 'React Frontend Developer',
+          'company': 'PixelForge Studio',
+          'from': '2019',
+          'to': '2021',
+        },
+      ],
+      'isDemo': true,
+    });
+
+    // ── 2. Skill Test Results ────────────────────────────────────────────────
+    final results = [
+      {
+        'resultID': _demoResult1ID,
+        'jobSeekerID': _demoProJobSeekerID,
+        'testID': 'DEMO_test_Flutter',
+        'score': 95.0,
+        'isPassed': true,
+        'startedAt': now.subtract(const Duration(days: 30)).toIso8601String(),
+        'completedAt': now.subtract(const Duration(days: 30)).toIso8601String(),
+        'timeTakenSeconds': 1420,
+        'attemptNumber': 1,
+        'lastAttemptAt': now.subtract(const Duration(days: 30)).toIso8601String(),
+        'cooldownUntil': null,
+        'experienceLevel': 'Advanced',
+        'badgeEarned': _demoBadge1ID,
+        'isDemo': true,
+      },
+      {
+        'resultID': _demoResult2ID,
+        'jobSeekerID': _demoProJobSeekerID,
+        'testID': 'DEMO_test_React',
+        'score': 92.0,
+        'isPassed': true,
+        'startedAt': now.subtract(const Duration(days: 25)).toIso8601String(),
+        'completedAt': now.subtract(const Duration(days: 25)).toIso8601String(),
+        'timeTakenSeconds': 1580,
+        'attemptNumber': 1,
+        'lastAttemptAt': now.subtract(const Duration(days: 25)).toIso8601String(),
+        'cooldownUntil': null,
+        'experienceLevel': 'Advanced',
+        'badgeEarned': _demoBadge2ID,
+        'isDemo': true,
+      },
+      {
+        'resultID': _demoResult3ID,
+        'jobSeekerID': _demoProJobSeekerID,
+        'testID': 'DEMO_test_Python',
+        'score': 75.0,
+        'isPassed': true,
+        'startedAt': now.subtract(const Duration(days: 20)).toIso8601String(),
+        'completedAt': now.subtract(const Duration(days: 20)).toIso8601String(),
+        'timeTakenSeconds': 1900,
+        'attemptNumber': 1,
+        'lastAttemptAt': now.subtract(const Duration(days: 20)).toIso8601String(),
+        'cooldownUntil': null,
+        'experienceLevel': 'Mid',
+        'badgeEarned': _demoBadge3ID,
+        'isDemo': true,
+      },
+      {
+        'resultID': _demoResult4ID,
+        'jobSeekerID': _demoProJobSeekerID,
+        'testID': 'DEMO_test_ML',
+        'score': 97.0,
+        'isPassed': true,
+        'startedAt': now.subtract(const Duration(days: 15)).toIso8601String(),
+        'completedAt': now.subtract(const Duration(days: 15)).toIso8601String(),
+        'timeTakenSeconds': 1200,
+        'attemptNumber': 1,
+        'lastAttemptAt': now.subtract(const Duration(days: 15)).toIso8601String(),
+        'cooldownUntil': null,
+        'experienceLevel': 'Advanced',
+        'badgeEarned': _demoBadge4ID,
+        'isDemo': true,
+      },
+      {
+        'resultID': _demoResult5ID,
+        'jobSeekerID': _demoProJobSeekerID,
+        'testID': 'DEMO_test_Cloud',
+        'score': 82.0,
+        'isPassed': true,
+        'startedAt': now.subtract(const Duration(days: 10)).toIso8601String(),
+        'completedAt': now.subtract(const Duration(days: 10)).toIso8601String(),
+        'timeTakenSeconds': 1750,
+        'attemptNumber': 1,
+        'lastAttemptAt': now.subtract(const Duration(days: 10)).toIso8601String(),
+        'cooldownUntil': null,
+        'experienceLevel': 'Mid',
+        'badgeEarned': _demoBadge5ID,
+        'isDemo': true,
+      },
+    ];
+    for (final r in results) {
+      batch.set(db.collection('results').doc(r['resultID'] as String), r);
+    }
+
+    // ── 3. Badge documents ───────────────────────────────────────────────────
+    final badges = [
+      {
+        'badgeID': _demoBadge1ID,
+        'badgeName': 'Flutter',
+        'badgeLevel': 'Gold',
+        'minScore': 90.0,
+        'maxScore': 100.0,
+        'badgeImage': 'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fgold.png?alt=media&token=8fa4f2b5-07f5-4b84-a943-02abb5989d72',
+        'isDemo': true,
+      },
+      {
+        'badgeID': _demoBadge2ID,
+        'badgeName': 'React',
+        'badgeLevel': 'Gold',
+        'minScore': 90.0,
+        'maxScore': 100.0,
+        'badgeImage': 'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fgold.png?alt=media&token=8fa4f2b5-07f5-4b84-a943-02abb5989d72',
+        'isDemo': true,
+      },
+      {
+        'badgeID': _demoBadge3ID,
+        'badgeName': 'Python',
+        'badgeLevel': 'Silver',
+        'minScore': 60.0,
+        'maxScore': 90.0,
+        'badgeImage': 'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fsilver.png?alt=media&token=8ace9945-0206-4491-b175-db75e70b9ff7',
+        'isDemo': true,
+      },
+      {
+        'badgeID': _demoBadge4ID,
+        'badgeName': 'Machine Learning',
+        'badgeLevel': 'Gold',
+        'minScore': 90.0,
+        'maxScore': 100.0,
+        'badgeImage': 'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fgold.png?alt=media&token=8fa4f2b5-07f5-4b84-a943-02abb5989d72',
+        'isDemo': true,
+      },
+      {
+        'badgeID': _demoBadge5ID,
+        'badgeName': 'Cloud Computing',
+        'badgeLevel': 'Silver',
+        'minScore': 60.0,
+        'maxScore': 90.0,
+        'badgeImage': 'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fsilver.png?alt=media&token=8ace9945-0206-4491-b175-db75e70b9ff7',
+        'isDemo': true,
+      },
+    ];
+    for (final b in badges) {
+      batch.set(db.collection('badges').doc(b['badgeID'] as String), b);
+    }
+
+    // ── 4. Portfolio Projects ────────────────────────────────────────────────
+    final projects = [
+      {
+        'projectID': _demoProProject1ID,
+        'jobSeekerID': _demoProJobSeekerID,
+        'projectTitle': 'Elevate Mobile App',
+        'projectDescription':
+            'A full-featured Flutter-based career platform with Firebase backend, '
+            'real-time job feeds, skill assessment tests, badge system, and AI-powered '
+            'career guidance. Deployed to 500+ active users across Pakistan.',
+        'projectURL': 'https://github.com/sara-demo/elevate-app',
+        'techStack': ['Flutter', 'Firebase', 'Firestore', 'Riverpod', 'Dart'],
+        'techFileUrls': [_demoFileDownloadUrl],
+        'mediaFiles': <String>[],
+        'createdAt': now.subtract(const Duration(days: 60)).toIso8601String(),
+        'isDemo': true,
+      },
+      {
+        'projectID': _demoProProject2ID,
+        'jobSeekerID': _demoProJobSeekerID,
+        'projectTitle': 'Intelligent ML Data Pipeline',
+        'projectDescription':
+            'End-to-end machine learning pipeline for resume screening and candidate ranking. '
+            'Uses NLP (spaCy + BERT) for entity extraction, skill matching, and automated '
+            'shortlisting. Reduced hiring time by 40% in pilot deployment.',
+        'projectURL': 'https://github.com/sara-demo/ml-pipeline',
+        'techStack': ['Python', 'TensorFlow', 'spaCy', 'FastAPI', 'PostgreSQL'],
+        'techFileUrls': [_demoFileDownloadUrl],
+        'mediaFiles': <String>[],
+        'createdAt': now.subtract(const Duration(days: 120)).toIso8601String(),
+        'isDemo': true,
+      },
+      {
+        'projectID': _demoProProject3ID,
+        'jobSeekerID': _demoProJobSeekerID,
+        'projectTitle': 'Cloud Infrastructure Dashboard',
+        'projectDescription':
+            'Real-time monitoring dashboard for AWS infrastructure. Aggregates metrics '
+            'from EC2, RDS, Lambda, and S3. Features auto-scaling alerts, cost projections, '
+            'and one-click rollback. Built with React and AWS SDK.',
+        'projectURL': 'https://github.com/sara-demo/cloud-dash',
+        'techStack': ['React', 'AWS SDK', 'Node.js', 'TypeScript', 'Terraform'],
+        'techFileUrls': <String>[],
+        'mediaFiles': <String>[],
+        'createdAt': now.subtract(const Duration(days: 180)).toIso8601String(),
+        'isDemo': true,
+      },
+      {
+        'projectID': _demoProProject4ID,
+        'jobSeekerID': _demoProJobSeekerID,
+        'projectTitle': 'E-Commerce React Storefront',
+        'projectDescription':
+            'High-performance e-commerce storefront built with React, Redux, and Stripe '
+            'payment integration. Features dynamic product filtering, cart persistence, '
+            'order tracking, and PWA support with offline caching. 4.9 ★ client rating.',
+        'projectURL': 'https://github.com/sara-demo/react-shop',
+        'techStack': ['React', 'Redux', 'Stripe API', 'GraphQL', 'Node.js'],
+        'techFileUrls': <String>[],
+        'mediaFiles': <String>[],
+        'createdAt': now.subtract(const Duration(days: 240)).toIso8601String(),
+        'isDemo': true,
+      },
+    ];
+    for (final p in projects) {
+      batch.set(db.collection('projects').doc(p['projectID'] as String), p);
+    }
+
+    // ── 5. Community Post (Sara) ─────────────────────────────────────────────
+    batch.set(db.collection('posts').doc(_demoProPost1ID), {
+      'postID': _demoProPost1ID,
+      'authorID': _demoProJobSeekerID,
+      'authorName': 'Sara Khan (Demo)',
+      'authorType': 'JobSeeker',
+      'authorProfilePic': 'https://ui-avatars.com/api/?name=Sara+Khan&background=6C63FF&color=fff&size=256',
+      'title': '🚀 Just earned my 5th Gold Badge on Elevate!',
+      'content':
+          'Incredibly proud to have passed the Machine Learning Advanced test with 97%! '
+          'That makes 5 skill badges — Flutter 🥇, React 🥇, Machine Learning 🥇, '
+          'Python 🥈, and Cloud Computing 🥈. The Elevate platform made the whole journey '
+          'structured and rewarding. If you are preparing for your tests, consistency is key! '
+          'Drop a comment if you want study tips 💪',
+      'likes': 42,
+      'likedByUserIDs': <String>[],
+      'totalCommentCount': 7,
+      'createdAt': now.subtract(const Duration(days: 8)).toIso8601String(),
+      'isDemo': true,
+    });
+
+    // ── 6. Top-notch Demo Company (NexCore Technologies) ─────────────────────
+    batch.set(db.collection('companies').doc(_demoProCompanyID), {
+      'companyID': _demoProCompanyID,
+      'email': 'nexcore.demo@elevate.demo',
+      'password': 'Test@123',
+      'userType': 'Company',
+      'companyName': 'NexCore Technologies',
+      'industry': 'Software & AI',
+      'website': 'https://nexcore.demo',
+      'logo': 'https://ui-avatars.com/api/?name=NexCore&background=1A1A2E&color=fff&size=256',
+      'description':
+          'NexCore Technologies is a cutting-edge software house and AI research firm '
+          'founded in 2018 and headquartered in Karachi, Pakistan. We build enterprise-grade '
+          'mobile applications, intelligent automation systems, and scalable cloud platforms. '
+          'Our team of 200+ engineers has delivered products to clients across 15 countries. '
+          'We are Gold partners with Google Cloud and AWS, and proud recipients of the '
+          'Pakistan Software Export Board (PSEB) Excellence Award 2024.',
+      'location': 'Karachi, Pakistan',
+      'companySize': 200,
+      'activeJobs': 3,
+      'followersCount': 1240,
+      'followers': <String>[_demoProJobSeekerID],
+      'followRequests': <String>[],
+      'employeeList': [_demoProEmployee1ID, _demoProEmployee2ID],
+      'companyWeaknessList': [
+        'Limited presence in the MENA region outside GCC',
+        'Heavy dependency on a few key enterprise clients',
+      ],
+      'companyStrengthList': [
+        'Top-tier AI and ML engineering talent',
+        'Google Cloud & AWS Gold Partner certifications',
+        'Agile delivery with <2% critical bug rate in production',
+        'Strong employer brand — 4.7★ on LinkedIn',
+      ],
+      'achievementList': [
+        'PSEB Excellence Award 2024',
+        'Best Tech Employer — HR Awards Pakistan 2023',
+        'ISO 27001 Certified (Information Security)',
+        '200K+ MAU across deployed products',
+      ],
+      'receivedApplications': <String>[],
+      'postedJobs': [_demoProJob1ID, _demoProJob2ID, _demoProJob3ID],
+      'isDemo': true,
+    });
+
+    // ── 7. Employees ─────────────────────────────────────────────────────────
+    batch.set(db.collection('employees').doc(_demoProEmployee1ID), {
+      'employeeID': _demoProEmployee1ID,
+      'jobSeekerID': _demoProJobSeekerID,
+      'companyID': _demoProCompanyID,
+      'position': 'Senior Flutter & ML Engineer',
+      'employeeStatus': 'Active',
+      'isDemo': true,
+    });
+    batch.set(db.collection('employees').doc(_demoProEmployee2ID), {
+      'employeeID': _demoProEmployee2ID,
+      'jobSeekerID': _demoJobSeekerID, // Ahmad from original seed
+      'companyID': _demoProCompanyID,
+      'position': 'Junior Flutter Developer',
+      'employeeStatus': 'Active',
+      'isDemo': true,
+    });
+
+    // ── 8. Job Posts ─────────────────────────────────────────────────────────
+    final jobs = [
+      {
+        'jobID': _demoProJob1ID,
+        'companyID': _demoProCompanyID,
+        'title': 'Senior Flutter Developer',
+        'description':
+            'We are looking for a Senior Flutter Developer to join our mobile division. '
+            'You will architect and ship features for our flagship career platform, '
+            'mentor junior engineers, and collaborate with the AI team on integrations. '
+            'Gold Flutter badge preferred. 3+ years of production Flutter experience required.',
+        'requiredSkills': ['Flutter', 'Dart', 'Firebase', 'REST APIs'],
+        'requiredBadges': ['Flutter'],
+        'salary': '200,000 – 280,000 PKR/month',
+        'jobType': 'Full-time',
+        'location': 'Karachi, Pakistan',
+        'experienceLevel': 'Senior',
+        'postedAt': now.subtract(const Duration(days: 5)).toIso8601String(),
+        'applicants': <String>[],
+        'isExternal': false,
+        'sourceUrl': '',
+        'isClosed': false,
+        'isDemo': true,
+      },
+      {
+        'jobID': _demoProJob2ID,
+        'companyID': _demoProCompanyID,
+        'title': 'Machine Learning Engineer',
+        'description':
+            'Join our AI Research division to build intelligent automation systems. '
+            'You will design and deploy ML models (NLP, CV), build data pipelines, '
+            'and integrate AI into our product suite. MSc AI or equivalent experience required. '
+            'Gold ML badge is a strong differentiator.',
+        'requiredSkills': ['Python', 'TensorFlow', 'PyTorch', 'MLOps', 'SQL'],
+        'requiredBadges': ['Machine Learning'],
+        'salary': '220,000 – 300,000 PKR/month',
+        'jobType': 'Full-time',
+        'location': 'Remote / Karachi',
+        'experienceLevel': 'Mid',
+        'postedAt': now.subtract(const Duration(days: 3)).toIso8601String(),
+        'applicants': <String>[],
+        'isExternal': false,
+        'sourceUrl': '',
+        'isClosed': false,
+        'isDemo': true,
+      },
+      {
+        'jobID': _demoProJob3ID,
+        'companyID': _demoProCompanyID,
+        'title': 'Cloud Infrastructure Engineer',
+        'description':
+            'Own and evolve our cloud infrastructure across AWS and GCP. '
+            'Design fault-tolerant, auto-scaling architectures, manage CI/CD pipelines, '
+            'implement monitoring & alerting, and drive cost optimisation initiatives. '
+            'AWS/GCP certifications and Cloud Computing badge preferred.',
+        'requiredSkills': ['AWS', 'Terraform', 'Docker', 'Kubernetes', 'CI/CD'],
+        'requiredBadges': ['Cloud Computing'],
+        'salary': '180,000 – 260,000 PKR/month',
+        'jobType': 'Full-time',
+        'location': 'Karachi, Pakistan',
+        'experienceLevel': 'Mid',
+        'postedAt': now.subtract(const Duration(days: 1)).toIso8601String(),
+        'applicants': <String>[],
+        'isExternal': false,
+        'sourceUrl': '',
+        'isClosed': false,
+        'isDemo': true,
+      },
+    ];
+    for (final j in jobs) {
+      batch.set(db.collection('jobs').doc(j['jobID'] as String), j);
+    }
+
+    await batch.commit();
+  }
+
+  /// Removes ALL demo documents created by [seedDemoProject] and [seedTopNotchDemo].
   /// Call this to clean up the demo dataset without touching any real data.
   Future<void> deleteDemoData() async {
     final batch = db.batch();
+    // Original seed
     batch.delete(db.collection('jobSeekers').doc(_demoJobSeekerID));
     batch.delete(db.collection('projects').doc(_demoProjectID));
     batch.delete(db.collection('companies').doc(_demoCompanyID));
     batch.delete(db.collection('employees').doc(_demoEmployeeID));
+
+    // Top-notch job seeker (Sara)
+    batch.delete(db.collection('jobSeekers').doc(_demoProJobSeekerID));
+    for (final id in [
+      _demoResult1ID, _demoResult2ID, _demoResult3ID,
+      _demoResult4ID, _demoResult5ID,
+    ]) {
+      batch.delete(db.collection('results').doc(id));
+    }
+    for (final id in [
+      _demoBadge1ID, _demoBadge2ID, _demoBadge3ID,
+      _demoBadge4ID, _demoBadge5ID,
+    ]) {
+      batch.delete(db.collection('badges').doc(id));
+    }
+    for (final id in [
+      _demoProProject1ID, _demoProProject2ID,
+      _demoProProject3ID, _demoProProject4ID,
+    ]) {
+      batch.delete(db.collection('projects').doc(id));
+    }
+    batch.delete(db.collection('posts').doc(_demoProPost1ID));
+
+    // Top-notch company (NexCore)
+    batch.delete(db.collection('companies').doc(_demoProCompanyID));
+    batch.delete(db.collection('employees').doc(_demoProEmployee1ID));
+    batch.delete(db.collection('employees').doc(_demoProEmployee2ID));
+    for (final id in [
+      _demoProJob1ID, _demoProJob2ID, _demoProJob3ID,
+    ]) {
+      batch.delete(db.collection('jobs').doc(id));
+    }
+
     await batch.commit();
   }
 }
+

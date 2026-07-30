@@ -1,7 +1,7 @@
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Search_Bar/custom_search_bar.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
-import 'package:elevate_app/Custom_Widgets/Tiles/admin_portfolio_tile.dart';
+import 'package:elevate_app/Custom_Widgets/Tiles/job_seeker_portfolio_tile.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/project_model.dart';
 import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
 import 'package:elevate_app/Pages/User_Screens/Admin_Screens/Admin_Manage%20Screens/Admin_Manage_Portfolio/admin_delete_portfolio.dart';
@@ -168,10 +168,8 @@ class AdminSearchPortfolioState extends State<AdminSearchPortfolio> {
                               final project = filteredProjects[index];
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 12),
-                                child: AdminPortfolioTile(
-                                  title: project.projectTitle.isNotEmpty
-                                      ? project.projectTitle
-                                      : "Untitled Project",
+                                child: JobSeekerPortfolioTile(
+                                  project: project,
                                   onTap: () => openProject(project),
                                 ),
                               );

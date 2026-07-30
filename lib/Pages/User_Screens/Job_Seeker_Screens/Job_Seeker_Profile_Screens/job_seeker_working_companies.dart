@@ -331,8 +331,7 @@ class _CompanyEmploymentCard extends StatelessWidget {
                   )
                 : GestureDetector(
                     onTap: () {
-                      Navigator.push(
-                        context,
+                      Navigator.of(context, rootNavigator: true).push(
                         SlideLeftRoute(
                           page: CompanyReviewScreen(
                             companyID: emp.companyID,

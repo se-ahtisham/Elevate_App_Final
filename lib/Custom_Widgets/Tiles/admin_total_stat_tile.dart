@@ -38,6 +38,11 @@ class AdminTotalStatTile extends StatelessWidget {
                     color: ElevateColor.lightgray,
                     fontWeight: FontWeight.w300,
                     lineHeight: 1.0,
+                    // Fixed 86px tile height leaves no room for a
+                    // second line at this font size; cap to 1 line
+                    // so long prefix text can't overflow vertically.
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   CustomText(
                     text: title,
@@ -45,6 +50,9 @@ class AdminTotalStatTile extends StatelessWidget {
                     color: ElevateColor.black,
                     fontWeight: FontWeight.w700,
                     lineHeight: 1.0,
+                    // Same reasoning as prefix above.
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
@@ -66,6 +74,9 @@ class AdminTotalStatTile extends StatelessWidget {
                 color: ElevateColor.white,
                 fontWeight: FontWeight.w700,
                 lineHeight: 1.0,
+
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ),
@@ -74,4 +85,3 @@ class AdminTotalStatTile extends StatelessWidget {
     );
   }
 }
-

@@ -153,8 +153,7 @@ class ShowAppliedCandidatesScreenState
                           shortDescription: candidate.shortDescription,
                           experience: candidate.experienceLevel,
                           onTap: () {
-                            Navigator.push(
-                              context,
+                            Navigator.of(context, rootNavigator: true).push(
                               MaterialPageRoute(
                                 builder: (context) =>
                                     CompanyViewAppliedCandidateProfileScreen(
@@ -183,3 +182,4 @@ class ShowAppliedCandidatesScreenState
     );
   }
 }
+

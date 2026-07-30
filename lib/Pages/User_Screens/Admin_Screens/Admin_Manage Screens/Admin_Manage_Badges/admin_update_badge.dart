@@ -26,7 +26,11 @@ class _AdminUpdateBadgeState extends State<AdminUpdateBadge> {
   // Picks a badge image from the bundled assets (same as the create screen),
   // instead of uploading a picked file to Firebase Storage.
   Future<void> pickNewBadgeImage() async {
-    final images = ["bronze.png", "silver.png", "gold.png"];
+    final images = [
+      "https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fbronze.png?alt=media&token=116cd0ca-d646-430a-8246-dfff9d29b673",
+      "https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fsilver.png?alt=media&token=8ace9945-0206-4491-b175-db75e70b9ff7",
+      "https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fgold.png?alt=media&token=8fa4f2b5-07f5-4b84-a943-02abb5989d72"
+    ];
 
     showModalBottomSheet(
       context: context,
@@ -51,8 +55,8 @@ class _AdminUpdateBadgeState extends State<AdminUpdateBadge> {
 
                   Navigator.pop(context);
                 },
-                child: Image.asset(
-                  "lib/Resources/Images/Badges/${images[index]}",
+                child: Image.network(
+                  images[index],
                 ),
               );
             },

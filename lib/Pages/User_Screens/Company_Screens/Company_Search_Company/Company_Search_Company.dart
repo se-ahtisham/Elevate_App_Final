@@ -101,8 +101,7 @@ class _CompanySearchCompanyState extends State<CompanySearchCompany> {
                           borderWidth: 2,
                           borderColor: ElevateColor.lightgray,
                           onTap: () {
-                            Navigator.push(
-                              context,
+                            Navigator.of(context, rootNavigator: true).push(
                               MaterialPageRoute(
                                 builder: (context) => CompnayViewCompanyProfile(company: company),
                               ),
@@ -121,3 +120,4 @@ class _CompanySearchCompanyState extends State<CompanySearchCompany> {
     );
   }
 }
+

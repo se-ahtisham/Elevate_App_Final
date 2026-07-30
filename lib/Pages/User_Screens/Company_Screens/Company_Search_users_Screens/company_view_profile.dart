@@ -102,8 +102,7 @@ class CompanyViewProfile extends StatelessWidget {
                                         otherAvatar: seekerAvatar,
                                       );
                                   if (!context.mounted) return;
-                                  Navigator.push(
-                                    context,
+                                  Navigator.of(context, rootNavigator: true).push(
                                     MaterialPageRoute(
                                       builder: (_) => ChatRoomScreen(
                                         chatID: chatID,
@@ -260,8 +259,7 @@ class CompanyViewProfile extends StatelessWidget {
                         textWeight: FontWeight.w400,
                         borderRadius: 50,
                         onTap: () {
-                          Navigator.push(
-                            context,
+                          Navigator.of(context, rootNavigator: true).push(
                             MaterialPageRoute(
                               builder: (context) => CompanyPortfolioCheck(
                                 jobSeekerID: seeker.jobSeekerID,
@@ -282,8 +280,7 @@ class CompanyViewProfile extends StatelessWidget {
                         borderColor: ElevateColor.gray,
                         borderWidth: 1,
                         onTap: () {
-                          Navigator.push(
-                            context,
+                          Navigator.of(context, rootNavigator: true).push(
                             MaterialPageRoute(
                               builder: (context) => CompanyViewUserPost(
                                 authorID: seeker.jobSeekerID,
@@ -303,3 +300,4 @@ class CompanyViewProfile extends StatelessWidget {
     );
   }
 }
+

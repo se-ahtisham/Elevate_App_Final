@@ -79,8 +79,7 @@ class CompanyViewAppliedCandidateProfileScreen extends StatelessWidget {
                               borderColor: ElevateColor.gray,
                               borderWidth: 1,
                               onTap: () {
-                                Navigator.push(
-                                  context,
+                                Navigator.of(context, rootNavigator: true).push(
                                   MaterialPageRoute(
                                     builder: (context) => CompanyMessageScreen(
                                       receiverId: candidate.jobSeekerID,
@@ -368,8 +367,7 @@ class CompanyViewAppliedCandidateProfileScreen extends StatelessWidget {
                         textWeight: FontWeight.w400,
                         borderRadius: 50,
                         onTap: () {
-                          Navigator.push(
-                            context,
+                          Navigator.of(context, rootNavigator: true).push(
                             MaterialPageRoute(
                               builder: (context) => CompanyPortfolioCheck(
                                 jobSeekerID: candidate.jobSeekerID,
@@ -390,8 +388,7 @@ class CompanyViewAppliedCandidateProfileScreen extends StatelessWidget {
                         borderColor: ElevateColor.gray,
                         borderWidth: 1,
                         onTap: () {
-                          Navigator.push(
-                            context,
+                          Navigator.of(context, rootNavigator: true).push(
                             MaterialPageRoute(
                               builder: (context) => CompanyViewUserPost(
                                 authorID: candidate.jobSeekerID,
@@ -411,3 +408,4 @@ class CompanyViewAppliedCandidateProfileScreen extends StatelessWidget {
     );
   }
 }
+

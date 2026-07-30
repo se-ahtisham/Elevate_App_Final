@@ -94,8 +94,7 @@ class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
                             circleSize: 50,
                             circleColor: ElevateColor.lightgray,
                             onTap: () {
-                              Navigator.push(
-                                context,
+                              Navigator.of(context, rootNavigator: true).push(
                                 MaterialPageRoute(
                                   builder: (context) =>
                                       ComapanyEmployeeRequest(),
@@ -157,8 +156,7 @@ class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
                                   borderWidth: 2,
                                   borderColor: ElevateColor.lightgray,
                                   onTap: () {
-                                    Navigator.push(
-                                      context,
+                                    Navigator.of(context, rootNavigator: true).push(
                                       MaterialPageRoute(
                                         builder: (context) =>
                                             CompanyViewEmployeeProfile(
@@ -185,3 +183,4 @@ class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
     );
   }
 }
+

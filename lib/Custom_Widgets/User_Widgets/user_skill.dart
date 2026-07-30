@@ -75,12 +75,19 @@ class UserSkill extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           // Image from assets
-          Image.asset(
-            imagePath,
-            width: imageSize,
-            height: imageSize,
-            fit: BoxFit.contain,
-          ),
+          imagePath.startsWith('http')
+              ? Image.network(
+                  imagePath,
+                  width: imageSize,
+                  height: imageSize,
+                  fit: BoxFit.contain,
+                )
+              : Image.asset(
+                  imagePath,
+                  width: imageSize,
+                  height: imageSize,
+                  fit: BoxFit.contain,
+                ),
 
           SizedBox(width: imageTextSpace.toDouble()),
 

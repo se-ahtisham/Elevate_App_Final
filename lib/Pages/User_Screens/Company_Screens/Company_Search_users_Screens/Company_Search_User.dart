@@ -103,8 +103,7 @@ class _CompanySearchUserState extends State<CompanySearchUser> {
                           borderWidth: 2,
                           borderColor: ElevateColor.lightgray,
                           onTap: () {
-                            Navigator.push(
-                              context,
+                            Navigator.of(context, rootNavigator: true).push(
                               MaterialPageRoute(
                                 builder: (context) => CompanyViewProfile(seeker: seeker),
                               ),
@@ -123,3 +122,4 @@ class _CompanySearchUserState extends State<CompanySearchUser> {
     );
   }
 }
+

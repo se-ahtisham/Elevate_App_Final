@@ -98,13 +98,18 @@ class SkillTestTile extends StatelessWidget {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(24),
               ),
-              child: Text(
-                buttonText,
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.3,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 90),
+                child: Text(
+                  buttonText,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.black,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.3,
+                  ),
                 ),
               ),
             ),

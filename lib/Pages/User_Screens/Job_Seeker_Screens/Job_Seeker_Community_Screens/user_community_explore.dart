@@ -138,8 +138,7 @@ class UserCommunityExploreScreenState
   }
 
   void openComments(PostModel post) {
-    Navigator.push(
-      context,
+    Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
         builder: (context) => CommunityComments(
           postID: post.postID,
@@ -243,9 +242,7 @@ class UserCommunityExploreScreenState
                 usershortDescription: post.authorType,
                 image: post.authorProfilePic.isNotEmpty
                     ? post.authorProfilePic
-                    : (post.authorType.toLowerCase() == 'company'
-                        ? "lib/Resources/Images/Profile_Images/Company_Logo.jpg"
-                        : "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg"),
+                    : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(post.authorName)}&background=random&color=fff&size=128',
                 postTitle: post.title,
                 postText: post.content,
                 textSize: 13,
@@ -267,3 +264,4 @@ class UserCommunityExploreScreenState
     );
   }
 }
+

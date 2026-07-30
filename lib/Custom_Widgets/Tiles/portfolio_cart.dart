@@ -1,4 +1,3 @@
-// import 'package:elevate_app/Resources/Colors/Gradient_Colors/gradient_colors.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
@@ -53,6 +52,7 @@ class PortfolioCard extends StatelessWidget {
                     textAlign: TextAlign.left,
                   ),
                 ),
+                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 8,
@@ -62,9 +62,17 @@ class PortfolioCard extends StatelessWidget {
                     color: Colors.grey[800],
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text(
-                    role,
-                    style: const TextStyle(fontSize: 12, color: Colors.white70),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 100),
+                    child: Text(
+                      role,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.white70,
+                      ),
+                    ),
                   ),
                 ),
               ],

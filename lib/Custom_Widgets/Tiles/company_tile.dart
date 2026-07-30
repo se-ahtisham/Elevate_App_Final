@@ -47,37 +47,58 @@ class CompanyTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(30),
         border: Border.all(color: ElevateColor.gray, width: 1),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: imageSize,
-            height: imageSize,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              color: Color(0xFFE8E8E8),
-            ),
-            alignment: Alignment.center,
-            child: const Icon(Icons.work_outline, size: 30, color: Colors.black),
+      // All dimensions here (tileHeight, tileWidth, imageSize, font
+      // sizes) are supplied by the caller, and name/location had no
+      // line cap — a long name or a caller passing a small
+      // tileHeight/large imageSize combo can overflow the fixed
+      // Container. Wrapping in a SingleChildScrollView keeps that
+      // safe without changing the normal-case appearance.
+      child: SingleChildScrollView(
+        physics: const ClampingScrollPhysics(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: imageSize,
+                height: imageSize,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(0xFFE8E8E8),
+                ),
+                alignment: Alignment.center,
+                child: const Icon(
+                  Icons.work_outline,
+                  size: 30,
+                  color: Colors.black,
+                ),
+              ),
+              SizedBox(height: spacingBetweenImageAndText),
+              CustomText(
+                text: name,
+                fontSize: nameFontSize,
+                color: nameColor,
+                fontWeight: nameFontWeight,
+                textAlign: TextAlign.left,
+                lineHeight: nameLineHeight,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              CustomText(
+                text: location,
+                fontSize: descriptionFontSize,
+                color: descriptionColor,
+                fontWeight: descriptionFontWeight,
+                textAlign: TextAlign.left,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ),
-          SizedBox(height: spacingBetweenImageAndText),
-          CustomText(
-            text: name,
-            fontSize: nameFontSize,
-            color: nameColor,
-            fontWeight: nameFontWeight,
-            textAlign: TextAlign.left,
-            lineHeight: nameLineHeight,
-          ),
-          CustomText(
-            text: location,
-            fontSize: descriptionFontSize,
-            color: descriptionColor,
-            fontWeight: descriptionFontWeight,
-            textAlign: TextAlign.left,
-          ),
-        ],
+        ),
       ),
     );
   }

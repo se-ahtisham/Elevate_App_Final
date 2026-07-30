@@ -17,10 +17,16 @@
 ///
 /// SAFETY:
 ///   • Storage path  →  demo_files/sample_test_file.txt (already uploaded)
-///   • Firestore IDs →  DEMO_jobSeeker_Ahmad
+///   • Firestore IDs →  DEMO_jobSeeker_Ahmad       (original demo job seeker)
 ///                      DEMO_project_SampleTestFile
-///                      DEMO_company_Elevate
+///                      DEMO_company_Elevate        (original demo company)
 ///                      DEMO_employee_Ahmad
+///   • NEW top-notch →  DEMO_jobSeeker_Sara         (5 badges, 4 projects, 3 work exp)
+///                      DEMO_company_NexCore        (3 jobs, strengths, achievements)
+///                      DEMO_badge_Sara_*           (5 badge docs)
+///                      DEMO_result_Sara_*          (5 result docs)
+///                      DEMO_project_Sara_*         (4 project docs)
+///                      DEMO_job_NexCore_*          (3 job post docs)
 /// ============================================================
 
 // ignore_for_file: avoid_print
@@ -111,7 +117,7 @@ class _SeedScreenState extends State<_SeedScreen> {
     // hardcoded in FirebaseService._demoFileDownloadUrl.
 
     // Seed Firestore documents (uses the hardcoded URL automatically)
-    _log('🔥  Seeding Firestore documents…');
+    _log('🔥  Seeding original demo documents…');
     final firebaseService = FirebaseService();
     await firebaseService.seedDemoProject();
     _log('   ✔  Demo JobSeeker   → DEMO_jobSeeker_Ahmad');
@@ -119,10 +125,22 @@ class _SeedScreenState extends State<_SeedScreen> {
     _log('   ✔  Demo Company     → DEMO_company_Elevate');
     _log('   ✔  Demo Employee    → DEMO_employee_Ahmad');
 
+    _log('\n🚀  Seeding top-notch demo accounts…');
+    await firebaseService.seedTopNotchDemo();
+    _log('   ✔  JobSeeker        → DEMO_jobSeeker_Sara');
+    _log('     • 5 skill results (Flutter 95%, React 92%, Python 75%, ML 97%, Cloud 82%)');
+    _log('     • 5 badges        (3× Gold, 2× Silver)');
+    _log('     • 4 portfolio projects');
+    _log('     • 3 work experiences, 2 education entries, 1 community post');
+    _log('   ✔  Company          → DEMO_company_NexCore (NexCore Technologies)');
+    _log('     • 3 active job posts (Flutter / ML / Cloud)');
+    _log('     • 2 employees, strengths, achievements, 1240 followers');
+
     _log('\n✅  SEED COMPLETE!\n'
-        'Log in as the demo company (DEMO_company_Elevate) to see\n'
-        '"Ahmad (Demo)" in the dashboard → open their portfolio →\n'
-        'tap ⬇ on "sample_test_file.txt" to download.');
+        'Top-notch profiles are live in Firebase.\n'
+        'Sara Khan  →  jobSeekers/DEMO_jobSeeker_Sara\n'
+        'NexCore    →  companies/DEMO_company_NexCore\n'
+        'Original Ahmad demo also seeded (DEMO_jobSeeker_Ahmad).');
   }
 
   // ── Cleanup ──────────────────────────────────────────────────────────────
@@ -137,7 +155,8 @@ class _SeedScreenState extends State<_SeedScreen> {
     _log('   ✔  Deleted all DEMO_ Firestore documents.');
 
     _log('\n✅  CLEANUP COMPLETE. All demo Firestore data removed.\n'
-        '   (Storage file kept so download URL stays valid.)');
+        '   (Storage file kept so download URL stays valid.\n'
+        '    Original Ahmad + NexCore/Sara data all deleted.)');
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
