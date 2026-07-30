@@ -33,14 +33,6 @@ class AdminApiStatusScreenState extends State<AdminApiStatusScreen> {
     });
   }
 
-  List<String> get groupOrder {
-    final seen = <String>[];
-    for (final item in statusList) {
-      if (!seen.contains(item.group)) seen.add(item.group);
-    }
-    return seen;
-  }
-
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -76,7 +68,7 @@ class AdminApiStatusScreenState extends State<AdminApiStatusScreen> {
           CircularProgressIndicator(color: Colors.black),
           SizedBox(height: 16),
           CustomText(
-            text: "Checking System Endpoints...",
+            text: "Checking Model Health...",
             fontSize: 14,
             fontWeight: FontWeight.w600,
             color: Colors.black,
@@ -97,15 +89,8 @@ class AdminApiStatusScreenState extends State<AdminApiStatusScreen> {
             const SizedBox(height: 10),
             summaryBar(),
             const SizedBox(height: 20),
-            for (final group in groupOrder) ...[
-              sectionHeader(group),
-              const SizedBox(height: 12),
-              ...statusList
-                  .where((item) => item.group == group)
-                  .map(endpointCard),
-              const SizedBox(height: 12),
-            ],
-            const SizedBox(height: 10),
+            ...statusList.map(modelCard),
+            const SizedBox(height: 12),
             rerunButton(),
             const SizedBox(height: 30),
           ],
@@ -135,8 +120,8 @@ class AdminApiStatusScreenState extends State<AdminApiStatusScreen> {
         children: [
           CustomText(
             text: allOnline
-                ? "All Systems Operational"
-                : "$online of $total Endpoints Online",
+                ? "All Models Operational"
+                : "$online of $total Models Online",
             fontSize: 15,
             fontWeight: FontWeight.bold,
             color: color,
@@ -148,32 +133,6 @@ class AdminApiStatusScreenState extends State<AdminApiStatusScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget sectionHeader(String title) {
-    final groupItems = statusList.where((item) => item.group == title);
-    final total = groupItems.length;
-    final online = groupItems.where((item) => item.isRunning).length;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        CustomText(
-          text: title,
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          color: Colors.black,
-        ),
-        CustomText(
-          text: "$online/$total",
-          fontSize: 13,
-          fontWeight: FontWeight.bold,
-          color: online == total && total > 0
-              ? Colors.green
-              : Colors.grey.shade700,
-        ),
-      ],
     );
   }
 
@@ -189,7 +148,7 @@ class AdminApiStatusScreenState extends State<AdminApiStatusScreen> {
     );
   }
 
-  Widget endpointCard(ApiEndpointStatus status) {
+  Widget modelCard(ApiEndpointStatus status) {
     final isOnline = status.isRunning;
     final badgeColor = isOnline ? Colors.green : Colors.red;
 
@@ -217,7 +176,7 @@ class AdminApiStatusScreenState extends State<AdminApiStatusScreen> {
             children: [
               Expanded(
                 child: CustomText(
-                  text: "[${status.method}] ${status.name}",
+                  text: status.name,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                   color: Colors.black,

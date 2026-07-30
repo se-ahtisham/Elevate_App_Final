@@ -6,13 +6,10 @@ import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_post_m
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/post_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/company_model.dart';
 import 'package:elevate_app/Pages/User_Screens/Company_Screens/Company_Posts_Screens/company_upload_job_screen.dart';
-import 'package:elevate_app/Pages/User_Screens/Company_Screens/Company_Posts_Screens/company_job_detail_screen.dart';
 import 'package:elevate_app/Pages/User_Screens/Company_Screens/Company_Posts_Screens/show_applied_candidates_screen.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/user_post_tile.dart';
 import 'package:elevate_app/Custom_Widgets/User_Widgets/user_post_new.dart';
-import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Community_Screens/community_comments.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
-import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/comment_model.dart';
 import 'package:flutter/material.dart';
 
 enum PostTab { jobs, community }
@@ -36,6 +33,7 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
 
   final TextEditingController _postTitleCtrl = TextEditingController();
   final TextEditingController _postContentCtrl = TextEditingController();
+  bool _isPosting = false;
 
   @override
   void initState() {
@@ -85,6 +83,8 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
       return;
     }
 
+    setState(() => _isPosting = true);
+
     try {
       final postID = FirebaseFirestore.instance.collection("posts").doc().id;
       final createdPost = PostModel(
@@ -112,7 +112,7 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
       ).showSnackBar(SnackBar(content: Text("Failed to create post: $e")));
     } finally {
       if (mounted) {
-        // Removed undefined variable usage
+        setState(() => _isPosting = false);
       }
     }
   }
@@ -136,6 +136,41 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
         _tabButton("Jobs", PostTab.jobs),
         const SizedBox(width: 10),
         _tabButton("Community Posts", PostTab.community),
+        SizedBox(width: 120),
+        InkWell(
+          child: Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                colors: [Color(0xFF555555), Color(0xFF111111)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.12),
+                  blurRadius: 12,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.ios_share_rounded,
+              size: 18,
+              color: Colors.white,
+            ),
+          ),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const CompanyUploadJobScreen(),
+              ),
+            );
+          },
+        ),
       ],
     );
   }
@@ -174,78 +209,99 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
     final String currentUserId = _authService.currentUser?.uid ?? '';
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color.fromARGB(255, 244, 244, 244),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
-          child: Column(
-            children: [
-              const ElevateHeader(
-                title: "Company Portal",
-                subTitle: "Let's Upload Opportunity",
-                showBackButton: false,
-              ),
-              const SizedBox(height: 18),
-              _searchBar(),
-              const SizedBox(height: 15),
-              _tabSwitcher(),
-              const SizedBox(height: 20),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  _activeTab == PostTab.jobs ? 'Posted Jobs' : 'Community Feed',
-                  style: TextStyle(
-                    color: ElevateColor.gray,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                  ),
+        child: Column(
+          children: [
+            // Header without left/right padding
+            _topHeader(),
+
+            // Everything else keeps the same padding
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 20,
                 ),
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: _activeTab == PostTab.jobs
-                    ? StreamBuilder<QuerySnapshot>(
-                        stream: FirebaseFirestore.instance
-                            .collection('jobs')
-                            .where('companyID', isEqualTo: currentUserId)
-                            .orderBy('postedAt', descending: true)
-                            .snapshots(),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Center(
-                              child: CircularProgressIndicator(),
-                            );
-                          }
-                          if (snapshot.hasError) {
-                            return StreamBuilder<QuerySnapshot>(
+                child: Column(
+                  children: [
+                    _searchBar(),
+                    const SizedBox(height: 15),
+                    _tabSwitcher(),
+                    const SizedBox(height: 20),
+
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        _activeTab == PostTab.jobs
+                            ? 'Posted Jobs'
+                            : 'Community Feed',
+                        style: TextStyle(
+                          color: ElevateColor.gray,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    Expanded(
+                      child: _activeTab == PostTab.jobs
+                          ? StreamBuilder<QuerySnapshot>(
                               stream: FirebaseFirestore.instance
                                   .collection('jobs')
                                   .where('companyID', isEqualTo: currentUserId)
+                                  .orderBy('postedAt', descending: true)
                                   .snapshots(),
-                              builder: (context, snap2) {
-                                if (snap2.connectionState ==
+                              builder: (context, snapshot) {
+                                if (snapshot.connectionState ==
                                     ConnectionState.waiting) {
                                   return const Center(
                                     child: CircularProgressIndicator(),
                                   );
                                 }
-                                if (snap2.hasError) {
-                                  return Center(
-                                    child: Text("Error: ${snap2.error}"),
+
+                                if (snapshot.hasError) {
+                                  return StreamBuilder<QuerySnapshot>(
+                                    stream: FirebaseFirestore.instance
+                                        .collection('jobs')
+                                        .where(
+                                          'companyID',
+                                          isEqualTo: currentUserId,
+                                        )
+                                        .snapshots(),
+                                    builder: (context, snap2) {
+                                      if (snap2.connectionState ==
+                                          ConnectionState.waiting) {
+                                        return const Center(
+                                          child: CircularProgressIndicator(),
+                                        );
+                                      }
+
+                                      if (snap2.hasError) {
+                                        return Center(
+                                          child: Text("Error: ${snap2.error}"),
+                                        );
+                                      }
+
+                                      return _buildJobList(
+                                        snap2.data?.docs ?? [],
+                                      );
+                                    },
                                   );
                                 }
-                                return _buildJobList(snap2.data?.docs ?? []);
+
+                                return _buildJobList(snapshot.data?.docs ?? []);
                               },
-                            );
-                          }
-                          return _buildJobList(snapshot.data?.docs ?? []);
-                        },
-                      )
-                    : _buildCommunityTab(currentUserId),
+                            )
+                          : _buildCommunityTab(currentUserId),
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -345,19 +401,6 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
                         debugPrint("Like post failed: $e");
                       }
                     },
-                    onCommentsTap: () {
-                      Navigator.of(context, rootNavigator: true).push(
-                        MaterialPageRoute(
-                          builder: (_) => CommunityComments(
-                            postID: post.postID,
-                            postAuthorName: post.authorName.isNotEmpty
-                                ? post.authorName
-                                : (_company?.companyName ?? 'Company'),
-                            postTitle: post.title,
-                          ),
-                        ),
-                      );
-                    },
                     onDeleteTap: () async {
                       try {
                         await FirebaseService().deletePost(post.postID);
@@ -405,83 +448,11 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
   }
 
   Widget _topHeader() {
-    return Row(
+    return Column(
       children: [
-        Container(
-          width: 52,
-          height: 52,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: Color(0xFFE7E7E7),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            'C',
-            style: TextStyle(
-              color: ElevateColor.gray,
-              fontWeight: FontWeight.w700,
-              fontSize: 32,
-            ),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "Let's Upload Opportunity",
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF9A9A9A),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'Company Portal',
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 22,
-                  color: ElevateColor.gray,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ),
-        InkWell(
-          child: Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                colors: [Color(0xFF555555), Color(0xFF111111)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.12),
-                  blurRadius: 12,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.ios_share_rounded,
-              size: 18,
-              color: Colors.white,
-            ),
-          ),
-          onTap: () {
-            Navigator.of(context, rootNavigator: true).push(
-              MaterialPageRoute(
-                builder: (context) => const CompanyUploadJobScreen(),
-              ),
-            );
-          },
+        ElevateHeader(
+          title: "Let's Upload Opportunity",
+          subTitle: "Company Portal",
         ),
       ],
     );
@@ -553,97 +524,94 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
     return Row(
       children: [
         Expanded(
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () {
-              Navigator.of(context, rootNavigator: true).push(
-                MaterialPageRoute(
-                  builder: (context) => CompanyJobDetailScreen(job: job),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
                 ),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF4A4A4A),
-                      shape: BoxShape.circle,
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      initials,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 14,
-                      ),
+              ],
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF4A4A4A),
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    initials,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          job.title.isNotEmpty ? job.title : "Untitled",
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 17,
-                            color: Color(0xFF2B2B2B),
-                          ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        job.title.isNotEmpty ? job.title : "Untitled",
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 17,
+                          color: Color(0xFF2B2B2B),
                         ),
-                        const SizedBox(height: 3),
-                        Text(
-                          job.location.isNotEmpty ? job.location : 'Remote',
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 11.5,
-                            color: Color(0xFF8B8B8B),
-                            fontWeight: FontWeight.w500,
-                          ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        job.location.isNotEmpty ? job.location : 'Remote',
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          color: Color(0xFF8B8B8B),
+                          fontWeight: FontWeight.w500,
                         ),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 7,
-                          runSpacing: 7,
-                          children: tags
-                              .map(
-                                (tag) => Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 5,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFF3F3F3),
-                                    borderRadius: BorderRadius.circular(30),
-                                  ),
-                                  child: Text(
-                                    tag,
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      color: Color(0xFF777777),
-                                      fontWeight: FontWeight.w500,
-                                    ),
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 7,
+                        runSpacing: 7,
+                        children: tags
+                            .map(
+                              (tag) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF3F3F3),
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                                child: Text(
+                                  tag,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Color(0xFF777777),
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                              )
-                              .toList(),
-                        ),
-                      ],
-                    ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -671,7 +639,8 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
             child: InkWell(
               borderRadius: BorderRadius.circular(24),
               onTap: () {
-                Navigator.of(context, rootNavigator: true).push(
+                Navigator.push(
+                  context,
                   MaterialPageRoute(
                     builder: (context) => ShowAppliedCandidatesScreen(job: job),
                   ),

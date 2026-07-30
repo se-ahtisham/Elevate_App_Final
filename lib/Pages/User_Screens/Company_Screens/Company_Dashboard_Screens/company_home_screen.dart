@@ -26,20 +26,6 @@ class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
   final AuthService _authService = AuthService();
   String _searchQuery = '';
 
-  late Future<List<Map<String, dynamic>>> _employeesFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _employeesFuture = _fetchActiveEmployees();
-  }
-
-  void _refreshEmployees() {
-    setState(() {
-      _employeesFuture = _fetchActiveEmployees();
-    });
-  }
-
   Future<List<Map<String, dynamic>>> _fetchActiveEmployees() async {
     final String companyId = _authService.currentUser?.uid ?? '';
     if (companyId.isEmpty) return [];
@@ -99,7 +85,6 @@ class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
                           onChanged: (val) {
                             setState(() {
                               _searchQuery = val;
-                              _employeesFuture = _fetchActiveEmployees();
                             });
                           },
                         ),
@@ -108,17 +93,14 @@ class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
                             iconData: Icons.person_add,
                             circleSize: 50,
                             circleColor: ElevateColor.lightgray,
-                            onTap: () async {
-                              await Navigator.of(
+                            onTap: () {
+                              Navigator.push(
                                 context,
-                                rootNavigator: true,
-                              ).push(
                                 MaterialPageRoute(
                                   builder: (context) =>
                                       ComapanyEmployeeRequest(),
                                 ),
                               );
-                              _refreshEmployees();
                             },
                           ),
                         ),
@@ -136,7 +118,7 @@ class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
                     SizedBox(height: 20),
                     Expanded(
                       child: FutureBuilder<List<Map<String, dynamic>>>(
-                        future: _employeesFuture,
+                        future: _fetchActiveEmployees(),
                         builder: (context, snapshot) {
                           if (snapshot.connectionState ==
                               ConnectionState.waiting) {
@@ -186,11 +168,9 @@ class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
                                   circleColor: ElevateColor.lightgray,
                                   borderWidth: 2,
                                   borderColor: ElevateColor.lightgray,
-                                  onTap: () async {
-                                    await Navigator.of(
+                                  onTap: () {
+                                    Navigator.push(
                                       context,
-                                      rootNavigator: true,
-                                    ).push(
                                       MaterialPageRoute(
                                         builder: (context) =>
                                             CompanyViewEmployeeProfile(
@@ -200,7 +180,6 @@ class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
                                             ),
                                       ),
                                     );
-                                    _refreshEmployees();
                                   },
                                 ),
                               );

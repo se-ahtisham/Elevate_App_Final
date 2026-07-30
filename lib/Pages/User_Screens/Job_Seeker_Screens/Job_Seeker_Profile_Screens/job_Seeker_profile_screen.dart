@@ -406,10 +406,6 @@ class _JobSeekerProfileScreenState
                         ),
                       )
                     else
-                      // Simple vertical list — badge image, 10px gap, skill
-                      // name. No card/border/shadow styling. If the image
-                      // fails to load on web (CORS etc.), it just leaves an
-                      // empty space instead of an error/placeholder icon.
                       Column(
                         children: [
                           for (final badge in _earnedBadges) ...[

@@ -1,4 +1,6 @@
 import "package:cloud_firestore/cloud_firestore.dart";
+import "package:elevate_app/Custom_Widgets/Buttons/text_button_gradient.dart";
+import "package:elevate_app/Pages/Login_Screens/login_screen.dart";
 import "package:firebase_auth/firebase_auth.dart";
 import "package:elevate_app/Custom_Widgets/Buttons/icon_text_button.dart";
 import "package:elevate_app/Custom_Widgets/Header/elevate_header.dart";
@@ -14,9 +16,14 @@ import "package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart";
 import "package:flutter/material.dart";
 import 'package:flutter/services.dart';
 
-class CompanyProfile extends StatelessWidget {
+class CompanyProfile extends StatefulWidget {
   const CompanyProfile({super.key});
 
+  @override
+  State<CompanyProfile> createState() => _CompanyProfileState();
+}
+
+class _CompanyProfileState extends State<CompanyProfile> {
   @override
   Widget build(BuildContext context) {
     final String companyId = AuthService().currentUser?.uid ?? '';
@@ -55,53 +62,6 @@ class CompanyProfile extends StatelessWidget {
                         ElevateHeader(
                           title: "Your Digital Identity",
                           subTitle: "Account Control Center",
-                        ),
-                        Positioned(
-                          top: 50,
-                          right: 16,
-                          child: SafeArea(
-                            child: IconButton(
-                              tooltip: "Logout",
-                              icon: const Icon(
-                                Icons.logout_rounded,
-                                color: Colors.white,
-                              ),
-                              onPressed: () async {
-                                final confirm = await showDialog<bool>(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: const Text("Logout"),
-                                    content: const Text(
-                                      "Are you sure you want to logout?",
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () =>
-                                            Navigator.pop(context, false),
-                                        child: const Text("Cancel"),
-                                      ),
-                                      TextButton(
-                                        onPressed: () =>
-                                            Navigator.pop(context, true),
-                                        child: const Text("Logout"),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                                if (confirm == true && context.mounted) {
-                                  await FirebaseAuth.instance.signOut();
-                                  if (context.mounted) {
-                                    Navigator.of(
-                                      context,
-                                    ).pushNamedAndRemoveUntil(
-                                      '/login',
-                                      (route) => false,
-                                    );
-                                  }
-                                }
-                              },
-                            ),
-                          ),
                         ),
                       ],
                     ),
@@ -293,6 +253,26 @@ class CompanyProfile extends StatelessWidget {
                                 textAlign: TextAlign.left,
                                 lineHeight: 1.2,
                               ),
+                              const SizedBox(height: 30),
+
+                              TextButtonGradient(
+                                text: "Logout",
+                                width: double.infinity,
+                                height: 55,
+                                borderRadius: 50,
+                                textSize: 16,
+                                textWeight: FontWeight.w600,
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const LoginScreen(),
+                                    ),
+                                  );
+                                },
+                              ),
+
+                              const SizedBox(height: 20),
                             ],
                           ),
                         ],
