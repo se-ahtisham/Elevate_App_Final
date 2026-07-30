@@ -169,18 +169,23 @@ class _PortfolioUpdateScreenState extends ConsumerState<PortfolioUpdateScreen> {
         }
       }
 
-      for (final url in removedImageUrls) {
-        await storageService.deleteFileFromStorage(url);
-      }
-      for (final url in removedTechUrls) {
-        await storageService.deleteFileFromStorage(url);
-      }
+      // Write Firestore first — it's the source of truth. Only delete the
+      // now-unreferenced storage files once the document update has
+      // actually succeeded, so a failed write never leaves the document
+      // pointing at files we've already deleted.
       await firebaseService.updateProject(project.projectID, {
         'projectDescription': descriptionController.text.trim(),
         'techStack': techNames,
         'techFileUrls': techUrls,
         'mediaFiles': updatedMediaUrls,
       });
+
+      for (final url in removedImageUrls) {
+        await storageService.deleteFileFromStorage(url);
+      }
+      for (final url in removedTechUrls) {
+        await storageService.deleteFileFromStorage(url);
+      }
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -204,17 +209,20 @@ class _PortfolioUpdateScreenState extends ConsumerState<PortfolioUpdateScreen> {
     setState(() => isLoading = true);
 
     try {
+      // Delete the Firestore doc first. If this fails, we bail out with
+      // nothing deleted from storage yet, so the project stays intact and
+      // consistent. Only clean up storage once the doc is actually gone.
+      await firebaseService.deleteProject(
+        project.projectID,
+        project.jobSeekerID,
+      );
+
       for (final url in project.mediaFiles) {
         await storageService.deleteFileFromStorage(url);
       }
       for (final url in project.techFileUrls) {
         await storageService.deleteFileFromStorage(url);
       }
-
-      await firebaseService.deleteProject(
-        project.projectID,
-        project.jobSeekerID,
-      );
 
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -499,9 +507,9 @@ class _PortfolioUpdateScreenState extends ConsumerState<PortfolioUpdateScreen> {
                               onDownload: existingTechFiles[i].url.isEmpty
                                   ? null
                                   : () => _downloadFile(
-                                        existingTechFiles[i].url,
-                                        existingTechFiles[i].name,
-                                      ),
+                                      existingTechFiles[i].url,
+                                      existingTechFiles[i].name,
+                                    ),
                               onRemove: () => setState(() {
                                 if (existingTechFiles[i].url.isNotEmpty) {
                                   removedTechUrls.add(existingTechFiles[i].url);

@@ -110,92 +110,19 @@ class _CompanyReviewScreenState extends State<CompanyReviewScreen> {
     });
 
     try {
-      // Call AI NLP backend — returns strengths/weaknesses derived from the review.
-      final apiResult = await reviewApiService.submitReview(
+      // Call AI NLP backend — it scores the review AND writes the resulting
+      // companyStrengthList/companyWeaknessList to Firestore itself (see
+      // review_api_service.dart). We intentionally do NOT duplicate that
+      // write here: doing so both raced the backend's own update to the
+      // same document and, worse, overwrote the whole array with just this
+      // one review's aspects instead of merging with prior reviews.
+      await reviewApiService.submitReview(
         companyID: widget.companyID,
         companyName: widget.companyName,
         companyEmail: widget.companyEmail,
         jobSeekerID: widget.jobSeekerID,
         rawReview: text,
       );
-
-      // ── Write strengths/weaknesses to Firestore immediately ──────────────
-      // The backend returns aspect lists; extract them and save to the company
-      // document so CompanyProfile displays them correctly.
-      try {
-        debugPrint('[Review] API response keys: ${apiResult.keys.toList()}');
-        debugPrint(
-          '[Review] raw company_strengths: ${apiResult['company_strengths']}',
-        );
-        debugPrint('[Review] companyID for Firestore: ${widget.companyID}');
-
-        final rawStrengths =
-            apiResult['company_strengths'] as List<dynamic>? ?? [];
-        final rawWeaknesses =
-            apiResult['company_weaknesses'] as List<dynamic>? ?? [];
-
-        // Convert aspect maps → human-readable labels
-        final Map<String, String> aspectLabels = {
-          'innovation_creativity': 'Innovation & Creativity',
-          'team_culture': 'Team Culture',
-          'management': 'Management',
-          'growth': 'Growth Opportunities',
-          'recognition': 'Employee Recognition',
-          'work_life_balance': 'Work-Life Balance',
-          'compensation': 'Compensation & Benefits',
-          'communication': 'Communication',
-          'diversity': 'Diversity & Inclusion',
-          'job_security': 'Job Security',
-          'overworked': 'Overworked',
-          'poor_management': 'Poor Management',
-          'lack_of_growth': 'Lack of Growth',
-          'poor_communication': 'Poor Communication',
-          'toxic_culture': 'Toxic Culture',
-        };
-
-        List<String> strengthLabels = rawStrengths
-            .whereType<Map>()
-            .map((s) {
-              final aspect = s['aspect']?.toString() ?? '';
-              return aspectLabels[aspect] ??
-                  aspect.replaceAll('_', ' ').toUpperCase();
-            })
-            .where((s) => s.isNotEmpty)
-            .toList();
-
-        List<String> weaknessLabels = rawWeaknesses
-            .whereType<Map>()
-            .map((s) {
-              final aspect = s['aspect']?.toString() ?? '';
-              return aspectLabels[aspect] ??
-                  aspect.replaceAll('_', ' ').toUpperCase();
-            })
-            .where((s) => s.isNotEmpty)
-            .toList();
-
-        debugPrint(
-          '[Review] strengthLabels=$strengthLabels weaknessLabels=$weaknessLabels',
-        );
-
-        await firebaseService.db
-            .collection('companies')
-            .doc(widget.companyID)
-            .update({
-              if (strengthLabels.isNotEmpty)
-                'companyStrengthList': strengthLabels,
-              if (weaknessLabels.isNotEmpty)
-                'companyWeaknessList': weaknessLabels,
-            });
-        debugPrint(
-          '[Review]   Firestore updated for company=${widget.companyID} '
-          'strengths=$strengthLabels weaknesses=$weaknessLabels',
-        );
-      } catch (e, st) {
-        debugPrint(
-          '[Review] Firestore strength/weakness write failed: $e\n$st',
-        );
-        // Non-critical — will retry on next review submission.
-      }
 
       // Save lightweight ReviewModel locally so "already reviewed" guard works.
       final review = ReviewModel(

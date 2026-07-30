@@ -40,10 +40,33 @@ class _PorfolioScreenState extends ConsumerState<PorfolioScreen> {
   void initState() {
     super.initState();
     loadProjects();
+
+    // If we're viewing our own portfolio and auth hasn't finished loading
+    // the job seeker yet, effectiveJobSeekerID will be '' on first build.
+    // Re-load automatically once the job seeker becomes available so we
+    // don't get stuck showing "No projects yet" for a user who has projects.
+    if (isOwnPortfolio) {
+      ref.listenManual(authProvider, (previous, next) {
+        final wasMissing = previous?.jobSeeker?.jobSeekerID == null;
+        final nowPresent = next.jobSeeker?.jobSeekerID != null;
+        if (wasMissing && nowPresent) {
+          loadProjects();
+        }
+      });
+    }
   }
 
   Future<void> loadProjects() async {
     if (!mounted) return;
+    if (effectiveJobSeekerID.isEmpty) {
+      // Auth hasn't resolved a job seeker yet; nothing to fetch.
+      setState(() {
+        projects = [];
+        isLoading = false;
+      });
+      return;
+    }
+
     setState(() => isLoading = true);
 
     final loaded = await firebaseService.getProjectsForJobSeeker(
@@ -86,8 +109,11 @@ class _PorfolioScreenState extends ConsumerState<PorfolioScreen> {
                           color: Colors.white.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(Icons.arrow_back_ios_new_rounded,
-                            size: 18, color: Colors.white),
+                        child: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          size: 18,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -128,7 +154,11 @@ class _PorfolioScreenState extends ConsumerState<PorfolioScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.work_outline, size: 48, color: Colors.grey.shade400),
+                          Icon(
+                            Icons.work_outline,
+                            size: 48,
+                            color: Colors.grey.shade400,
+                          ),
                           const SizedBox(height: 12),
                           const CustomText(
                             text: "No projects yet",
@@ -160,14 +190,18 @@ class _PorfolioScreenState extends ConsumerState<PorfolioScreen> {
                         return JobSeekerPortfolioTile(
                           project: project,
                           onTap: () {
-                            Navigator.of(context, rootNavigator: true).push(
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    JobSeekerPortfolioDescriptionScreen(
-                                      project: project,
-                                    ),
-                              ),
-                            ).then((_) => isOwnPortfolio ? loadProjects() : null);
+                            Navigator.of(context, rootNavigator: true)
+                                .push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        JobSeekerPortfolioDescriptionScreen(
+                                          project: project,
+                                        ),
+                                  ),
+                                )
+                                .then(
+                                  (_) => isOwnPortfolio ? loadProjects() : null,
+                                );
                           },
                         );
                       },
@@ -179,4 +213,3 @@ class _PorfolioScreenState extends ConsumerState<PorfolioScreen> {
     );
   }
 }
-
