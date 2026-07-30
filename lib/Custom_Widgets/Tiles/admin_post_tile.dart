@@ -89,6 +89,10 @@ class AdminPostTile extends StatelessWidget {
                   ],
                 ),
               ),
+              // FIX: was showing default "Just now" always because the
+              // caller (admin_user_posts.dart) wasn't passing `timed:`.
+              // Now that the caller passes a real formatted date, this
+              // renders correctly.
               CustomText(text: timed, fontSize: 10.5, color: Colors.grey),
             ],
           ),
@@ -109,16 +113,25 @@ class AdminPostTile extends StatelessWidget {
               CustomText(text: "$commentCount", fontSize: 14),
               const SizedBox(width: 40),
               Expanded(
-                child: TexxtButton(
-                  text: "View all comments",
-                  textSize: 13,
-                  textColor: Colors.black87,
-                  backgroundColor: const Color(0xFFE5E7EB),
-                  borderRadius: 20,
-                  borderColor: Colors.black,
-                  borderWidth: 1,
-                  height: 40,
+                // FIX: wrapped in GestureDetector as a safety net so the
+                // "View all comments" tap fires reliably even if
+                // TexxtButton's internal tap handling is the broken part.
+                // Whichever one actually receives the touch, viewCommentonTap
+                // will now be called.
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
                   onTap: viewCommentonTap,
+                  child: TexxtButton(
+                    text: "View all comments",
+                    textSize: 13,
+                    textColor: Colors.black87,
+                    backgroundColor: const Color(0xFFE5E7EB),
+                    borderRadius: 20,
+                    borderColor: Colors.black,
+                    borderWidth: 1,
+                    height: 40,
+                    onTap: viewCommentonTap,
+                  ),
                 ),
               ),
             ],

@@ -1,9 +1,12 @@
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/badge_new_card.dart';
 import 'package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Message_Box/messageBox.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/badge_model.dart';
 import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
+import 'package:elevate_app/Database/Online_Database/firebase_storage_service.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -19,51 +22,35 @@ class AdminUpdateBadge extends StatefulWidget {
 
 class _AdminUpdateBadgeState extends State<AdminUpdateBadge> {
   final FirebaseService firebaseService = FirebaseService();
+  final FirebaseStorageService storageService = FirebaseStorageService();
 
   String? newBadgeImagePath;
   bool isUpdating = false;
+  bool isUploading = false;
 
-  // Picks a badge image from the bundled assets (same as the create screen),
-  // instead of uploading a picked file to Firebase Storage.
+  // Picks an image from device gallery and uploads it to Firebase Storage.
   Future<void> pickNewBadgeImage() async {
-    final images = [
-      "https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fbronze.png?alt=media&token=116cd0ca-d646-430a-8246-dfff9d29b673",
-      "https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fsilver.png?alt=media&token=8ace9945-0206-4491-b175-db75e70b9ff7",
-      "https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fgold.png?alt=media&token=8fa4f2b5-07f5-4b84-a943-02abb5989d72"
-    ];
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (picked == null) return;
 
-    showModalBottomSheet(
+    final file = File(picked.path);
+
+    if (!storageService.validateFileSize(file, context)) return;
+
+    setState(() => isUploading = true);
+
+    final url = await storageService.uploadSkillImage(
+      skillId: "badge_${widget.badge.badgeID}",
+      file: file,
       context: context,
-      backgroundColor: Colors.white,
-      builder: (_) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: GridView.builder(
-            shrinkWrap: true,
-            itemCount: images.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 20,
-              mainAxisSpacing: 20,
-            ),
-            itemBuilder: (_, index) {
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    newBadgeImagePath = images[index];
-                  });
-
-                  Navigator.pop(context);
-                },
-                child: Image.network(
-                  images[index],
-                ),
-              );
-            },
-          ),
-        );
-      },
     );
+
+    if (!mounted) return;
+    setState(() => isUploading = false);
+
+    if (url != null) {
+      setState(() => newBadgeImagePath = url);
+    }
   }
 
   Future<void> updateBadge() async {
@@ -117,9 +104,13 @@ class _AdminUpdateBadgeState extends State<AdminUpdateBadge> {
                   children: [
                     BadgeNewCard(
                       imagePath: newBadgeImagePath ?? widget.badge.badgeImage,
-                      buttonText: isUpdating ? "UPDATING..." : "UPDATE BADGE",
-                      onPickImage: pickNewBadgeImage,
-                      onButtonTap: isUpdating ? () {} : updateBadge,
+                      buttonText: isUploading
+                          ? "UPLOADING..."
+                          : (isUpdating ? "UPDATING..." : "UPDATE BADGE"),
+                      onPickImage: isUploading ? () {} : pickNewBadgeImage,
+                      onButtonTap: (isUpdating || isUploading)
+                          ? () {}
+                          : updateBadge,
                     ),
                     const SizedBox(height: 20),
                     TexxtButton(

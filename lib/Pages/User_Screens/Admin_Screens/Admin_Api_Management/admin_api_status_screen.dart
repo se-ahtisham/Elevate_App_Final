@@ -33,6 +33,14 @@ class AdminApiStatusScreenState extends State<AdminApiStatusScreen> {
     });
   }
 
+  List<String> get groupOrder {
+    final seen = <String>[];
+    for (final item in statusList) {
+      if (!seen.contains(item.group)) seen.add(item.group);
+    }
+    return seen;
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -89,10 +97,15 @@ class AdminApiStatusScreenState extends State<AdminApiStatusScreen> {
             const SizedBox(height: 10),
             summaryBar(),
             const SizedBox(height: 20),
-            sectionHeader("LIVE PRODUCTION SERVER (RENDER)"),
-            const SizedBox(height: 12),
-            ...statusList.map(endpointCard),
-            const SizedBox(height: 25),
+            for (final group in groupOrder) ...[
+              sectionHeader(group),
+              const SizedBox(height: 12),
+              ...statusList
+                  .where((item) => item.group == group)
+                  .map(endpointCard),
+              const SizedBox(height: 12),
+            ],
+            const SizedBox(height: 10),
             rerunButton(),
             const SizedBox(height: 30),
           ],
@@ -139,8 +152,9 @@ class AdminApiStatusScreenState extends State<AdminApiStatusScreen> {
   }
 
   Widget sectionHeader(String title) {
-    final total = statusList.length;
-    final online = statusList.where((item) => item.isRunning).length;
+    final groupItems = statusList.where((item) => item.group == title);
+    final total = groupItems.length;
+    final online = groupItems.where((item) => item.isRunning).length;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,

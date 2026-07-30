@@ -109,6 +109,18 @@ class _AdminUserPostsState extends State<AdminUserPosts> {
     );
   }
 
+  // FIX: new helper — was missing entirely, which is why AdminPostTile's
+  // `timed` parameter was never passed and always showed the "Just now"
+  // default regardless of the post's real createdAt.
+  String _formatDate(DateTime dt) {
+    final diff = DateTime.now().difference(dt);
+    if (diff.inMinutes < 1) return "Just now";
+    if (diff.inMinutes < 60) return "${diff.inMinutes}m ago";
+    if (diff.inHours < 24) return "${diff.inHours}h ago";
+    if (diff.inDays < 7) return "${diff.inDays}d ago";
+    return "${dt.day}/${dt.month}/${dt.year}";
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -169,6 +181,9 @@ class _AdminUserPostsState extends State<AdminUserPosts> {
                             children: visiblePosts.map((post) {
                               return AdminPostTile(
                                 key: ValueKey(post.postID),
+                                // FIX: now passing the real post timestamp
+                                // instead of relying on the "Just now" default.
+                                timed: _formatDate(post.createdAt),
                                 title: post.title,
                                 text: post.content,
                                 commentCount: post.totalCommentCount,

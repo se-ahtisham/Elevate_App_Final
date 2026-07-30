@@ -21,26 +21,6 @@ class AdminDeletePortfolioState extends State<AdminDeletePortfolio> {
   bool isDeleting = false;
 
   Future<void> deleteProject() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Delete Project"),
-        content: const Text("This cannot be undone. Delete this project?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel"),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text("Delete", style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
     setState(() => isDeleting = true);
     try {
       await service.deleteProject(
@@ -193,7 +173,10 @@ class AdminDeletePortfolioState extends State<AdminDeletePortfolio> {
                                 onDownload: () async {
                                   if (fileUrl.isNotEmpty) {
                                     try {
-                                      await saveOrDownloadFile(fileUrl, fileName);
+                                      await saveOrDownloadFile(
+                                        fileUrl,
+                                        fileName,
+                                      );
                                     } catch (_) {}
                                   }
                                 },

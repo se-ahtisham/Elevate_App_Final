@@ -8,11 +8,16 @@ import "package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart";
 import "package:flutter/material.dart";
 import 'package:flutter/services.dart';
 
-class AdminViewCompany extends StatelessWidget {
+class AdminViewCompany extends StatefulWidget {
   final CompanyModel company;
 
   const AdminViewCompany({super.key, required this.company});
 
+  @override
+  State<AdminViewCompany> createState() => _AdminViewCompanyState();
+}
+
+class _AdminViewCompanyState extends State<AdminViewCompany> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -58,15 +63,15 @@ class AdminViewCompany extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(left: 10.0, right: 20),
                   child: UserDescription(
-                    imageURL: company.logo.isNotEmpty
-                        ? company.logo
+                    imageURL: widget.company.logo.isNotEmpty
+                        ? widget.company.logo
                         : 'https://mir-s3-cdn-cf.behance.net/projects/404/e87f90243740647.Y3JvcCwxNTM0LDEyMDAsMzQsMA.jpg',
-                    name: company.companyName,
-                    shortDescription: company.industry.isNotEmpty
-                        ? company.industry
+                    name: widget.company.companyName,
+                    shortDescription: widget.company.industry.isNotEmpty
+                        ? widget.company.industry
                         : "Company",
                     skills: 0,
-                    followers: company.followersCount,
+                    followers: widget.company.followersCount,
                     followings: 0,
                     showSkills: false,
                   ),
@@ -90,8 +95,8 @@ class AdminViewCompany extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       CustomText(
-                        text: company.description.isNotEmpty
-                            ? company.description
+                        text: widget.company.description.isNotEmpty
+                            ? widget.company.description
                             : "No description provided.",
                         fontSize: 13,
                         color: ElevateColor.whitegray,
@@ -101,10 +106,10 @@ class AdminViewCompany extends StatelessWidget {
                       ),
                       const SizedBox(height: 22),
                       UserSocialmedia(
-                        city: company.location,
+                        city: widget.company.location,
                         country: "",
-                        email: company.email,
-                        web: company.website,
+                        email: widget.company.email,
+                        web: widget.company.website,
                       ),
 
                       const SizedBox(height: 30),
@@ -121,8 +126,8 @@ class AdminViewCompany extends StatelessWidget {
                           ),
                           const SizedBox(height: 8),
                           CustomText(
-                            text: company.companyStrengthList.isNotEmpty
-                                ? company.companyStrengthList.join(" • ")
+                            text: widget.company.companyStrengthList.isNotEmpty
+                                ? widget.company.companyStrengthList.join(" • ")
                                 : "No strengths listed yet.",
                             fontSize: 12,
                             color: ElevateColor.lightgray,
@@ -142,8 +147,8 @@ class AdminViewCompany extends StatelessWidget {
                           ),
                           const SizedBox(height: 8),
                           CustomText(
-                            text: company.companyWeaknessList.isNotEmpty
-                                ? company.companyWeaknessList.join(" • ")
+                            text: widget.company.companyWeaknessList.isNotEmpty
+                                ? widget.company.companyWeaknessList.join(" • ")
                                 : "No weaknesses listed yet.",
                             fontSize: 12,
                             color: ElevateColor.lightgray,

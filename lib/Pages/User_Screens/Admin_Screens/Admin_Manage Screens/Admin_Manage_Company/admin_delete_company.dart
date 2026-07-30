@@ -1,6 +1,5 @@
 import 'package:elevate_app/Custom_Widgets/Buttons/texxt_button.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
-import 'package:elevate_app/Custom_Widgets/Message_Box/delete_box.dart';
 import 'package:elevate_app/Custom_Widgets/Message_Box/messageBox.dart';
 import 'package:elevate_app/Custom_Widgets/Search_Bar/custom_search_bar.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
@@ -67,16 +66,6 @@ class _AdminDeleteCompanyState extends State<AdminDeleteCompany> {
         return company.companyName.toLowerCase().contains(query);
       }).toList();
     });
-  }
-
-  void confirmDelete(CompanyModel company) {
-    showDialog(
-      context: context,
-      builder: (_) => Deletebox(
-        name: company.companyName,
-        onDelete: () => deleteCompany(company),
-      ),
-    );
   }
 
   Future<void> deleteCompany(CompanyModel company) async {
@@ -208,7 +197,7 @@ class _AdminDeleteCompanyState extends State<AdminDeleteCompany> {
                               firstContainerWidth: 270,
                               experienceBoxWidth: 240,
                               iconData: Icons.delete,
-                              onTap: () => confirmDelete(company),
+                              onTap: () => deleteCompany(company),
                             ),
                           );
                         }).toList(),

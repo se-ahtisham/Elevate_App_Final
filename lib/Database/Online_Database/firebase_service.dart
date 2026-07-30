@@ -2050,4 +2050,31 @@ class FirebaseService {
       } while (snap.docs.length == 400);
     }
   }
+
+  // ── Add these methods to FirebaseService (e.g. near listAllBadges) ─────────
+
+  Future<List<PostModel>> listAllPosts() async {
+    final snap = await db.collection('posts').get();
+    final posts = snap.docs.map((d) => PostModel.fromMap(d.data())).toList();
+    final seen = <String>{};
+    posts.retainWhere((p) => seen.add(p.postID));
+    return posts;
+  }
+
+  Future<List<ApplicationModel>> listAllApplications() async {
+    final snap = await db.collection('applications').get();
+    return snap.docs.map((d) => ApplicationModel.fromMap(d.data())).toList();
+  }
+
+  Future<List<ReviewModel>> listAllReviews() async {
+    final snap = await db.collection('reviews').get();
+    return snap.docs.map((d) => ReviewModel.fromMap(d.data())).toList();
+  }
+
+  Future<List<CompanyEmployeeModel>> listAllEmployees() async {
+    final snap = await db.collection('employees').get();
+    return snap.docs
+        .map((d) => CompanyEmployeeModel.fromMap(d.data()))
+        .toList();
+  }
 }

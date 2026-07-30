@@ -64,8 +64,12 @@ class FirebaseStorageService {
   }) async {
     if (!validateFileSize(file, context)) return null;
     try {
-      final ref = storage.ref().child('profile_pictures').child('$userId.jpg');
-      final uploadTask = await ref.putFile(file);
+      final ext = _extensionOf(file.path);
+      final ref = storage.ref().child('profile_pictures').child('$userId.$ext');
+      final uploadTask = await ref.putFile(
+        file,
+        SettableMetadata(contentType: _imageContentType(file.path)),
+      );
       return await uploadTask.ref.getDownloadURL();
     } catch (e) {
       if (context.mounted) {

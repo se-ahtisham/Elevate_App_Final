@@ -36,7 +36,7 @@ class AdminViewJobSeeker extends StatelessWidget {
                   child: UserDescription(
                     imageURL: jobSeeker.profilePic.isNotEmpty
                         ? jobSeeker.profilePic
-                        : 'https://avatars.githubusercontent.com/u/159082885?v=4',
+                        : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(jobSeeker.name.isNotEmpty ? jobSeeker.name : "User")}&background=E0E0E0&color=757575&size=128&bold=true',
                     name: jobSeeker.name,
                     shortDescription: jobSeeker.about.isNotEmpty
                         ? jobSeeker.about

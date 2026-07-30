@@ -1,4 +1,3 @@
-import 'package:elevate_app/Custom_Widgets/Tiles/badge_new_card.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/manage_white_black_full.dart';
 import 'package:elevate_app/Pages/User_Screens/Admin_Screens/Admin_Manage%20Screens/Admin_Manage_Badges/admin_update_badge.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
@@ -25,13 +24,6 @@ class _AdminBadgesManagementState extends State<AdminBadgesManagement> {
 
   List<BadgeModel> allBadges = [];
   List<BadgeModel> visibleBadges = [];
-
-  final List<String> badgeLevels = ["Bronze", "Silver", "Gold"];
-  final List<String> scoreRanges = ["50-60", "60-90", "90-100"];
-
-  String selectedBadgeLevel = "Bronze";
-  String? selectedScoreRange;
-  String? newBadgeImagePath;
 
   bool isLoading = true;
 
@@ -77,82 +69,6 @@ class _AdminBadgesManagementState extends State<AdminBadgesManagement> {
     });
   }
 
-  Future<void> pickNewBadgeImage() async {
-    final images = [
-      "https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fbronze.png?alt=media&token=116cd0ca-d646-430a-8246-dfff9d29b673",
-      "https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fsilver.png?alt=media&token=8ace9945-0206-4491-b175-db75e70b9ff7",
-      "https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fgold.png?alt=media&token=8fa4f2b5-07f5-4b84-a943-02abb5989d72"
-    ];
-
-    showModalBottomSheet(
-      backgroundColor: Colors.white,
-      context: context,
-      builder: (_) {
-        return Padding(
-          padding: const EdgeInsets.all(20),
-          child: GridView.builder(
-            shrinkWrap: true,
-            itemCount: images.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 20,
-              mainAxisSpacing: 20,
-            ),
-            itemBuilder: (_, index) {
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    newBadgeImagePath = images[index];
-                  });
-
-                  Navigator.pop(context);
-                },
-                child: Image.network(
-                  images[index],
-                ),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> createBadge() async {
-    if (selectedScoreRange == null) return;
-
-    final parts = selectedScoreRange!.split('-');
-    final minScore = double.parse(parts[0]);
-    final maxScore = double.parse(parts[1]);
-
-    final badge = BadgeModel(
-      badgeID: firebaseService.db.collection("badges").doc().id,
-      badgeName: selectedBadgeLevel,
-      badgeLevel: selectedBadgeLevel,
-      minScore: minScore,
-      maxScore: maxScore,
-      badgeImage: newBadgeImagePath ?? "",
-    );
-
-    try {
-      await firebaseService.createNewBadge(badge);
-
-      if (!mounted) return;
-      setState(() {
-        selectedBadgeLevel = "Bronze";
-        selectedScoreRange = null;
-        newBadgeImagePath = null;
-      });
-
-      loadAllBadges();
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Failed to create badge. Try again.")),
-      );
-    }
-  }
-
   void openUpdateScreen(BadgeModel badge) async {
     final updated = await Navigator.push(
       context,
@@ -187,31 +103,6 @@ class _AdminBadgesManagementState extends State<AdminBadgesManagement> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    BadgeNewCard(
-                      imagePath: newBadgeImagePath,
-                      buttonText: "CREATE BADGE",
-                      onPickImage: pickNewBadgeImage,
-                      onButtonTap: createBadge,
-
-                      levels: badgeLevels,
-                      selectedLevel: selectedBadgeLevel,
-                      onLevelChanged: (value) {
-                        if (value != null) {
-                          setState(() {
-                            selectedBadgeLevel = value;
-                          });
-                        }
-                      },
-
-                      scoreRanges: scoreRanges,
-                      selectedScoreRange: selectedScoreRange,
-                      onScoreRangeChanged: (value) {
-                        setState(() {
-                          selectedScoreRange = value;
-                        });
-                      },
-                    ),
-
                     const SizedBox(height: 25),
 
                     const IconText(
