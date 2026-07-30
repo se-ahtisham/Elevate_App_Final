@@ -117,8 +117,14 @@ class JobScreenState extends ConsumerState<JobScreen> {
           .where('isClosed', isEqualTo: false)
           .get();
 
-      final fetchedJobs = allJobsSnap.docs
+      final rawFetchedJobs = allJobsSnap.docs
           .map((d) => JobPostModel.fromMap(d.data()))
+          .toList();
+      // De-dupe at the source (guards against duplicate-looking docs from
+      // running more than one demo seed script against the same project).
+      final seenFetchedIDs = <String>{};
+      final fetchedJobs = rawFetchedJobs
+          .where((j) => seenFetchedIDs.add(j.jobID))
           .toList();
 
       // Build static 10 Bronze + 10 Silver + 10 Gold random pool for no-skills mode
@@ -200,6 +206,8 @@ class JobScreenState extends ConsumerState<JobScreen> {
             )
             .toList();
       }
+      final seenJobIDs = <String>{};
+      result = result.where((job) => seenJobIDs.add(job.jobID)).toList();
       return result;
     }
 
@@ -236,6 +244,11 @@ class JobScreenState extends ConsumerState<JobScreen> {
         return jobTier == selectedTierFilter;
       }).toList();
     }
+
+    // Safety net: never show the same job twice, regardless of how it
+    // ended up in the source lists (e.g. duplicate-looking seed docs).
+    final seenJobIDs = <String>{};
+    result = result.where((job) => seenJobIDs.add(job.jobID)).toList();
 
     return result;
   }

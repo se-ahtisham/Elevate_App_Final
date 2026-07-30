@@ -101,13 +101,15 @@ class UserCommunityMycommunityScreenState
   void openProfile(Map<String, String> member) {
     final isCompany = member['type'] == 'Company';
 
-    Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute(
-        builder: (context) => isCompany
-            ? CommunityViewCompanyProfile(companyID: member['id']!)
-            : CommunityViewJobseekerProfile(jobSeekerID: member['id']!),
-      ),
-    ).then((value) => loadCommunity());
+    Navigator.of(context, rootNavigator: true)
+        .push(
+          MaterialPageRoute(
+            builder: (context) => isCompany
+                ? CommunityViewCompanyProfile(companyID: member['id']!)
+                : CommunityViewJobseekerProfile(jobSeekerID: member['id']!),
+          ),
+        )
+        .then((value) => loadCommunity());
   }
 
   Widget filterChip(String label, CommunityFilter filter) {
@@ -168,35 +170,48 @@ class UserCommunityMycommunityScreenState
                   child: CircularProgressIndicator(color: Colors.black),
                 )
               : visibleMembers.isEmpty
-              ? const Center(
-                  child: CustomText(
-                    text: "No connections yet.",
-                    fontSize: 15,
-                    color: ElevateColor.gray,
-                    fontWeight: FontWeight.w500,
+              ? RefreshIndicator(
+                  onRefresh: loadCommunity,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: SizedBox(
+                      height: 300,
+                      child: Center(
+                        child: CustomText(
+                          text: "No connections yet.",
+                          fontSize: 15,
+                          color: ElevateColor.gray,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
                   ),
                 )
-              : SingleChildScrollView(
-                  child: Column(
-                    children: visibleMembers.map((member) {
-                      final imageUrl = member['imageUrl'] ?? '';
-                      return Padding(
-                        key: ValueKey(member['id']),
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: WhiteBlackUser(
-                          imageURL: imageUrl.isNotEmpty
-                              ? imageUrl
-                              : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(member['name'] ?? 'User')}&background=random&color=fff&size=128',
-                          name: member['name'] ?? '',
-                          shortDescription: member['subtitle'] ?? '',
-                          experience: member['type'] ?? '',
-                          firstContainerWidth: 270,
-                          experienceBoxWidth: 240,
-                          tileHeight: 80,
-                          onTap: () => openProfile(member),
-                        ),
-                      );
-                    }).toList(),
+              : RefreshIndicator(
+                  onRefresh: loadCommunity,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      children: visibleMembers.map((member) {
+                        final imageUrl = member['imageUrl'] ?? '';
+                        return Padding(
+                          key: ValueKey(member['id']),
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: WhiteBlackUser(
+                            imageURL: imageUrl.isNotEmpty
+                                ? imageUrl
+                                : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(member['name'] ?? 'User')}&background=random&color=fff&size=128',
+                            name: member['name'] ?? '',
+                            shortDescription: member['subtitle'] ?? '',
+                            experience: member['type'] ?? '',
+                            firstContainerWidth: 270,
+                            experienceBoxWidth: 240,
+                            tileHeight: 80,
+                            onTap: () => openProfile(member),
+                          ),
+                        );
+                      }).toList(),
+                    ),
                   ),
                 ),
         ),
@@ -204,4 +219,3 @@ class UserCommunityMycommunityScreenState
     );
   }
 }
-

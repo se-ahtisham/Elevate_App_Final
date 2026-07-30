@@ -152,7 +152,9 @@ class _CareerGuidanceScreenState extends State<CareerGuidanceScreen>
       ),
     );
     if (confirm == true) {
-      await _service.deleteGuidanceTask(task.taskID);
+      // Updated: deleteGuidanceTask now also needs jobSeekerID so it can
+      // clean up the careerGuidanceTasks array on the job seeker's document.
+      await _service.deleteGuidanceTask(task.taskID, widget.jobSeekerID);
       await _loadTasks();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

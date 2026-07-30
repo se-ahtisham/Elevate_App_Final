@@ -75,7 +75,12 @@ class FirebaseService {
 
   Future<List<JobSeekerModel>> listAllJobSeekers() async {
     final snap = await db.collection('jobSeekers').get();
-    return snap.docs.map((d) => JobSeekerModel.fromMap(d.data())).toList();
+    final list = snap.docs
+        .map((d) => JobSeekerModel.fromMap(d.data()))
+        .toList();
+    final seen = <String>{};
+    list.retainWhere((s) => seen.add(s.jobSeekerID));
+    return list;
   }
 
   Future<JobSeekerModel?> searchJobSeeker(String jobSeekerID) =>
@@ -105,7 +110,10 @@ class FirebaseService {
     );
 
     final batch = db.batch();
-    batch.set(db.collection('followRequests').doc(requestID), request.toMap());
+    batch.set(db.collection('followRequests').doc(requestID), {
+      ...request.toMap(),
+      'requestedAt': DateTime.now().toIso8601String(),
+    });
     batch.update(db.collection(toCollection).doc(toID), {
       'followRequests': FieldValue.arrayUnion([requestID]),
     });
@@ -253,7 +261,10 @@ class FirebaseService {
     );
 
     final batch = db.batch();
-    batch.set(db.collection('employees').doc(employeeID), employee.toMap());
+    batch.set(db.collection('employees').doc(employeeID), {
+      ...employee.toMap(),
+      'hiredAt': DateTime.now().toIso8601String(),
+    });
     batch.update(db.collection('jobSeekers').doc(jobSeekerID), {
       'becomeEmployee': FieldValue.arrayUnion([employeeID]),
     });
@@ -290,7 +301,10 @@ class FirebaseService {
 
   Future<List<CompanyModel>> listAllCompanies() async {
     final snap = await db.collection('companies').get();
-    return snap.docs.map((d) => CompanyModel.fromMap(d.data())).toList();
+    final list = snap.docs.map((d) => CompanyModel.fromMap(d.data())).toList();
+    final seen = <String>{};
+    list.retainWhere((c) => seen.add(c.companyID));
+    return list;
   }
 
   Future<CompanyModel?> searchCompany(String companyID) =>
@@ -722,11 +736,19 @@ class FirebaseService {
   }
 
   // Career Guidance Task
+  //
+  // NOTE: These older method names are kept for backward compatibility with
+  // any existing call sites, but now point at the SAME 'careerGuidance'
+  // collection that getGuidanceTasks/updateGuidanceTask/deleteGuidanceTask
+  // use (confirmed to be the collection the live Career Guidance screen
+  // actually reads/writes). This eliminates the two-silently-disconnected-
+  // collections bug. Prefer the newer saveGuidanceTask/getGuidanceTasks/
+  // updateGuidanceTask/deleteGuidanceTask methods below for new code.
   Future<List<CareerGuidanceTaskModel>> viewCareerTasks(
     String jobSeekerID,
   ) async {
     final snap = await db
-        .collection('careerTasks')
+        .collection('careerGuidance')
         .where('jobSeekerID', isEqualTo: jobSeekerID)
         .get();
     return snap.docs
@@ -746,19 +768,22 @@ class FirebaseService {
   }
 
   Future<void> markTaskComplete(String taskID) async {
-    await db.collection('careerTasks').doc(taskID).update({
+    await db.collection('careerGuidance').doc(taskID).update({
       'isCompleted': true,
       'completedAt': DateTime.now().toIso8601String(),
     });
   }
 
-  Future<void> deleteTask(String taskID) async {
-    await db.collection('careerTasks').doc(taskID).delete();
+  Future<void> deleteTask(String taskID, String jobSeekerID) async {
+    await db.collection('careerGuidance').doc(taskID).delete();
+    await db.collection('jobSeekers').doc(jobSeekerID).update({
+      'careerGuidanceTasks': FieldValue.arrayRemove([taskID]),
+    });
   }
 
   // Saves a CareerGuidanceTaskModel (aiGenerated: true, false if hand-created by an admin).
   Future<void> saveCareerTask(CareerGuidanceTaskModel task) async {
-    await db.collection('careerTasks').doc(task.taskID).set(task.toMap());
+    await db.collection('careerGuidance').doc(task.taskID).set(task.toMap());
     await db.collection('jobSeekers').doc(task.jobSeekerID).update({
       'careerGuidanceTasks': FieldValue.arrayUnion([task.taskID]),
     });
@@ -1132,10 +1157,13 @@ class FirebaseService {
   ) async {
     if (companyIDs.isEmpty) return [];
     final results = <JobPostModel>[];
-    for (int i = 0; i < companyIDs.length; i += 10) {
-      final chunk = companyIDs.sublist(
+    // De-dupe companyIDs first so the same company can't produce the same
+    // job twice across chunks.
+    final uniqueCompanyIDs = companyIDs.toSet().toList();
+    for (int i = 0; i < uniqueCompanyIDs.length; i += 10) {
+      final chunk = uniqueCompanyIDs.sublist(
         i,
-        i + 10 > companyIDs.length ? companyIDs.length : i + 10,
+        i + 10 > uniqueCompanyIDs.length ? uniqueCompanyIDs.length : i + 10,
       );
       final snap = await db
           .collection('jobs')
@@ -1143,6 +1171,10 @@ class FirebaseService {
           .get();
       results.addAll(snap.docs.map((d) => JobPostModel.fromMap(d.data())));
     }
+
+    final seen = <String>{};
+    results.retainWhere((j) => seen.add(j.jobID));
+
     return results;
   }
 
@@ -1178,10 +1210,10 @@ class FirebaseService {
     );
 
     final batch = db.batch();
-    batch.set(
-      db.collection('applications').doc(application.applicationID),
-      application.toMap(),
-    );
+    batch.set(db.collection('applications').doc(application.applicationID), {
+      ...application.toMap(),
+      'appliedAt': DateTime.now().toIso8601String(),
+    });
     batch.update(db.collection('jobs').doc(jobID), {
       'applicants': FieldValue.arrayUnion([application.applicationID]),
     });
@@ -1370,13 +1402,16 @@ class FirebaseService {
     return recommendedJobs.take(limit).toList();
   }
 
+  // getOtherPlatformJobs — fixed: filter for isExternal: true, since these
+  // are jobs scraped in from other platforms via saveExternalJobs(), not
+  // our own internal postings.
   Future<List<JobPostModel>> getOtherPlatformJobs({
     List<String> excludeJobIDs = const [],
     int limit = 10,
   }) async {
     final snap = await db
         .collection('jobs')
-        .where('isExternal', isEqualTo: false)
+        .where('isExternal', isEqualTo: true)
         .where('isClosed', isEqualTo: false)
         .get();
 
@@ -1437,11 +1472,13 @@ class FirebaseService {
   // ─── Employees & Reviews ───────────────────────────────────────────────────
 
   /// Fetch all employments for a given job seeker.
+  // Fixed: was querying 'companyEmployees', but every write (applyAsEmployee,
+  // saveEmployee, terminateEmployee, seed data) writes to 'employees'.
   Future<List<CompanyEmployeeModel>> getEmployeesForJobSeeker(
     String jobSeekerID,
   ) async {
     final snap = await db
-        .collection('companyEmployees')
+        .collection('employees')
         .where('jobSeekerID', isEqualTo: jobSeekerID)
         .get();
     return snap.docs
@@ -1487,8 +1524,13 @@ class FirebaseService {
   // ─── Career Guidance Tasks ──────────────────────────────────────────────────
 
   /// Save a new AI-generated or manually created guidance task.
+  // Fixed: now keeps jobSeeker.careerGuidanceTasks in sync (was previously
+  // only done by the older saveCareerTask() path, leaving this array stale).
   Future<void> saveGuidanceTask(CareerGuidanceTaskModel task) async {
     await db.collection('careerGuidance').doc(task.taskID).set(task.toMap());
+    await db.collection('jobSeekers').doc(task.jobSeekerID).update({
+      'careerGuidanceTasks': FieldValue.arrayUnion([task.taskID]),
+    });
   }
 
   /// Fetch all guidance tasks for a specific job seeker, ordered by creation date.
@@ -1515,240 +1557,120 @@ class FirebaseService {
   }
 
   /// Permanently delete a guidance task.
-  Future<void> deleteGuidanceTask(String taskID) async {
+  // Fixed: now requires jobSeekerID so it can also clean up the stale
+  // careerGuidanceTasks array reference on the job seeker's document.
+  Future<void> deleteGuidanceTask(String taskID, String jobSeekerID) async {
     await db.collection('careerGuidance').doc(taskID).delete();
+    await db.collection('jobSeekers').doc(jobSeekerID).update({
+      'careerGuidanceTasks': FieldValue.arrayRemove([taskID]),
+    });
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // DEMO ONLY — all IDs are prefixed with "DEMO_" so they are instantly
-  // distinguishable from real data and can be safely bulk-deleted.
-  // No existing jobSeeker, company, or employee documents are ever touched.
+  // DEMO ONLY — ONE seeder, ONE deleter. All docs tagged isDemo: true so
+  // deleteDemoData() finds and removes everything, no matter which method
+  // created it. No fallback/duplicate doc IDs are ever written.
   // ─────────────────────────────────────────────────────────────────────────
 
-  static const String _demoJobSeekerID = 'DEMO_jobSeeker_Ahmad';
-  static const String _demoProjectID = 'DEMO_project_SampleTestFile';
-  static const String _demoCompanyID = 'DEMO_company_Elevate';
-  static const String _demoEmployeeID = 'DEMO_employee_Ahmad';
-
-  // ── Top-notch demo job seeker ─────────────────────────────────────────────
-  static const String _demoProJobSeekerID = 'DEMO_jobSeeker_Sara';
-  static const String _demoResult1ID = 'DEMO_result_Sara_Flutter';
-  static const String _demoResult2ID = 'DEMO_result_Sara_React';
-  static const String _demoResult3ID = 'DEMO_result_Sara_Python';
-  static const String _demoResult4ID = 'DEMO_result_Sara_ML';
-  static const String _demoResult5ID = 'DEMO_result_Sara_Cloud';
-  static const String _demoBadge1ID = 'DEMO_badge_Sara_Flutter_Gold';
-  static const String _demoBadge2ID = 'DEMO_badge_Sara_React_Gold';
-  static const String _demoBadge3ID = 'DEMO_badge_Sara_Python_Silver';
-  static const String _demoBadge4ID = 'DEMO_badge_Sara_ML_Gold';
-  static const String _demoBadge5ID = 'DEMO_badge_Sara_Cloud_Silver';
-  static const String _demoProProject1ID = 'DEMO_project_Sara_Elevate';
-  static const String _demoProProject2ID = 'DEMO_project_Sara_MLPipeline';
-  static const String _demoProProject3ID = 'DEMO_project_Sara_CloudDash';
-  static const String _demoProProject4ID = 'DEMO_project_Sara_ReactShop';
-  static const String _demoProPost1ID = 'DEMO_post_Sara_1';
-
-  // ── Top-notch demo company ────────────────────────────────────────────────
-  static const String _demoProCompanyID = 'DEMO_company_NexCore';
-  static const String _demoProEmployee1ID = 'DEMO_employee_Sara';
-  static const String _demoProEmployee2ID = 'DEMO_employee_Ahmad2';
-  static const String _demoProJob1ID = 'DEMO_job_NexCore_Flutter';
-  static const String _demoProJob2ID = 'DEMO_job_NexCore_ML';
-  static const String _demoProJob3ID = 'DEMO_job_NexCore_Cloud';
-
-  // Permanently uploaded to Firebase Storage — no seed script needed.
   static const String _demoFileDownloadUrl =
       'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app'
       '/o/demo_files%2Fsample_test_file.txt?alt=media&token=afd007ca-77e8-4b9f-b08f-59dc6b36dd59';
 
-  // ── Helper to ensure Firebase Auth account exists for demo credentials ─────
-  Future<String> _ensureDemoUserAuth(
-    String email,
-    String password,
-    String fallbackId,
-  ) async {
+  Future<String> _ensureDemoUserAuth(String email, String password) async {
+    final auth = FirebaseAuth.instance;
     try {
-      final auth = FirebaseAuth.instance;
-      UserCredential uc;
-      try {
-        uc = await auth.createUserWithEmailAndPassword(
+      final uc = await auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      return uc.user!.uid;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'email-already-in-use') {
+        final uc = await auth.signInWithEmailAndPassword(
           email: email,
           password: password,
         );
         return uc.user!.uid;
-      } on FirebaseAuthException catch (e) {
-        if (e.code == 'email-already-in-use') {
-          try {
-            uc = await auth.signInWithEmailAndPassword(
-              email: email,
-              password: password,
-            );
-            return uc.user!.uid;
-          } catch (signInErr) {
-            debugPrint("Sign in existing demo user failed: $signInErr");
-          }
-        }
       }
-    } catch (e) {
-      debugPrint("Auth creation error for $email: $e");
+      rethrow;
     }
-    return fallbackId;
   }
 
-  /// Seeds a fully self-contained demo dataset:
-  ///   • A demo JobSeeker  (collection: jobSeekers, doc: DEMO_jobSeeker_Ahmad)
-  ///   • A demo Project    (collection: projects,   doc: DEMO_project_SampleTestFile)
-  ///   • A demo Company    (collection: companies,  doc: DEMO_company_Elevate)
-  ///   • A demo Employee   (collection: employees,  doc: DEMO_employee_Ahmad)
-  ///
-  /// Uses the permanently uploaded sample_test_file.txt from Firebase Storage.
-  /// Safe to call multiple times — overwrites only DEMO_ documents.
-  Future<void> seedDemoProject({String? fileDownloadUrl}) async {
-    final String url = fileDownloadUrl ?? _demoFileDownloadUrl;
+  /// The ONE seeder. Creates:
+  ///   • 1 admin
+  ///   • 1 top-notch job seeker + 1 top-notch company (badges/tests/projects)
+  ///   • 3 small job seekers + 3 small companies, each with: 1 passed test,
+  ///     1 sent follow request, 1 job application, 1 pending employee
+  ///     request, and 1 community post — all cross-linked to different
+  ///     companies so nothing is self-referential.
+  /// Every doc is tagged isDemo: true. Safe to run multiple times.
+  Future<void> seedAllDemoData() async {
+    final now = DateTime.now();
 
-    final ahmadUid = await _ensureDemoUserAuth(
-      'demo.ahmad@elevate.demo',
+    // ── Admin ──────────────────────────────────────────────────────────────
+    final adminUid = await _ensureDemoUserAuth(
+      'admin.demo@elevate.demo',
       'Test@123',
-      _demoJobSeekerID,
     );
-    final companyUid = await _ensureDemoUserAuth(
-      'demo.company@elevate.demo',
-      'Test@123',
-      _demoCompanyID,
-    );
-
-    final batch = db.batch();
-
-    // 1 ── Demo JobSeeker
-    final ahmadData = {
-      'jobSeekerID': ahmadUid,
-      'name': 'Ahmad (Demo)',
-      'email': 'demo.ahmad@elevate.demo',
+    await db.collection('admins').doc(adminUid).set({
+      'adminID': adminUid,
+      'name': 'Super Admin',
+      'email': 'admin.demo@elevate.demo',
       'password': 'Test@123',
-      'userType': 'JobSeeker',
-      'profilePic': '',
-      'location': 'Lahore, Pakistan',
-      'about': 'This is a demo account created for testing purposes only.',
-      'shortDescription': 'Demo Job Seeker',
-      'experienceLevel': 'Mid',
-      'skillCount': 1,
-      'passedResultIDs': <String>[],
-      'following': <String>[],
-      'followers': <String>[],
-      'followRequests': <String>[],
-      'followedCompanies': <String>[],
-      'postList': <String>[],
-      'portfolio': [_demoProjectID],
-      'mySkillTestsResultList': <String>[],
-      'totalTestsTaken': 0,
-      'appliedJobRequests': <String>[],
-      'becomeEmployee': [_demoEmployeeID],
-      'careerGuidanceTasks': <String>[],
-      'earnedBadges': <String>[],
-      'totalBadgesEarned': 0,
-      'education': [
-        {'title': 'BS Computer Science', 'school': 'FAST-NUCES'},
-      ],
-      'jobExperience': [
-        {
-          'jobTitle': 'Flutter Developer',
-          'company': 'Elevate Demo Corp',
-          'from': '2024',
-          'to': '',
-        },
-      ],
-      // ── demo marker ──────────────────────────────────────────────────────
-      'isDemo': true,
-    };
-    batch.set(db.collection('jobSeekers').doc(ahmadUid), ahmadData);
-    if (ahmadUid != _demoJobSeekerID) {
-      batch.set(db.collection('jobSeekers').doc(_demoJobSeekerID), ahmadData);
-    }
-
-    // 2 ── Demo Project (with the uploaded file)
-    final projectRef = db.collection('projects').doc(_demoProjectID);
-    batch.set(projectRef, {
-      'projectID': _demoProjectID,
-      'jobSeekerID': _demoJobSeekerID,
-      'projectTitle': 'Project Test File',
-      'projectDescription':
-          'A sample test file created for demo purposes. '
-          'Contains random data, names, numbers and special characters. '
-          'Click the download icon to download sample_test_file.txt.',
-      'projectURL': '',
-      'techStack': ['sample_test_file.txt'],
-      'techFileUrls': [url],
-      'mediaFiles': <String>[],
-      'createdAt': DateTime.now().toIso8601String(),
-      // ── demo marker ──────────────────────────────────────────────────────
+      'userType': 'Admin',
+      'about': 'System Administrator',
+      'location': 'HQ',
+      'profilePic': 'https://ui-avatars.com/api/?name=Admin',
       'isDemo': true,
     });
 
-    // 3 ── Demo Company
-    final companyData = {
-      'companyID': companyUid,
-      'email': 'demo.company@elevate.demo',
-      'password': 'Test@123',
-      'userType': 'Company',
-      'companyName': 'Elevate Demo Corp',
-      'industry': 'Technology',
-      'website': 'https://elevate.demo',
-      'logo': '',
-      'description': 'Demo company account — for testing only.',
-      'location': 'Lahore, Pakistan',
-      'companySize': 10,
-      'activeJobs': 0,
-      'followersCount': 0,
-      'followers': <String>[],
-      'followRequests': <String>[],
-      'employeeList': [_demoEmployeeID],
-      'companyWeaknessList': <String>[],
-      'companyStrengthList': <String>[],
-      'achievementList': <String>[],
-      'receivedApplications': <String>[],
-      'postedJobs': <String>[],
-      // ── demo marker ──────────────────────────────────────────────────────
-      'isDemo': true,
-    };
-    batch.set(db.collection('companies').doc(companyUid), companyData);
-    if (companyUid != _demoCompanyID) {
-      batch.set(db.collection('companies').doc(_demoCompanyID), companyData);
+    // ── Skills + Tests (shared by everyone) ──────────────────────────────────
+    const skillDefs = [
+      {'id': 'skill_flutter', 'name': 'Flutter', 'cat': 'Mobile Development'},
+      {'id': 'skill_react', 'name': 'React', 'cat': 'Frontend Development'},
+      {'id': 'skill_python', 'name': 'Python', 'cat': 'Backend Development'},
+    ];
+    for (final s in skillDefs) {
+      await db.collection('skills').doc(s['id']).set({
+        'skillID': s['id'],
+        'skillName': s['name'],
+        'skillDescription': '${s['name']} skill assessment.',
+        'skillImage': 'https://ui-avatars.com/api/?name=${s['name']}',
+        'category': s['cat'],
+        'isDemo': true,
+      });
+      await db.collection('tests').doc('DEMO_test_${s['id']}').set({
+        'testID': 'DEMO_test_${s['id']}',
+        'skillID': s['id'],
+        'testName': '${s['name']} Mastery Test',
+        'testType': 'Pure',
+        'totalQuestions': 1,
+        'durationMinutes': 15,
+        'passingScore': 50.0,
+        'questions': [
+          {
+            'questionID': 'q_${s['id']}',
+            'questionText': 'Placeholder question for ${s['name']}.',
+            'options': ['A', 'B', 'C', 'D'],
+            'correctAnswer': 'A',
+            'marks': 100,
+          },
+        ],
+        'isDemo': true,
+      });
     }
 
-    // 4 ── Demo Employee link (company ↔ job seeker)
-    final employeeRef = db.collection('employees').doc(_demoEmployeeID);
-    batch.set(employeeRef, {
-      'employeeID': _demoEmployeeID,
-      'jobSeekerID': _demoJobSeekerID,
-      'companyID': _demoCompanyID,
-      'position': 'Demo Flutter Developer',
-      'employeeStatus': 'Active',
-      // ── demo marker ──────────────────────────────────────────────────────
-      'isDemo': true,
-    });
-
-    await batch.commit();
-  }
-
-  // ── Top-notch demo seed ────────────────────────────────────────────────────
-  // ── Top-notch demo seed ────────────────────────────────────────────────────
-  Future<void> seedTopNotchDemo() async {
+    // ── 1. Top-notch job seeker (Sara Khan) + top-notch company (NexCore) ────
     final saraUid = await _ensureDemoUserAuth(
       'sara.demo@elevate.demo',
       'Test@123',
-      _demoProJobSeekerID,
     );
     final nexcoreUid = await _ensureDemoUserAuth(
       'nexcore.demo@elevate.demo',
       'Test@123',
-      _demoProCompanyID,
     );
 
-    final batch = db.batch();
-    final now = DateTime.now();
-
-    // ── 1. Top-notch Job Seeker (Sara Khan) ──────────────────────────────────
-    final saraData = {
+    await db.collection('jobSeekers').doc(saraUid).set({
       'jobSeekerID': saraUid,
       'name': 'Sara Khan',
       'email': 'sara.demo@elevate.demo',
@@ -1758,59 +1680,26 @@ class FirebaseService {
           'https://ui-avatars.com/api/?name=Sara+Khan&background=6C63FF&color=fff&size=256',
       'location': 'Karachi, Pakistan',
       'about':
-          'Full-Stack & ML Engineer with 5+ years building production-grade mobile apps, '
-          'intelligent data pipelines, and cloud-native systems. '
-          'Gold-badge holder in Flutter, React, and Machine Learning. '
-          'Passionate about bridging elegant UI with powerful AI backends.',
-      'shortDescription': 'Full-Stack & ML Engineer',
+          'Full-Stack Engineer with 5+ years of experience. Gold-badge holder.',
+      'shortDescription': 'Full-Stack Engineer',
       'experienceLevel': 'Senior',
-      'skillCount': 5,
-      'passedResultIDs': [
-        _demoResult1ID,
-        _demoResult2ID,
-        _demoResult3ID,
-        _demoResult4ID,
-        _demoResult5ID,
-      ],
-      'mySkillTestsResultList': [
-        _demoResult1ID,
-        _demoResult2ID,
-        _demoResult3ID,
-        _demoResult4ID,
-        _demoResult5ID,
-      ],
-      'totalTestsTaken': 5,
-      'earnedBadges': [
-        _demoBadge1ID,
-        _demoBadge2ID,
-        _demoBadge3ID,
-        _demoBadge4ID,
-        _demoBadge5ID,
-      ],
-      'totalBadgesEarned': 5,
-      'portfolio': [
-        _demoProProject1ID,
-        _demoProProject2ID,
-        _demoProProject3ID,
-        _demoProProject4ID,
-      ],
-      'postList': [_demoProPost1ID],
+      'skillCount': 3,
+      'passedResultIDs': ['DEMO_result_Sara_flutter'],
+      'mySkillTestsResultList': ['DEMO_result_Sara_flutter'],
+      'totalTestsTaken': 1,
+      'earnedBadges': <String>[],
+      'totalBadgesEarned': 0,
+      'portfolio': ['DEMO_project_Sara_1'],
+      'postList': <String>[],
       'following': <String>[],
       'followers': <String>[],
       'followRequests': <String>[],
       'followedCompanies': [nexcoreUid],
       'appliedJobRequests': <String>[],
-      'becomeEmployee': [_demoProEmployee1ID],
+      'becomeEmployee': <String>[],
       'careerGuidanceTasks': <String>[],
       'education': [
-        {
-          'title': 'BS Computer Science',
-          'school': 'NED University of Engineering & Technology',
-        },
-        {
-          'title': 'MSc Artificial Intelligence',
-          'school': 'University of Karachi',
-        },
+        {'title': 'BS Computer Science', 'school': 'NED University'},
       ],
       'jobExperience': [
         {
@@ -1819,388 +1708,40 @@ class FirebaseService {
           'from': '2023',
           'to': '',
         },
-        {
-          'jobTitle': 'ML Engineer',
-          'company': 'DataSpark Labs',
-          'from': '2021',
-          'to': '2023',
-        },
-        {
-          'jobTitle': 'React Frontend Developer',
-          'company': 'PixelForge Studio',
-          'from': '2019',
-          'to': '2021',
-        },
       ],
-      'isDemo': true,
-    };
-    // ── CHANGE (Step 1): removed duplicate write to _demoProJobSeekerID ──────
-    batch.set(db.collection('jobSeekers').doc(saraUid), saraData);
-
-    // ── 2. Skill Test Results ────────────────────────────────────────────────
-    // ── CHANGE (Step 2): 'jobSeekerID' now uses saraUid instead of the fixed
-    // constant, so getBestPassedScoresBySkill(myID) actually finds these. ────
-    final results = [
-      {
-        'resultID': _demoResult1ID,
-        'jobSeekerID': saraUid,
-        'testID': 'DEMO_test_Flutter',
-        'score': 95.0,
-        'isPassed': true,
-        'startedAt': now.subtract(const Duration(days: 30)).toIso8601String(),
-        'completedAt': now.subtract(const Duration(days: 30)).toIso8601String(),
-        'timeTakenSeconds': 1420,
-        'attemptNumber': 1,
-        'lastAttemptAt': now
-            .subtract(const Duration(days: 30))
-            .toIso8601String(),
-        'cooldownUntil': null,
-        'experienceLevel': 'Advanced',
-        'badgeEarned': _demoBadge1ID,
-        'isDemo': true,
-      },
-      {
-        'resultID': _demoResult2ID,
-        'jobSeekerID': saraUid,
-        'testID': 'DEMO_test_React',
-        'score': 92.0,
-        'isPassed': true,
-        'startedAt': now.subtract(const Duration(days: 25)).toIso8601String(),
-        'completedAt': now.subtract(const Duration(days: 25)).toIso8601String(),
-        'timeTakenSeconds': 1580,
-        'attemptNumber': 1,
-        'lastAttemptAt': now
-            .subtract(const Duration(days: 25))
-            .toIso8601String(),
-        'cooldownUntil': null,
-        'experienceLevel': 'Advanced',
-        'badgeEarned': _demoBadge2ID,
-        'isDemo': true,
-      },
-      {
-        'resultID': _demoResult3ID,
-        'jobSeekerID': saraUid,
-        'testID': 'DEMO_test_Python',
-        'score': 75.0,
-        'isPassed': true,
-        'startedAt': now.subtract(const Duration(days: 20)).toIso8601String(),
-        'completedAt': now.subtract(const Duration(days: 20)).toIso8601String(),
-        'timeTakenSeconds': 1900,
-        'attemptNumber': 1,
-        'lastAttemptAt': now
-            .subtract(const Duration(days: 20))
-            .toIso8601String(),
-        'cooldownUntil': null,
-        'experienceLevel': 'Mid',
-        'badgeEarned': _demoBadge3ID,
-        'isDemo': true,
-      },
-      {
-        'resultID': _demoResult4ID,
-        'jobSeekerID': saraUid,
-        'testID': 'DEMO_test_ML',
-        'score': 97.0,
-        'isPassed': true,
-        'startedAt': now.subtract(const Duration(days: 15)).toIso8601String(),
-        'completedAt': now.subtract(const Duration(days: 15)).toIso8601String(),
-        'timeTakenSeconds': 1200,
-        'attemptNumber': 1,
-        'lastAttemptAt': now
-            .subtract(const Duration(days: 15))
-            .toIso8601String(),
-        'cooldownUntil': null,
-        'experienceLevel': 'Advanced',
-        'badgeEarned': _demoBadge4ID,
-        'isDemo': true,
-      },
-      {
-        'resultID': _demoResult5ID,
-        'jobSeekerID': saraUid,
-        'testID': 'DEMO_test_Cloud',
-        'score': 82.0,
-        'isPassed': true,
-        'startedAt': now.subtract(const Duration(days: 10)).toIso8601String(),
-        'completedAt': now.subtract(const Duration(days: 10)).toIso8601String(),
-        'timeTakenSeconds': 1750,
-        'attemptNumber': 1,
-        'lastAttemptAt': now
-            .subtract(const Duration(days: 10))
-            .toIso8601String(),
-        'cooldownUntil': null,
-        'experienceLevel': 'Mid',
-        'badgeEarned': _demoBadge5ID,
-        'isDemo': true,
-      },
-    ];
-    for (final r in results) {
-      batch.set(db.collection('results').doc(r['resultID'] as String), r);
-    }
-
-    // ── 2.5. Skill + Test docs ────────────────────────────────────────────────
-    const skillFlutterID = 'skill_flutter';
-    const skillReactID = 'skill_react';
-    const skillPythonID = 'skill_python';
-    const skillMLID = 'skill_ml';
-    const skillCloudID = 'skill_cloud';
-
-    final skills = [
-      SkillModel(
-        skillID: skillFlutterID,
-        skillName: 'Flutter',
-        skillDescription:
-            'Cross-platform mobile development with Flutter & Dart.',
-        skillImage: 'https://ui-avatars.com/api/?name=Flutter',
-        category: 'Mobile Development',
-      ),
-      SkillModel(
-        skillID: skillReactID,
-        skillName: 'React',
-        skillDescription:
-            'Modern frontend development with React & TypeScript.',
-        skillImage: 'https://ui-avatars.com/api/?name=React',
-        category: 'Frontend Development',
-      ),
-      SkillModel(
-        skillID: skillPythonID,
-        skillName: 'Python',
-        skillDescription: 'Backend engineering with Python.',
-        skillImage: 'https://ui-avatars.com/api/?name=Python',
-        category: 'Backend Development',
-      ),
-      SkillModel(
-        skillID: skillMLID,
-        skillName: 'Machine Learning',
-        skillDescription: 'ML pipelines, NLP, and model deployment.',
-        skillImage: 'https://ui-avatars.com/api/?name=ML',
-        category: 'Data Science',
-      ),
-      SkillModel(
-        skillID: skillCloudID,
-        skillName: 'Cloud Computing',
-        skillDescription: 'Cloud infrastructure, AWS, and DevOps.',
-        skillImage: 'https://ui-avatars.com/api/?name=Cloud',
-        category: 'Cloud',
-      ),
-    ];
-    for (final s in skills) {
-      batch.set(db.collection('skills').doc(s.skillID), s.toMap());
-    }
-
-    final fillerQuestion = QuestionModel(
-      questionID: 'q_filler',
-      questionText: 'Placeholder question for seeded demo test.',
-      options: const ['A', 'B', 'C', 'D'],
-      correctAnswer: 'A',
-      marks: 100,
-    );
-
-    final tests = [
-      TestModel(
-        testID: 'DEMO_test_Flutter',
-        skillID: skillFlutterID,
-        testName: 'Flutter Mastery Test',
-        testType: 'Pure',
-        totalQuestions: 1,
-        durationMinutes: 15,
-        passingScore: 50.0,
-        questions: [fillerQuestion],
-      ),
-      TestModel(
-        testID: 'DEMO_test_React',
-        skillID: skillReactID,
-        testName: 'React Mastery Test',
-        testType: 'Pure',
-        totalQuestions: 1,
-        durationMinutes: 15,
-        passingScore: 50.0,
-        questions: [fillerQuestion],
-      ),
-      TestModel(
-        testID: 'DEMO_test_Python',
-        skillID: skillPythonID,
-        testName: 'Python Backend Test',
-        testType: 'Pure',
-        totalQuestions: 1,
-        durationMinutes: 15,
-        passingScore: 50.0,
-        questions: [fillerQuestion],
-      ),
-      TestModel(
-        testID: 'DEMO_test_ML',
-        skillID: skillMLID,
-        testName: 'Machine Learning Test',
-        testType: 'Pure',
-        totalQuestions: 1,
-        durationMinutes: 15,
-        passingScore: 50.0,
-        questions: [fillerQuestion],
-      ),
-      TestModel(
-        testID: 'DEMO_test_Cloud',
-        skillID: skillCloudID,
-        testName: 'Cloud Computing Test',
-        testType: 'Pure',
-        totalQuestions: 1,
-        durationMinutes: 15,
-        passingScore: 50.0,
-        questions: [fillerQuestion],
-      ),
-    ];
-    for (final t in tests) {
-      batch.set(db.collection('tests').doc(t.testID), t.toMap());
-    }
-
-    // ── 3. Badge documents ───────────────────────────────────────────────────
-    final badges = [
-      {
-        'badgeID': _demoBadge1ID,
-        'badgeName': 'Flutter',
-        'badgeLevel': 'Gold',
-        'minScore': 90.0,
-        'maxScore': 100.0,
-        'badgeImage':
-            'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fgold.png?alt=media&token=8fa4f2b5-07f5-4b84-a943-02abb5989d72',
-        'isDemo': true,
-      },
-      {
-        'badgeID': _demoBadge2ID,
-        'badgeName': 'React',
-        'badgeLevel': 'Gold',
-        'minScore': 90.0,
-        'maxScore': 100.0,
-        'badgeImage':
-            'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fgold.png?alt=media&token=8fa4f2b5-07f5-4b84-a943-02abb5989d72',
-        'isDemo': true,
-      },
-      {
-        'badgeID': _demoBadge3ID,
-        'badgeName': 'Python',
-        'badgeLevel': 'Silver',
-        'minScore': 60.0,
-        'maxScore': 90.0,
-        'badgeImage':
-            'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fsilver.png?alt=media&token=8ace9945-0206-4491-b175-db75e70b9ff7',
-        'isDemo': true,
-      },
-      {
-        'badgeID': _demoBadge4ID,
-        'badgeName': 'Machine Learning',
-        'badgeLevel': 'Gold',
-        'minScore': 90.0,
-        'maxScore': 100.0,
-        'badgeImage':
-            'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fgold.png?alt=media&token=8fa4f2b5-07f5-4b84-a943-02abb5989d72',
-        'isDemo': true,
-      },
-      {
-        'badgeID': _demoBadge5ID,
-        'badgeName': 'Cloud Computing',
-        'badgeLevel': 'Silver',
-        'minScore': 60.0,
-        'maxScore': 90.0,
-        'badgeImage':
-            'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fsilver.png?alt=media&token=8ace9945-0206-4491-b175-db75e70b9ff7',
-        'isDemo': true,
-      },
-    ];
-    for (final b in badges) {
-      batch.set(db.collection('badges').doc(b['badgeID'] as String), b);
-    }
-
-    // ── 4. Portfolio Projects ────────────────────────────────────────────────
-    // ── CHANGE (Step 3): 'jobSeekerID' now uses saraUid in all 4 projects ────
-    final projects = [
-      {
-        'projectID': _demoProProject1ID,
-        'jobSeekerID': saraUid,
-        'projectTitle': 'Elevate Mobile App',
-        'projectDescription':
-            'A full-featured Flutter-based career platform with Firebase backend, '
-            'real-time job feeds, skill assessment tests, badge system, and AI-powered '
-            'career guidance. Deployed to 500+ active users across Pakistan.',
-        'projectURL': 'https://github.com/sara-demo/elevate-app',
-        'techStack': ['Flutter', 'Firebase', 'Firestore', 'Riverpod', 'Dart'],
-        'techFileUrls': [_demoFileDownloadUrl],
-        'mediaFiles': <String>[],
-        'createdAt': now.subtract(const Duration(days: 60)).toIso8601String(),
-        'isDemo': true,
-      },
-      {
-        'projectID': _demoProProject2ID,
-        'jobSeekerID': saraUid,
-        'projectTitle': 'Intelligent ML Data Pipeline',
-        'projectDescription':
-            'End-to-end machine learning pipeline for resume screening and candidate ranking. '
-            'Uses NLP (spaCy + BERT) for entity extraction, skill matching, and automated '
-            'shortlisting. Reduced hiring time by 40% in pilot deployment.',
-        'projectURL': 'https://github.com/sara-demo/ml-pipeline',
-        'techStack': ['Python', 'TensorFlow', 'spaCy', 'FastAPI', 'PostgreSQL'],
-        'techFileUrls': [_demoFileDownloadUrl],
-        'mediaFiles': <String>[],
-        'createdAt': now.subtract(const Duration(days: 120)).toIso8601String(),
-        'isDemo': true,
-      },
-      {
-        'projectID': _demoProProject3ID,
-        'jobSeekerID': saraUid,
-        'projectTitle': 'Cloud Infrastructure Dashboard',
-        'projectDescription':
-            'Real-time monitoring dashboard for AWS infrastructure. Aggregates metrics '
-            'from EC2, RDS, Lambda, and S3. Features auto-scaling alerts, cost projections, '
-            'and one-click rollback. Built with React and AWS SDK.',
-        'projectURL': 'https://github.com/sara-demo/cloud-dash',
-        'techStack': ['React', 'AWS SDK', 'Node.js', 'TypeScript', 'Terraform'],
-        'techFileUrls': <String>[],
-        'mediaFiles': <String>[],
-        'createdAt': now.subtract(const Duration(days: 180)).toIso8601String(),
-        'isDemo': true,
-      },
-      {
-        'projectID': _demoProProject4ID,
-        'jobSeekerID': saraUid,
-        'projectTitle': 'E-Commerce React Storefront',
-        'projectDescription':
-            'High-performance e-commerce storefront built with React, Redux, and Stripe '
-            'payment integration. Features dynamic product filtering, cart persistence, '
-            'order tracking, and PWA support with offline caching. 4.9 ★ client rating.',
-        'projectURL': 'https://github.com/sara-demo/react-shop',
-        'techStack': ['React', 'Redux', 'Stripe API', 'GraphQL', 'Node.js'],
-        'techFileUrls': <String>[],
-        'mediaFiles': <String>[],
-        'createdAt': now.subtract(const Duration(days: 240)).toIso8601String(),
-        'isDemo': true,
-      },
-    ];
-    for (final p in projects) {
-      batch.set(db.collection('projects').doc(p['projectID'] as String), p);
-    }
-
-    // ── 5. Community Post (Sara) ─────────────────────────────────────────────
-    // ── CHANGE (Step 4): 'authorID' now uses saraUid ─────────────────────────
-    batch.set(db.collection('posts').doc(_demoProPost1ID), {
-      'postID': _demoProPost1ID,
-      'authorID': saraUid,
-      'authorName': 'Sara Khan',
-      'authorType': 'JobSeeker',
-      'authorProfilePic':
-          'https://ui-avatars.com/api/?name=Sara+Khan&background=6C63FF&color=fff&size=256',
-      'title': '🚀 Just earned my 5th Gold Badge on Elevate!',
-      'content':
-          'Incredibly proud to have passed the Machine Learning Advanced test with 97%! '
-          'That makes 5 skill badges — Flutter 🥇, React 🥇, Machine Learning 🥇, '
-          'Python 🥈, and Cloud Computing 🥈. The Elevate platform made the whole journey '
-          'structured and rewarding. If you are preparing for your tests, consistency is key! '
-          'Drop a comment if you want study tips 💪',
-      'likes': 42,
-      'likedByUserIDs': <String>[],
-      'totalCommentCount': 7,
-      'createdAt': now.subtract(const Duration(days: 8)).toIso8601String(),
       'isDemo': true,
     });
 
-    // ── 6. Top-notch Demo Company (NexCore Technologies) ─────────────────────
-    // ── CHANGE (Step 5): 'followers' now only contains saraUid ───────────────
-    final nexcoreData = {
+    await db.collection('results').doc('DEMO_result_Sara_flutter').set({
+      'resultID': 'DEMO_result_Sara_flutter',
+      'jobSeekerID': saraUid,
+      'testID': 'DEMO_test_skill_flutter',
+      'score': 95.0,
+      'isPassed': true,
+      'startedAt': now.subtract(const Duration(days: 10)).toIso8601String(),
+      'completedAt': now.subtract(const Duration(days: 10)).toIso8601String(),
+      'timeTakenSeconds': 1200,
+      'attemptNumber': 1,
+      'lastAttemptAt': now.subtract(const Duration(days: 10)).toIso8601String(),
+      'experienceLevel': 'Advanced',
+      'isDemo': true,
+    });
+
+    await db.collection('projects').doc('DEMO_project_Sara_1').set({
+      'projectID': 'DEMO_project_Sara_1',
+      'jobSeekerID': saraUid,
+      'projectTitle': 'Elevate Mobile App',
+      'projectDescription':
+          'Full-featured Flutter career platform with Firebase backend.',
+      'projectURL': 'https://github.com/sara-demo/elevate-app',
+      'techStack': ['Flutter', 'Firebase'],
+      'techFileUrls': [_demoFileDownloadUrl],
+      'mediaFiles': <String>[],
+      'createdAt': now.subtract(const Duration(days: 60)).toIso8601String(),
+      'isDemo': true,
+    });
+
+    await db.collection('companies').doc(nexcoreUid).set({
       'companyID': nexcoreUid,
       'email': 'nexcore.demo@elevate.demo',
       'password': 'Test@123',
@@ -2211,300 +1752,302 @@ class FirebaseService {
       'logo':
           'https://ui-avatars.com/api/?name=NexCore&background=1A1A2E&color=fff&size=256',
       'description':
-          'NexCore Technologies is a cutting-edge software house and AI research firm '
-          'founded in 2018 and headquartered in Karachi, Pakistan. We build enterprise-grade '
-          'mobile applications, intelligent automation systems, and scalable cloud platforms. '
-          'Our team of 200+ engineers has delivered products to clients across 15 countries. '
-          'We are Gold partners with Google Cloud and AWS, and proud recipients of the '
-          'Pakistan Software Export Board (PSEB) Excellence Award 2024.',
+          'Enterprise software house building mobile and AI platforms.',
       'location': 'Karachi, Pakistan',
       'companySize': 200,
-      'activeJobs': 3,
-      'followersCount': 1240,
-      'followers': <String>[saraUid],
+      'activeJobs': 1,
+      'followersCount': 1,
+      'followers': [saraUid],
       'followRequests': <String>[],
-      'employeeList': [_demoProEmployee1ID, _demoProEmployee2ID],
-      'companyWeaknessList': [
-        'Limited presence in the MENA region outside GCC',
-        'Heavy dependency on a few key enterprise clients',
-      ],
-      'companyStrengthList': [
-        'Top-tier AI and ML engineering talent',
-        'Google Cloud & AWS Gold Partner certifications',
-        'Agile delivery with <2% critical bug rate in production',
-        'Strong employer brand — 4.7★ on LinkedIn',
-      ],
-      'achievementList': [
-        'PSEB Excellence Award 2024',
-        'Best Tech Employer — HR Awards Pakistan 2023',
-        'ISO 27001 Certified (Information Security)',
-        '200K+ MAU across deployed products',
-      ],
+      'employeeList': <String>[],
+      'companyWeaknessList': <String>[],
+      'companyStrengthList': ['Strong AI/ML talent', 'Gold Cloud partner'],
+      'achievementList': ['PSEB Excellence Award 2024'],
       'receivedApplications': <String>[],
-      'postedJobs': [_demoProJob1ID, _demoProJob2ID, _demoProJob3ID],
-      'isDemo': true,
-    };
-    // ── CHANGE (Step 5): removed duplicate write to _demoProCompanyID ────────
-    batch.set(db.collection('companies').doc(nexcoreUid), nexcoreData);
-
-    // ── 7. Employees ─────────────────────────────────────────────────────────
-    // ── CHANGE (Step 6): jobSeekerID/companyID now use real UIDs ─────────────
-    batch.set(db.collection('employees').doc(_demoProEmployee1ID), {
-      'employeeID': _demoProEmployee1ID,
-      'jobSeekerID': saraUid,
-      'companyID': nexcoreUid,
-      'position': 'Senior Flutter & ML Engineer',
-      'employeeStatus': 'Active',
-      'isDemo': true,
-    });
-    batch.set(db.collection('employees').doc(_demoProEmployee2ID), {
-      'employeeID': _demoProEmployee2ID,
-      'jobSeekerID': _demoJobSeekerID, // Ahmad from original seed
-      'companyID': nexcoreUid,
-      'position': 'Junior Flutter Developer',
-      'employeeStatus': 'Active',
+      'postedJobs': ['DEMO_job_NexCore_1'],
       'isDemo': true,
     });
 
-    // ── 8. Job Posts ─────────────────────────────────────────────────────────
-    // ── CHANGE (Step 7): 'companyID' now uses nexcoreUid in all 3 jobs ───────
-    final jobs = [
+    await db.collection('jobs').doc('DEMO_job_NexCore_1').set({
+      'jobID': 'DEMO_job_NexCore_1',
+      'companyID': nexcoreUid,
+      'title': 'Senior Flutter Developer',
+      'description':
+          'Architect and ship features for our flagship career platform.',
+      'requiredSkills': ['skill_flutter'],
+      'requiredBadges': <String>[],
+      'salary': '200,000 - 280,000 PKR/month',
+      'jobType': 'Full-time',
+      'location': 'Karachi, Pakistan',
+      'experienceLevel': 'Senior',
+      'postedAt': now.subtract(const Duration(days: 5)).toIso8601String(),
+      'applicants': <String>[],
+      'isExternal': false,
+      'sourceUrl': '',
+      'isClosed': false,
+      'isDemo': true,
+    });
+
+    // ── 2. 3 small companies (basic + 1 job post each) ────────────────────────
+    const smallCompanyDefs = [
       {
-        'jobID': _demoProJob1ID,
-        'companyID': nexcoreUid,
-        'title': 'Senior Flutter Developer',
-        'description':
-            'We are looking for a Senior Flutter Developer to join our mobile division. '
-            'You will architect and ship features for our flagship career platform, '
-            'mentor junior engineers, and collaborate with the AI team on integrations. '
-            'Gold Flutter badge preferred. 3+ years of production Flutter experience required.',
-        'requiredSkills': [skillFlutterID],
-        'requiredBadges': ['Flutter'],
-        'salary': '200,000 – 280,000 PKR/month',
-        'jobType': 'Full-time',
-        'location': 'Karachi, Pakistan',
-        'experienceLevel': 'Senior',
-        'postedAt': now.subtract(const Duration(days: 5)).toIso8601String(),
-        'applicants': <String>[],
-        'isExternal': false,
-        'sourceUrl': '',
-        'isClosed': false,
-        'isDemo': true,
+        'email': 'techcorp.demo@elevate.demo',
+        'name': 'TechCorp Innovations',
+        'industry': 'Software Development',
+        'skill': 'skill_flutter',
       },
       {
-        'jobID': _demoProJob2ID,
-        'companyID': nexcoreUid,
-        'title': 'Machine Learning Engineer',
-        'description':
-            'Join our AI Research division to build intelligent automation systems. '
-            'You will design and deploy ML models (NLP, CV), build data pipelines, '
-            'and integrate AI into our product suite. MSc AI or equivalent experience required. '
-            'Gold ML badge is a strong differentiator.',
-        'requiredSkills': [skillMLID],
-        'requiredBadges': ['Machine Learning'],
-        'salary': '220,000 – 300,000 PKR/month',
-        'jobType': 'Full-time',
-        'location': 'Remote / Karachi',
-        'experienceLevel': 'Mid',
-        'postedAt': now.subtract(const Duration(days: 3)).toIso8601String(),
-        'applicants': <String>[],
-        'isExternal': false,
-        'sourceUrl': '',
-        'isClosed': false,
-        'isDemo': true,
+        'email': 'creativestudio.demo@elevate.demo',
+        'name': 'Creative Studio',
+        'industry': 'Design',
+        'skill': 'skill_react',
       },
       {
-        'jobID': _demoProJob3ID,
-        'companyID': nexcoreUid,
-        'title': 'Cloud Infrastructure Engineer',
-        'description':
-            'Own and evolve our cloud infrastructure across AWS and GCP. '
-            'Design fault-tolerant, auto-scaling architectures, manage CI/CD pipelines, '
-            'implement monitoring & alerting, and drive cost optimisation initiatives. '
-            'AWS/GCP certifications and Cloud Computing badge preferred.',
-        'requiredSkills': [skillCloudID],
-        'requiredBadges': ['Cloud Computing'],
-        'salary': '180,000 – 260,000 PKR/month',
-        'jobType': 'Full-time',
-        'location': 'Karachi, Pakistan',
-        'experienceLevel': 'Mid',
-        'postedAt': now.subtract(const Duration(days: 1)).toIso8601String(),
-        'applicants': <String>[],
-        'isExternal': false,
-        'sourceUrl': '',
-        'isClosed': false,
-        'isDemo': true,
+        'email': 'datagen.demo@elevate.demo',
+        'name': 'DataGen Analytics',
+        'industry': 'Data & AI',
+        'skill': 'skill_python',
       },
     ];
-    for (final j in jobs) {
-      batch.set(db.collection('jobs').doc(j['jobID'] as String), j);
+    const smallSeekerDefs = [
+      {
+        'email': 'ahmadraza.demo@elevate.demo',
+        'name': 'Ahmad Raza',
+        'level': 'Mid',
+        'desc': 'Flutter Developer',
+        'skill': 'skill_flutter',
+      },
+      {
+        'email': 'usmantariq.demo@elevate.demo',
+        'name': 'Usman Tariq',
+        'level': 'Senior',
+        'desc': 'React Developer',
+        'skill': 'skill_react',
+      },
+      {
+        'email': 'yusufmalik.demo@elevate.demo',
+        'name': 'Yusuf Malik',
+        'level': 'Junior',
+        'desc': 'Python Developer',
+        'skill': 'skill_python',
+      },
+    ];
+
+    final smallCompanyUids = <String>[];
+    for (final c in smallCompanyDefs) {
+      final uid = await _ensureDemoUserAuth(c['email']!, 'Test@123');
+      smallCompanyUids.add(uid);
+      final jobID = 'DEMO_job_${c['name']!.replaceAll(' ', '')}';
+      await db.collection('companies').doc(uid).set({
+        'companyID': uid,
+        'email': c['email'],
+        'password': 'Test@123',
+        'userType': 'Company',
+        'companyName': c['name'],
+        'industry': c['industry'],
+        'website': 'https://www.example.com',
+        'logo': 'https://ui-avatars.com/api/?name=${c['name']}',
+        'description': 'Small demo company in ${c['industry']}.',
+        'location': 'Lahore, Pakistan',
+        'companySize': 20,
+        'activeJobs': 1,
+        'followersCount': 0,
+        'followers': <String>[],
+        'followRequests': <String>[],
+        'employeeList': <String>[],
+        'companyWeaknessList': <String>[],
+        'companyStrengthList': <String>[],
+        'achievementList': <String>[],
+        'receivedApplications': <String>[],
+        'postedJobs': [jobID],
+        'isDemo': true,
+      });
+      await db.collection('jobs').doc(jobID).set({
+        'jobID': jobID,
+        'companyID': uid,
+        'title': '${c['name']} Developer',
+        'description': 'Join ${c['name']} as a developer.',
+        'requiredSkills': [c['skill']],
+        'requiredBadges': <String>[],
+        'salary': '60,000 - 100,000 PKR/month',
+        'jobType': 'Full-time',
+        'location': 'Lahore, Pakistan',
+        'experienceLevel': '1 to 5 years',
+        'postedAt': now.subtract(const Duration(days: 2)).toIso8601String(),
+        'applicants': <String>[],
+        'isExternal': false,
+        'sourceUrl': '',
+        'isClosed': false,
+        'isDemo': true,
+      });
     }
 
-    await batch.commit();
-  }
+    // ── 3. 3 small job seekers — with follow request, application, and
+    // pending employee request, each cross-linked to a DIFFERENT company ─────
+    for (int i = 0; i < smallSeekerDefs.length; i++) {
+      final s = smallSeekerDefs[i];
+      final uid = await _ensureDemoUserAuth(s['email']!, 'Test@123');
+      final resultID = 'DEMO_result_${s['name']!.replaceAll(' ', '')}';
 
-  Future<void> seedExplorerJobPool() async {
-    final companyID = _demoProCompanyID;
-    final batch = db.batch();
+      final followTargetUid = smallCompanyUids[i % smallCompanyUids.length];
+      final applyTargetIndex = (i + 1) % smallCompanyUids.length;
+      final applyTargetUid = smallCompanyUids[applyTargetIndex];
+      final applyTargetJobID =
+          'DEMO_job_${smallCompanyDefs[applyTargetIndex]['name']!.replaceAll(' ', '')}';
+      final empTargetIndex = (i + 2) % smallCompanyUids.length;
+      final empTargetUid = smallCompanyUids[empTargetIndex];
 
-    const tiers = {
-      'Bronze': 'Entry Level',
-      'Silver': '1 to 5 years',
-      'Gold': '5+ years',
-    };
+      final followRequestID =
+          'DEMO_followreq_${s['name']!.replaceAll(' ', '')}';
+      final appID = 'DEMO_app_${s['name']!.replaceAll(' ', '')}';
+      final empID = 'DEMO_emp_${s['name']!.replaceAll(' ', '')}';
+      final postID = 'DEMO_post_${s['name']!.replaceAll(' ', '')}';
 
-    final titlesByTier = {
-      'Bronze': [
-        'Junior Frontend Developer',
-        'Support Engineer Intern',
-        'Junior QA Tester',
-        'Data Entry Analyst',
-        'Junior Backend Developer',
-        'Graphic Design Intern',
-        'Junior DevOps Assistant',
-        'Customer Success Associate',
-        'Junior Mobile Developer',
-        'Content & Social Media Assistant',
-      ],
-      'Silver': [
-        'Mid Frontend Developer',
-        'Backend Engineer',
-        'QA Automation Engineer',
-        'Product Analyst',
-        'Mobile App Developer',
-        'UI/UX Designer',
-        'DevOps Engineer',
-        'Technical Support Lead',
-        'Database Administrator',
-        'Marketing Automation Specialist',
-      ],
-      'Gold': [
-        'Senior Software Architect',
-        'Principal Backend Engineer',
-        'Lead QA Engineer',
-        'Senior Product Manager',
-        'Staff Mobile Engineer',
-        'Lead UI/UX Designer',
-        'Senior DevOps Architect',
-        'Engineering Manager',
-        'Senior Database Architect',
-        'Head of Growth Marketing',
-      ],
-    };
+      await db.collection('jobSeekers').doc(uid).set({
+        'jobSeekerID': uid,
+        'name': s['name'],
+        'email': s['email'],
+        'password': 'Test@123',
+        'userType': 'JobSeeker',
+        'profilePic': 'https://ui-avatars.com/api/?name=${s['name']}',
+        'location': 'Lahore, Pakistan',
+        'about': 'Demo job seeker account.',
+        'shortDescription': s['desc'],
+        'experienceLevel': s['level'],
+        'skillCount': 1,
+        'passedResultIDs': [resultID],
+        'mySkillTestsResultList': [resultID],
+        'totalTestsTaken': 1,
+        'earnedBadges': <String>[],
+        'totalBadgesEarned': 0,
+        'portfolio': <String>[],
+        'postList': [postID],
+        'following': <String>[],
+        'followers': <String>[],
+        'followRequests': <String>[],
+        'followedCompanies': <String>[],
+        'appliedJobRequests': [appID],
+        'becomeEmployee': [empID],
+        'careerGuidanceTasks': <String>[],
+        'education': [
+          {'title': 'BSc Computer Science', 'school': 'Tech University'},
+        ],
+        'jobExperience': <Map<String, String>>[],
+        'isDemo': true,
+      });
 
-    for (final tier in tiers.keys) {
-      final experienceLevel = tiers[tier]!;
-      final titles = titlesByTier[tier]!;
-      for (int i = 0; i < titles.length; i++) {
-        final jobID = 'DEMO_explorer_${tier}_$i';
-        batch.set(db.collection('jobs').doc(jobID), {
-          'jobID': jobID,
-          'companyID': companyID,
-          'title': titles[i],
-          'description':
-              'Explore this $tier-level opportunity at NexCore Technologies. Open to candidates matching the $experienceLevel experience range.',
-          'requiredSkills': <String>[],
-          'requiredBadges': <String>[],
-          'salary': tier == 'Gold'
-              ? '250,000 – 350,000 PKR/month'
-              : tier == 'Silver'
-              ? '120,000 – 200,000 PKR/month'
-              : '50,000 – 90,000 PKR/month',
-          'jobType': 'Full-time',
-          'location': 'Karachi, Pakistan',
-          'experienceLevel': experienceLevel,
-          'postedAt': DateTime.now()
-              .subtract(Duration(days: i))
-              .toIso8601String(),
-          'applicants': <String>[],
-          'isExternal': false,
-          'sourceUrl': '',
-          'isClosed': false,
-          'isDemo': true,
-        });
-      }
+      await db.collection('results').doc(resultID).set({
+        'resultID': resultID,
+        'jobSeekerID': uid,
+        'testID': 'DEMO_test_${s['skill']}',
+        'score': 75.0,
+        'isPassed': true,
+        'startedAt': now.subtract(const Duration(days: 3)).toIso8601String(),
+        'completedAt': now.subtract(const Duration(days: 3)).toIso8601String(),
+        'timeTakenSeconds': 900,
+        'attemptNumber': 1,
+        'lastAttemptAt': now
+            .subtract(const Duration(days: 3))
+            .toIso8601String(),
+        'experienceLevel': s['level'],
+        'isDemo': true,
+      });
+
+      await db.collection('followRequests').doc(followRequestID).set({
+        'requestID': followRequestID,
+        'fromID': uid,
+        'toID': followTargetUid,
+        'status': 'Pending',
+        'requestedAt': now.toIso8601String(),
+        'isDemo': true,
+      });
+      await db.collection('companies').doc(followTargetUid).update({
+        'followRequests': FieldValue.arrayUnion([followRequestID]),
+      });
+
+      await db.collection('applications').doc(appID).set({
+        'applicationID': appID,
+        'jobID': applyTargetJobID,
+        'jobSeekerID': uid,
+        'companyID': applyTargetUid,
+        'status': 'Pending',
+        'appliedAt': now.toIso8601String(),
+        'coldEmail':
+            'Hi, I am very interested in this role and believe my skills are a strong match.',
+        'resumeUrl': _demoFileDownloadUrl,
+        'isDemo': true,
+      });
+      await db.collection('jobs').doc(applyTargetJobID).update({
+        'applicants': FieldValue.arrayUnion([appID]),
+      });
+      await db.collection('companies').doc(applyTargetUid).update({
+        'receivedApplications': FieldValue.arrayUnion([appID]),
+      });
+
+      await db.collection('employees').doc(empID).set({
+        'employeeID': empID,
+        'jobSeekerID': uid,
+        'companyID': empTargetUid,
+        'position': s['desc'],
+        'employeeStatus': 'Pending',
+        'hiredAt': now.toIso8601String(),
+        'isDemo': true,
+      });
+      await db.collection('companies').doc(empTargetUid).update({
+        'employeeList': FieldValue.arrayUnion([empID]),
+      });
+
+      await db.collection('posts').doc(postID).set({
+        'postID': postID,
+        'authorID': uid,
+        'authorName': s['name'],
+        'authorProfilePic': 'https://ui-avatars.com/api/?name=${s['name']}',
+        'authorType': 'JobSeeker',
+        'title': 'Just passed my ${s['skill']} skill test!',
+        'content': 'Excited to be applying for new roles on Elevate.',
+        'likes': 2,
+        'likedByUserIDs': <String>[],
+        'totalCommentCount': 0,
+        'createdAt': now.subtract(const Duration(days: 1)).toIso8601String(),
+        'isDemo': true,
+      });
     }
-
-    await batch.commit();
   }
 
-  /// Removes ALL demo documents created by [seedDemoProject], [seedTopNotchDemo],
-  /// and [seedExplorerJobPool]. Call this to clean up the demo dataset without
-  /// touching any real data.
+  /// The ONE deleter. Removes every document tagged isDemo: true across all
+  /// collections seedAllDemoData() writes to.
   Future<void> deleteDemoData() async {
-    final batch = db.batch();
-
-    // Original seed
-    batch.delete(db.collection('jobSeekers').doc(_demoJobSeekerID));
-    batch.delete(db.collection('projects').doc(_demoProjectID));
-    batch.delete(db.collection('companies').doc(_demoCompanyID));
-    batch.delete(db.collection('employees').doc(_demoEmployeeID));
-
-    // Top-notch job seeker (Sara)
-    batch.delete(db.collection('jobSeekers').doc(_demoProJobSeekerID));
-    for (final id in [
-      _demoResult1ID,
-      _demoResult2ID,
-      _demoResult3ID,
-      _demoResult4ID,
-      _demoResult5ID,
-    ]) {
-      batch.delete(db.collection('results').doc(id));
+    const collections = [
+      'jobSeekers',
+      'companies',
+      'admins',
+      'employees',
+      'projects',
+      'results',
+      'badges',
+      'posts',
+      'careerGuidance',
+      'skills',
+      'tests',
+      'jobs',
+      'applications',
+      'followRequests',
+    ];
+    for (final collectionName in collections) {
+      QuerySnapshot<Map<String, dynamic>> snap;
+      do {
+        snap = await db
+            .collection(collectionName)
+            .where('isDemo', isEqualTo: true)
+            .limit(400)
+            .get();
+        if (snap.docs.isEmpty) break;
+        final batch = db.batch();
+        for (final doc in snap.docs) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+      } while (snap.docs.length == 400);
     }
-    for (final id in [
-      _demoBadge1ID,
-      _demoBadge2ID,
-      _demoBadge3ID,
-      _demoBadge4ID,
-      _demoBadge5ID,
-    ]) {
-      batch.delete(db.collection('badges').doc(id));
-    }
-    for (final id in [
-      _demoProProject1ID,
-      _demoProProject2ID,
-      _demoProProject3ID,
-      _demoProProject4ID,
-    ]) {
-      batch.delete(db.collection('projects').doc(id));
-    }
-    batch.delete(db.collection('posts').doc(_demoProPost1ID));
-
-    // Skill + Test docs
-    for (final id in [
-      'skill_flutter',
-      'skill_react',
-      'skill_python',
-      'skill_ml',
-      'skill_cloud',
-    ]) {
-      batch.delete(db.collection('skills').doc(id));
-    }
-    for (final id in [
-      'DEMO_test_Flutter',
-      'DEMO_test_React',
-      'DEMO_test_Python',
-      'DEMO_test_ML',
-      'DEMO_test_Cloud',
-    ]) {
-      batch.delete(db.collection('tests').doc(id));
-    }
-
-    // Top-notch company (NexCore)
-    batch.delete(db.collection('companies').doc(_demoProCompanyID));
-    batch.delete(db.collection('employees').doc(_demoProEmployee1ID));
-    batch.delete(db.collection('employees').doc(_demoProEmployee2ID));
-    for (final id in [_demoProJob1ID, _demoProJob2ID, _demoProJob3ID]) {
-      batch.delete(db.collection('jobs').doc(id));
-    }
-
-    // Explorer job pool (30 filler jobs)
-    for (final tier in ['Bronze', 'Silver', 'Gold']) {
-      for (int i = 0; i < 10; i++) {
-        batch.delete(db.collection('jobs').doc('DEMO_explorer_${tier}_$i'));
-      }
-    }
-
-    await batch.commit();
   }
 }

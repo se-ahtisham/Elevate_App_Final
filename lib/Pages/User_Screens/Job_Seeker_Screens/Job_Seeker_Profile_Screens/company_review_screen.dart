@@ -187,12 +187,12 @@ class _CompanyReviewScreenState extends State<CompanyReviewScreen> {
                 'companyWeaknessList': weaknessLabels,
             });
         debugPrint(
-          '[Review] ✅ Firestore updated for company=${widget.companyID} '
+          '[Review]   Firestore updated for company=${widget.companyID} '
           'strengths=$strengthLabels weaknesses=$weaknessLabels',
         );
       } catch (e, st) {
         debugPrint(
-          '[Review] ⚠️ Firestore strength/weakness write failed: $e\n$st',
+          '[Review] Firestore strength/weakness write failed: $e\n$st',
         );
         // Non-critical — will retry on next review submission.
       }

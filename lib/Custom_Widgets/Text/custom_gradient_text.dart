@@ -32,8 +32,8 @@ class CustomGradientText extends StatelessWidget {
   Widget build(BuildContext context) {
     // Flutter’s TextStyle does NOT natively support a gradient property.
     //So in short:
-    //Solid color → just TextStyle(color: ...) ✅
-    //Gradient color → must use foreground Paint or ShaderMask ❌
+    //Solid color → just TextStyle(color: ...) 
+    //Gradient color → must use foreground Paint or ShaderMask
 
     return ShaderMask(
       shaderCallback: (bounds) => LinearGradient(

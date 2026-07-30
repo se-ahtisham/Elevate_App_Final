@@ -8,7 +8,7 @@ class SkillTestTile extends StatelessWidget {
   final VoidCallback? onTap;
   final String? imagePath;
   final IconData? icon;
-  final Gradient? gradient; // ✅ Optional gradient parameter
+  final Gradient? gradient; //  Optional gradient parameter
 
   const SkillTestTile({
     super.key,
@@ -18,7 +18,7 @@ class SkillTestTile extends StatelessWidget {
     this.onTap,
     this.imagePath,
     this.icon,
-    this.gradient, // ✅
+    this.gradient, //
   });
 
   @override
@@ -30,7 +30,7 @@ class SkillTestTile extends StatelessWidget {
       decoration: BoxDecoration(
         gradient:
             gradient ??
-            ElevateGradientColors.grayToBlack, // ✅ fallback to default
+            ElevateGradientColors.grayToBlack, //  fallback to default
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
