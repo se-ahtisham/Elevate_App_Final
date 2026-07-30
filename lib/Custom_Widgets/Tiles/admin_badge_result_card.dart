@@ -55,6 +55,8 @@ class AdminBadgeResultCard extends StatelessWidget {
                       color: ElevateColor.gray,
                       fontWeight: FontWeight.w700,
                       lineHeight: 1.0,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
@@ -95,4 +97,3 @@ class AdminBadgeResultCard extends StatelessWidget {
     );
   }
 }
-

@@ -19,12 +19,15 @@ class JobSeekerWorkingCompanies extends StatefulWidget {
       _JobSeekerWorkingCompaniesState();
 }
 
-class _JobSeekerWorkingCompaniesState
-    extends State<JobSeekerWorkingCompanies> {
+class _JobSeekerWorkingCompaniesState extends State<JobSeekerWorkingCompanies> {
   final firebaseService = FirebaseService();
 
   List<CompanyEmployeeModel> myEmployments = [];
   Map<String, CompanyModel> companiesByID = {};
+  // employeeID -> original company name, for manual entries that didn't
+  // match any registered company (so we don't have to re-derive the name
+  // by parsing the employeeID string later).
+  Map<String, String> manualCompanyNames = {};
   bool isLoading = true;
 
   @override
@@ -39,14 +42,16 @@ class _JobSeekerWorkingCompaniesState
 
     try {
       final seeker = await firebaseService.getJobSeeker(widget.jobSeekerID);
-      final employments =
-          await firebaseService.getEmployeesForJobSeeker(widget.jobSeekerID);
+      final employments = await firebaseService.getEmployeesForJobSeeker(
+        widget.jobSeekerID,
+      );
       final companies = await firebaseService.listAllCompanies();
       final map = {for (final c in companies) c.companyID: c};
 
       // Also process manual job experiences/internships from the job seeker profile
       final List<CompanyEmployeeModel> combined = List.from(employments);
-      
+      final Map<String, String> manualNames = {};
+
       if (seeker != null) {
         for (final exp in seeker.jobExperience) {
           // Check if this manual company already exists in employments to avoid duplicates
@@ -62,15 +67,23 @@ class _JobSeekerWorkingCompaniesState
             orElse: () => CompanyModel(companyID: '', companyName: exp.company),
           );
 
+          final employeeID = 'manual_${exp.company}_${exp.jobTitle}';
+
           combined.add(
             CompanyEmployeeModel(
-              employeeID: 'manual_${exp.company}_${exp.jobTitle}',
+              employeeID: employeeID,
               jobSeekerID: widget.jobSeekerID,
-              companyID: matchedCompany.companyID, // Empty if not a registered company
+              companyID:
+                  matchedCompany.companyID, // Empty if not a registered company
               position: exp.jobTitle,
               employeeStatus: 'Terminated', // Treated as past experience
             ),
           );
+
+          // Preserve the real name — don't rely on re-parsing employeeID.
+          if (matchedCompany.companyID.isEmpty) {
+            manualNames[employeeID] = exp.company;
+          }
         }
       }
 
@@ -78,6 +91,7 @@ class _JobSeekerWorkingCompaniesState
       setState(() {
         myEmployments = combined;
         companiesByID = map;
+        manualCompanyNames = manualNames;
         isLoading = false;
       });
     } catch (_) {
@@ -110,26 +124,31 @@ class _JobSeekerWorkingCompaniesState
                       child: CircularProgressIndicator(color: Colors.black),
                     )
                   : myEmployments.isEmpty
-                      ? _buildEmpty()
-                      : ListView.builder(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 20,
-                          ),
-                          itemCount: myEmployments.length,
-                          itemBuilder: (context, index) {
-                            final emp = myEmployments[index];
-                            final isManual = emp.employeeID.startsWith('manual_');
-                            final company = emp.companyID.isNotEmpty 
-                                ? companiesByID[emp.companyID] 
-                                : CompanyModel(companyID: '', companyName: emp.employeeID.split('_')[1]);
-                            return _CompanyEmploymentCard(
-                              emp: emp,
-                              company: company,
-                              isManual: isManual,
-                            );
-                          },
-                        ),
+                  ? _buildEmpty()
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 20,
+                      ),
+                      itemCount: myEmployments.length,
+                      itemBuilder: (context, index) {
+                        final emp = myEmployments[index];
+                        final isManual = emp.employeeID.startsWith('manual_');
+                        final company = emp.companyID.isNotEmpty
+                            ? companiesByID[emp.companyID]
+                            : CompanyModel(
+                                companyID: '',
+                                companyName:
+                                    manualCompanyNames[emp.employeeID] ??
+                                    'Company',
+                              );
+                        return _CompanyEmploymentCard(
+                          emp: emp,
+                          company: company,
+                          isManual: isManual,
+                        );
+                      },
+                    ),
             ),
           ],
         ),
@@ -164,7 +183,8 @@ class _JobSeekerWorkingCompaniesState
           ),
           const SizedBox(height: 8),
           const CustomText(
-            text: "You haven't been added to any company\nor added any work experience.",
+            text:
+                "You haven't been added to any company\nor added any work experience.",
             fontSize: 13,
             color: ElevateColor.whitegray,
             textAlign: TextAlign.center,
@@ -182,7 +202,11 @@ class _CompanyEmploymentCard extends StatelessWidget {
   final CompanyModel? company;
   final bool isManual;
 
-  const _CompanyEmploymentCard({required this.emp, this.company, this.isManual = false});
+  const _CompanyEmploymentCard({
+    required this.emp,
+    this.company,
+    this.isManual = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -235,9 +259,7 @@ class _CompanyEmploymentCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   CustomText(
-                    text: emp.position.isNotEmpty
-                        ? emp.position
-                        : 'Employee',
+                    text: emp.position.isNotEmpty ? emp.position : 'Employee',
                     fontSize: 12,
                     color: ElevateColor.whitegray,
                     fontWeight: FontWeight.w500,
@@ -313,11 +335,13 @@ class _CompanyEmploymentCard extends StatelessWidget {
 
             const SizedBox(width: 8),
 
-
             // ── Arrow → Review ────────────────────────────────
             emp.companyID.isEmpty
                 ? Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(8),
@@ -331,8 +355,7 @@ class _CompanyEmploymentCard extends StatelessWidget {
                   )
                 : GestureDetector(
                     onTap: () {
-                      Navigator.push(
-                        context,
+                      Navigator.of(context, rootNavigator: true).push(
                         SlideLeftRoute(
                           page: CompanyReviewScreen(
                             companyID: emp.companyID,

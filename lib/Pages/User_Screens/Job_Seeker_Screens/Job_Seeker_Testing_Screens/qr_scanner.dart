@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Testing_Screens/device_linked_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
-import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Testing_Screens/test_web_config.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
@@ -39,7 +39,9 @@ class QrScannerState extends State<QrScanner> {
     }
 
     // 2. Extract the session ID parameter 's'
-    final sessionId = uri.queryParameters['s'];
+    final sessionId =
+        uri.queryParameters['s'] ??
+        (code.startsWith('elevate_login_') ? code : null);
     if (sessionId == null || sessionId.isEmpty) {
       _showError("Not a valid Elevate login session.");
       return;
@@ -57,50 +59,52 @@ class QrScannerState extends State<QrScanner> {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(color: Color(0xFFD97706)),
+        ),
       );
     }
 
     try {
       final userEmail = currentUser.email ?? "";
       final userUid = currentUser.uid;
-      final userName = currentUser.displayName ?? userEmail.split('@')[0];
+      final userName =
+          currentUser.displayName ??
+          (userEmail.contains('@') ? userEmail.split('@')[0] : "Candidate");
 
       // 4. Update the Firestore session document to "paired"
       await FirebaseFirestore.instance
           .collection('qr_sessions')
           .doc(sessionId)
-          .update({
+          .set({
             'status': 'paired',
             'email': userEmail,
             'name': userName,
+            'displayName': userName,
             'jobSeekerID': userUid,
             'pairedAt': FieldValue.serverTimestamp(),
             'updatedAt': FieldValue.serverTimestamp(),
-          });
+          }, SetOptions(merge: true));
 
       if (!mounted) return;
       Navigator.pop(context); // Close loading dialog
 
-      // Success feedback
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Logged in successfully on desktop!")),
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const DeviceLinkedScreen()),
       );
-
-      Navigator.pop(context); // Pop back to Skill Verification page
     } catch (e) {
       if (!mounted) return;
       Navigator.pop(context); // Close loading dialog
-
       _showError("Failed to pair device: $e");
     }
   }
 
   void _showError(String message) async {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.redAccent),
+    );
     handled = false;
     await controller.start();
   }

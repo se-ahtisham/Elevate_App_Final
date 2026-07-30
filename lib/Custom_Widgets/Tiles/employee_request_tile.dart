@@ -51,28 +51,52 @@ class EmployeeRequestTile extends StatelessWidget {
             SizedBox(height: 10),
             Expanded(
               child: Row(
+                // "width" is a required caller-supplied parameter,
+                // but the two buttons below are fixed at 130px each
+                // (270 total + spacing + padding = ~300 minimum).
+                // If a caller passes a smaller width, this Row would
+                // overflow horizontally with no fallback. Wrapping
+                // in a horizontal SingleChildScrollView keeps the
+                // buttons at their intended fixed size while letting
+                // the row scroll instead of overflowing when space
+                // is tight.
                 children: [
-                  TexxtButton(
-                    text: "Reject",
-                    height: 30,
-                    width: 130,
-                    textSize: 11,
-                    textColor: ElevateColor.gray,
-                    textWeight: FontWeight.bold,
-                    borderRadius: 50,
-                    backgroundColor: const Color.fromARGB(255, 230, 230, 230),
-                    borderWidth: 0,
-                    onTap: rejectonTap,
-                  ),
-                  SizedBox(width: 10),
-                  TextButtonGradient(
-                    text: "Accept",
-                    width: 130,
-                    height: 30,
-                    textSize: 11,
-                    textWeight: FontWeight.bold,
-                    borderRadius: 50,
-                    onTap: acceptonTap,
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const ClampingScrollPhysics(),
+                      child: Row(
+                        children: [
+                          TexxtButton(
+                            text: "Reject",
+                            height: 30,
+                            width: 130,
+                            textSize: 11,
+                            textColor: ElevateColor.gray,
+                            textWeight: FontWeight.bold,
+                            borderRadius: 50,
+                            backgroundColor: const Color.fromARGB(
+                              255,
+                              230,
+                              230,
+                              230,
+                            ),
+                            borderWidth: 0,
+                            onTap: rejectonTap,
+                          ),
+                          SizedBox(width: 10),
+                          TextButtonGradient(
+                            text: "Accept",
+                            width: 130,
+                            height: 30,
+                            textSize: 11,
+                            textWeight: FontWeight.bold,
+                            borderRadius: 50,
+                            onTap: acceptonTap,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),

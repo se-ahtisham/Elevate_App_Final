@@ -455,8 +455,7 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
             ),
           ),
           onTap: () {
-            Navigator.push(
-              context,
+            Navigator.of(context, rootNavigator: true).push(
               MaterialPageRoute(
                 builder: (context) => const CompanyUploadJobScreen(),
               ),
@@ -648,8 +647,7 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
             child: InkWell(
               borderRadius: BorderRadius.circular(24),
               onTap: () {
-                Navigator.push(
-                  context,
+                Navigator.of(context, rootNavigator: true).push(
                   MaterialPageRoute(
                     builder: (context) => ShowAppliedCandidatesScreen(job: job),
                   ),
@@ -669,3 +667,4 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
     );
   }
 }
+

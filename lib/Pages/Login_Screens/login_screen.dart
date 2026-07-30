@@ -6,7 +6,6 @@ import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Test_Fields/custom_Text_Field.dart';
 import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Database/Online_Database/auth_provider.dart';
-import 'package:elevate_app/Database/Mock_Data/demo_data_seeder.dart';
 import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
 import 'package:elevate_app/Navigations/admin_bottom_navigation.dart';
 import 'package:elevate_app/Navigations/company_bottom_navigation.dart';
@@ -266,14 +265,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   return;
                                 }
 
-                                 final success = await ref
-                                     .read(authProvider.notifier)
-                                     .login(
-                                       emailController.text.trim(),
-                                       passwordController.text.trim(),
-                                     );
+                                final success = await ref
+                                    .read(authProvider.notifier)
+                                    .login(
+                                      emailController.text.trim(),
+                                      passwordController.text.trim(),
+                                    );
 
-                                 if (!context.mounted) return;
+                                if (!context.mounted) return;
 
                                 if (!success) {
                                   ScaffoldMessenger.of(context).showSnackBar(
@@ -345,7 +344,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           );
                         },
                       ),
+
                       SizedBox(height: 20),
+
+                      // ── SEED DEMO DATA (single seeder call) ─────────────
                       TexxtButton(
                         text: "Seed Demo Data (TESTING)",
                         textSize: 13,
@@ -357,30 +359,59 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         onTap: () async {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Step 1/2 — Seeding users, jobs & skills...'),
+                              content: Text('Seeding demo data...'),
                               duration: Duration(seconds: 4),
                             ),
                           );
                           try {
-                            // Step 1: Seed general demo data (users, skills, jobs, posts)
-                            await DemoDataSeeder().seedAllData();
+                            await FirebaseService().seedAllDemoData();
 
                             if (!context.mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Step 2/2 — Seeding portfolio demo project...'),
-                                duration: Duration(seconds: 4),
+                                content: Text(
+                                  '✅ Demo Data Seeded! Login: sara.demo@elevate.demo / Test@123',
+                                ),
+                                backgroundColor: Colors.green,
+                                duration: Duration(seconds: 6),
                               ),
                             );
+                          } catch (e) {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error: $e')),
+                            );
+                          }
+                        },
+                      ),
 
-                            // Step 2: Seed the demo portfolio project with .txt download file
-                            await FirebaseService().seedDemoProject();
+                      SizedBox(height: 12),
+
+                      // ── DELETE DEMO DATA (cleanup) ──────────────────────
+                      TexxtButton(
+                        text: "Delete Demo Data (TESTING)",
+                        textSize: 13,
+                        textColor: Colors.white,
+                        textWeight: FontWeight.w500,
+                        textAlign: TextAlign.center,
+                        backgroundColor: Colors.grey.shade800,
+                        height: 50,
+                        onTap: () async {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Deleting demo data...'),
+                              duration: Duration(seconds: 3),
+                            ),
+                          );
+                          try {
+                            await FirebaseService().deleteDemoData();
 
                             if (!context.mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('✅ Demo Data Seeded Successfully!'),
+                                content: Text(' Demo data deleted.'),
                                 backgroundColor: Colors.green,
+                                duration: Duration(seconds: 4),
                               ),
                             );
                           } catch (e) {

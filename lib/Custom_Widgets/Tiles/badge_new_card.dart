@@ -46,7 +46,7 @@ class BadgeNewCard extends StatelessWidget {
               radius: 40,
               backgroundColor: Colors.white,
               backgroundImage: imagePath != null && imagePath!.isNotEmpty
-                  ? AssetImage("lib/Resources/Images/Badges/$imagePath")
+                  ? NetworkImage(imagePath!)
                   : null,
               child: imagePath == null || imagePath!.isEmpty
                   ? const Icon(Icons.add, color: Colors.black, size: 30)

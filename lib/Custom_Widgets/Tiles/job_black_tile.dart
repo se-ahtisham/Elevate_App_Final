@@ -4,29 +4,6 @@ import 'package:elevate_app/Resources/Colors/Gradient_Colors/gradient_colors.dar
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 
-
-/*JobBlackTile
-└─ Container
-   └─ Column
-      ├─ Column
-      │  ├─ CustomText (title)
-      │  ├─ CustomText (company • location)
-      │  ├─ SizedBox
-      │  └─ SizedBox
-      │     └─ SingleChildScrollView
-      │        └─ Column
-      │           └─ CustomText (description)
-      │
-      ├─ SizedBox
-      │
-      └─ Expanded
-         └─ Row
-            ├─ CustomTextBox (jobMode)
-            ├─ SizedBox
-            ├─ CustomTextBox (jobType)
-            ├─ SizedBox
-            └─ CustomTextBox (salary) */
-
 class JobBlackTile extends StatelessWidget {
   final String title;
   final String company;
@@ -73,6 +50,12 @@ class JobBlackTile extends StatelessWidget {
                   color: ElevateColor.white,
                   fontWeight: FontWeight.w600,
                   textAlign: TextAlign.left,
+                  // Card height is fixed at 200 and the bottom Row is
+                  // wrapped in Expanded — if this title wraps to
+                  // multiple lines it eats into that budget and can
+                  // push Expanded into negative space. Cap to 1 line.
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 CustomText(
                   text: "$company • $location",
@@ -80,8 +63,11 @@ class JobBlackTile extends StatelessWidget {
                   color: const Color.fromARGB(255, 187, 187, 187),
                   fontWeight: FontWeight.normal,
                   textAlign: TextAlign.left,
+                  // Same reasoning as title above.
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                SizedBox(height:10),
+                SizedBox(height: 10),
                 SizedBox(
                   height: 40,
                   child: SingleChildScrollView(
@@ -112,14 +98,14 @@ class JobBlackTile extends StatelessWidget {
                       textColor: ElevateColor.white,
                       borderWidth: 0.8,
                       borderColor: const Color.fromARGB(255, 190, 190, 190),
-                       paddingLeft: 20,
+                      paddingLeft: 20,
                       paddingRight: 20,
                       textSize: 10,
                       height: 30,
                     ),
-        
+
                   if (jobMode.isNotEmpty) const SizedBox(width: 15),
-        
+
                   if (jobType.isNotEmpty)
                     CustomTextBox(
                       text: jobType,
@@ -133,9 +119,9 @@ class JobBlackTile extends StatelessWidget {
                       textSize: 10,
                       height: 30,
                     ),
-        
+
                   if (jobType.isNotEmpty) SizedBox(width: 15),
-        
+
                   if (salary.isNotEmpty)
                     CustomTextBox(
                       text: salary,
@@ -144,7 +130,7 @@ class JobBlackTile extends StatelessWidget {
                       textColor: ElevateColor.white,
                       borderWidth: 0.8,
                       borderColor: const Color.fromARGB(255, 190, 190, 190),
-                       paddingLeft: 20,
+                      paddingLeft: 20,
                       paddingRight: 20,
                       textSize: 10,
                       height: 30,

@@ -62,15 +62,23 @@ class WhiteBlackUser extends StatelessWidget {
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 10.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                UserDescriptionShort(
-                  imageURL: imageURL,
-                  name: name,
-                  shortDescription: shortDescription,
-                ),
-              ],
+            // tileHeight is caller-configurable with no minimum
+            // guard. Wrapping in a SingleChildScrollView keeps this
+            // safe from overflow if a smaller tileHeight is passed
+            // or UserDescriptionShort needs more room than expected.
+            child: SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  UserDescriptionShort(
+                    imageURL: imageURL,
+                    name: name,
+                    shortDescription: shortDescription,
+                  ),
+                ],
+              ),
             ),
           ),
         ),

@@ -29,6 +29,8 @@ class PlatformFilterChip extends StatelessWidget {
         child: CustomText(
           text: label,
 
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           color: isSelected
               ? const Color.fromARGB(255, 235, 235, 235)
               : Colors.black,

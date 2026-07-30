@@ -277,8 +277,7 @@ class JobSelectionState extends ConsumerState<JobSelection> {
                         borderColor: ElevateColor.gray,
                         borderWidth: 1,
                         onTap: () {
-                          Navigator.push(
-                            context,
+                          Navigator.of(context, rootNavigator: true).push(
                             MaterialPageRoute(
                               builder: (context) => UserColdEmail(
                                 jobTitle: widget.jobPost.title,
@@ -328,3 +327,4 @@ class JobSelectionState extends ConsumerState<JobSelection> {
     );
   }
 }
+

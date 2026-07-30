@@ -72,11 +72,17 @@ class UserPostTile extends StatelessWidget {
                         shortDescription: shortDescription,
                       ),
                     ),
-                    CustomText(
-                      text: timed,
-                      fontSize: 10,
-                      color: ElevateColor.gray,
-                      fontWeight: FontWeight.w500,
+                    const SizedBox(width: 8),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 90),
+                      child: CustomText(
+                        text: timed,
+                        fontSize: 10,
+                        color: ElevateColor.gray,
+                        fontWeight: FontWeight.w500,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                 ),

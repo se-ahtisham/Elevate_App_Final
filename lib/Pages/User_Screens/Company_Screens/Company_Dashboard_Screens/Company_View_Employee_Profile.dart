@@ -126,8 +126,7 @@ class _CompanyViewEmployeeProfileState
                                   borderColor: ElevateColor.gray,
                                   borderWidth: 1,
                                   onTap: () {
-                                    Navigator.push(
-                                      context,
+                                    Navigator.of(context, rootNavigator: true).push(
                                       MaterialPageRoute(
                                         builder: (context) =>
                                             CompanyMessageScreen(
@@ -260,7 +259,7 @@ class _CompanyViewEmployeeProfileState
                                 title: 'Java Development',
                                 subtitle: 'Experienced Coding',
                                 imagePath:
-                                    'lib/Resources/Images/Coding_Badges/Pure/pure_hard.png',
+                                    'https://ui-avatars.com/api/?name=Java&background=random&color=fff&size=128',
                                 year: '2025',
                               ),
                             ],
@@ -314,8 +313,7 @@ class _CompanyViewEmployeeProfileState
                             borderColor: ElevateColor.gray,
                             borderWidth: 1,
                             onTap: () {
-                              Navigator.push(
-                                context,
+                              Navigator.of(context, rootNavigator: true).push(
                                 MaterialPageRoute(
                                   builder: (context) => CompanyViewUserPost(
                                     authorID: seeker.jobSeekerID,
@@ -337,3 +335,4 @@ class _CompanyViewEmployeeProfileState
     );
   }
 }
+

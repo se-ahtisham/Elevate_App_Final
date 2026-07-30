@@ -70,8 +70,8 @@ class ManageWhiteBlackFull extends StatelessWidget {
         Container(
           height: tileHeight,
           width: firstContainerWidth,
-          padding:   EdgeInsets.only(left: 16),
-          decoration:   BoxDecoration(
+          padding: EdgeInsets.only(left: 16),
+          decoration: BoxDecoration(
             color: firstContainerColor,
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(18),
@@ -82,7 +82,6 @@ class ManageWhiteBlackFull extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
               CustomText(
                 text: titleText,
                 fontSize: titleFontSize,
@@ -90,6 +89,12 @@ class ManageWhiteBlackFull extends StatelessWidget {
                 fontWeight: titleFontWeight,
                 lineHeight: lineHeight,
                 textAlign: TextAlign.left,
+                // tileHeight and both font sizes are caller-
+                // configurable; without a line cap a long titleText
+                // or a larger titleFontSize can wrap and overflow
+                // the fixed height.
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
 
               SizedBox(height: sizedBetween),
@@ -101,8 +106,12 @@ class ManageWhiteBlackFull extends StatelessWidget {
                 fontWeight: subtitleFontWeight,
                 lineHeight: lineHeight,
                 textAlign: TextAlign.left,
+                // Same reasoning as titleText above — subtitle is
+                // larger (20) by default, making this the higher-
+                // risk line.
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-
             ],
           ),
         ),
@@ -111,7 +120,7 @@ class ManageWhiteBlackFull extends StatelessWidget {
         Container(
           width: secondContainerWidth,
           height: tileHeight,
-          decoration:  BoxDecoration(
+          decoration: BoxDecoration(
             gradient: ElevateGradientColors.grayToBlack,
             borderRadius: BorderRadius.only(
               topRight: Radius.circular(18),
@@ -131,7 +140,6 @@ class ManageWhiteBlackFull extends StatelessWidget {
             ),
           ),
         ),
-
       ],
     );
   }

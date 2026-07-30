@@ -35,6 +35,8 @@ class JobSkillFilterChip extends StatelessWidget {
           fontSize: 13,
           fontWeight: FontWeight.w600,
           color: isSelected ? Colors.white : Colors.black,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ),
     );

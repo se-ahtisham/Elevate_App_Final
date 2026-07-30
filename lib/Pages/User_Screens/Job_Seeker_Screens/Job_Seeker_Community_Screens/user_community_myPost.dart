@@ -169,8 +169,7 @@ class UserCommunityMypostState extends ConsumerState<UserCommunityMypost>
   }
 
   void openComments(PostModel post) {
-    Navigator.push(
-      context,
+    Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
         builder: (context) => CommunityComments(
           postID: post.postID,
@@ -205,7 +204,7 @@ class UserCommunityMypostState extends ConsumerState<UserCommunityMypost>
               hintText: "Post Description",
               imageURL: user.profilePic.isNotEmpty
                   ? user.profilePic
-                  : "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg",
+                  : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(user.name)}&background=random&color=fff&size=128',
               name: user.name,
               shortDescription: "Job Seeker",
               titleController: titleController,
@@ -250,9 +249,7 @@ class UserCommunityMypostState extends ConsumerState<UserCommunityMypost>
                       isLiked: uid != null && post.likedByUserIDs.contains(uid),
                       imageURL: post.authorProfilePic.isNotEmpty
                           ? post.authorProfilePic
-                          : (post.authorType.toLowerCase() == 'company'
-                              ? "lib/Resources/Images/Profile_Images/Company_Logo.jpg"
-                              : "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg"),
+                          : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(post.authorName)}&background=random&color=fff&size=128',
                       name: post.authorName,
                       shortDescription: "Job Seeker",
                       onDeleteTap: () => deletePost(post),
@@ -269,3 +266,4 @@ class UserCommunityMypostState extends ConsumerState<UserCommunityMypost>
     );
   }
 }
+

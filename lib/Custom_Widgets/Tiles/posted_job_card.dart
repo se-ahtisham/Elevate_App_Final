@@ -50,71 +50,92 @@ class PostedJobCard extends StatelessWidget {
                 ),
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-                  child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF4A4A4A),
-                          shape: BoxShape.circle,
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          initials,
-                          style: const TextStyle(
-                            color: ElevateColor.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                  // The fixed 102px card height is already tight with
+                  // just the default content once all the nested
+                  // padding is accounted for. Wrapping in a
+                  // SingleChildScrollView keeps it from throwing a
+                  // hard overflow if content ever needs a touch more
+                  // vertical space (larger text scale, etc).
+                  child: SingleChildScrollView(
+                    physics: const ClampingScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
                           children: [
-                            Text(
-                              title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 13.2,
-                                color: ElevateColor.gray,
-                                fontWeight: FontWeight.w600,
-                                height: 1.0,
+                            Container(
+                              width: 36,
+                              height: 36,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF4A4A4A),
+                                shape: BoxShape.circle,
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                initials,
+                                style: const TextStyle(
+                                  color: ElevateColor.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
-                            Text(
-                              companyAndLocation,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 9,
-                                color: Color(0xFF9A9A9A),
-                                fontWeight: FontWeight.w400,
-                                height: 1.2,
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 13.2,
+                                      color: ElevateColor.gray,
+                                      fontWeight: FontWeight.w600,
+                                      height: 1.0,
+                                    ),
+                                  ),
+                                  Text(
+                                    companyAndLocation,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 9,
+                                      color: Color(0xFF9A9A9A),
+                                      fontWeight: FontWeight.w400,
+                                      height: 1.2,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      for (int i = 0; i < tags.length; i++) ...[
-                        _Tag(text: tags[i]),
-                        if (i != tags.length - 1) const SizedBox(width: 6),
+                        const SizedBox(height: 8),
+                        // tags is a caller-supplied list with no
+                        // length limit, and there was no
+                        // scroll/wrap here — more or longer tags
+                        // than the defaults would overflow
+                        // horizontally. Wrapped in a horizontal
+                        // SingleChildScrollView so it scrolls
+                        // instead.
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const ClampingScrollPhysics(),
+                          child: Row(
+                            children: [
+                              for (int i = 0; i < tags.length; i++) ...[
+                                _Tag(text: tags[i]),
+                                if (i != tags.length - 1)
+                                  const SizedBox(width: 6),
+                              ],
+                            ],
+                          ),
+                        ),
                       ],
-                    ],
-                  ),
-                ],
+                    ),
                   ),
                 ),
               ),
@@ -180,6 +201,8 @@ class _Tag extends StatelessWidget {
       ),
       child: Text(
         text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: const TextStyle(
           fontSize: 8.5,
           color: Color(0xFF767676),

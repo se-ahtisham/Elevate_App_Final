@@ -9,6 +9,7 @@ import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Por
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:elevate_app/Custom_Widgets/Tiles/job_seeker_portfolio_tile.dart';
 
 class PorfolioScreen extends ConsumerStatefulWidget {
   /// If provided, shows the portfolio of another job seeker (read-only).
@@ -39,10 +40,33 @@ class _PorfolioScreenState extends ConsumerState<PorfolioScreen> {
   void initState() {
     super.initState();
     loadProjects();
+
+    // If we're viewing our own portfolio and auth hasn't finished loading
+    // the job seeker yet, effectiveJobSeekerID will be '' on first build.
+    // Re-load automatically once the job seeker becomes available so we
+    // don't get stuck showing "No projects yet" for a user who has projects.
+    if (isOwnPortfolio) {
+      ref.listenManual(authProvider, (previous, next) {
+        final wasMissing = previous?.jobSeeker?.jobSeekerID == null;
+        final nowPresent = next.jobSeeker?.jobSeekerID != null;
+        if (wasMissing && nowPresent) {
+          loadProjects();
+        }
+      });
+    }
   }
 
   Future<void> loadProjects() async {
     if (!mounted) return;
+    if (effectiveJobSeekerID.isEmpty) {
+      // Auth hasn't resolved a job seeker yet; nothing to fetch.
+      setState(() {
+        projects = [];
+        isLoading = false;
+      });
+      return;
+    }
+
     setState(() => isLoading = true);
 
     final loaded = await firebaseService.getProjectsForJobSeeker(
@@ -85,8 +109,11 @@ class _PorfolioScreenState extends ConsumerState<PorfolioScreen> {
                           color: Colors.white.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(Icons.arrow_back_ios_new_rounded,
-                            size: 18, color: Colors.white),
+                        child: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          size: 18,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -105,8 +132,7 @@ class _PorfolioScreenState extends ConsumerState<PorfolioScreen> {
                       height: 50,
                       width: 150,
                       onTap: () async {
-                        await Navigator.push(
-                          context,
+                        await Navigator.of(context, rootNavigator: true).push(
                           MaterialPageRoute(
                             builder: (context) => const NewPortfolioScreen(),
                           ),
@@ -128,7 +154,11 @@ class _PorfolioScreenState extends ConsumerState<PorfolioScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.work_outline, size: 48, color: Colors.grey.shade400),
+                          Icon(
+                            Icons.work_outline,
+                            size: 48,
+                            color: Colors.grey.shade400,
+                          ),
                           const SizedBox(height: 12),
                           const CustomText(
                             text: "No projects yet",
@@ -157,108 +187,22 @@ class _PorfolioScreenState extends ConsumerState<PorfolioScreen> {
                       separatorBuilder: (_, __) => const SizedBox(height: 14),
                       itemBuilder: (context, index) {
                         final project = projects[index];
-                        final techLabel = project.techStack.isNotEmpty
-                            ? project.techStack.join(', ')
-                            : 'Developer';
-
-                        return GestureDetector(
+                        return JobSeekerPortfolioTile(
+                          project: project,
                           onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    JobSeekerPortfolioDescriptionScreen(
-                                      project: project,
-                                    ),
-                              ),
-                            ).then((_) => isOwnPortfolio ? loadProjects() : null);
+                            Navigator.of(context, rootNavigator: true)
+                                .push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        JobSeekerPortfolioDescriptionScreen(
+                                          project: project,
+                                        ),
+                                  ),
+                                )
+                                .then(
+                                  (_) => isOwnPortfolio ? loadProjects() : null,
+                                );
                           },
-                          child: Container(
-                            padding: const EdgeInsets.all(18),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF5F5F5),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: const Color(0xFFE0E0E0),
-                                width: 0.5,
-                              ),
-                            ),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Project icon
-                                Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF3C3C3C),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Icon(
-                                    Icons.code_rounded,
-                                    color: Colors.white,
-                                    size: 22,
-                                  ),
-                                ),
-                                const SizedBox(width: 14),
-                                // Content
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      CustomText(
-                                        text: project.projectTitle,
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.black87,
-                                        maxLines: 1,
-                                      ),
-                                      const SizedBox(height: 4),
-                                      CustomText(
-                                        text: project.projectDescription.isNotEmpty
-                                            ? project.projectDescription
-                                            : "No description",
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w400,
-                                        color: Colors.black54,
-                                        maxLines: 2,
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF3C3C3C),
-                                          borderRadius: BorderRadius.circular(20),
-                                        ),
-                                        child: Text(
-                                          techLabel,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                const Padding(
-                                  padding: EdgeInsets.only(top: 10),
-                                  child: Icon(
-                                    Icons.arrow_forward_ios_rounded,
-                                    size: 16,
-                                    color: Colors.black38,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
                         );
                       },
                     ),

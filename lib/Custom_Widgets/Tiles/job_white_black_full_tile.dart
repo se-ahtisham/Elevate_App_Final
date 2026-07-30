@@ -92,6 +92,9 @@ class JobWhiteBlackFullTile extends StatelessWidget {
                 fontWeight: titleFontWeight,
                 lineHeight: 0.8,
                 textAlign: TextAlign.left,
+
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
               SizedBox(height: spaceBetweenTitleSubtitle),
               CustomText(
@@ -101,35 +104,43 @@ class JobWhiteBlackFullTile extends StatelessWidget {
                 fontWeight: subtitleFontWeight,
                 lineHeight: 0.8,
                 textAlign: TextAlign.left,
+                // Same reasoning as titleText above.
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
               SizedBox(height: spaceBetweenSubtitleBlocks),
-              Row(
-                children: [
-                  CustomTextBox(
-                    text: jobModeText,
-                    backgroundColor: const Color.fromARGB(255, 231, 231, 231),
-                    borderRadius: 50,
-                    textSize: blockFontSize,
-                    width: smallBoxWdith,
-                  ),
-                  SizedBox(width: sizedBetween),
-                  CustomTextBox(
-                    text: jobTypeText,
-                    backgroundColor: const Color.fromARGB(255, 231, 231, 231),
-                    borderRadius: 50,
-                    textSize: blockFontSize,
-                    width: smallBoxWdith,
-                  ),
-                  SizedBox(width: sizedBetween),
-                  CustomTextBox(
-                    text: salaryText,
-                    backgroundColor: const Color.fromARGB(255, 231, 231, 231),
-                    borderRadius: 50,
-                    textSize: blockFontSize,
-                    width: smallBoxWdith,
-                  ),
-                  SizedBox(width: sizedBetween),
-                ],
+
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: const ClampingScrollPhysics(),
+                child: Row(
+                  children: [
+                    CustomTextBox(
+                      text: jobModeText,
+                      backgroundColor: const Color.fromARGB(255, 231, 231, 231),
+                      borderRadius: 50,
+                      textSize: blockFontSize,
+                      width: smallBoxWdith,
+                    ),
+                    SizedBox(width: sizedBetween),
+                    CustomTextBox(
+                      text: jobTypeText,
+                      backgroundColor: const Color.fromARGB(255, 231, 231, 231),
+                      borderRadius: 50,
+                      textSize: blockFontSize,
+                      width: smallBoxWdith,
+                    ),
+                    SizedBox(width: sizedBetween),
+                    CustomTextBox(
+                      text: salaryText,
+                      backgroundColor: const Color.fromARGB(255, 231, 231, 231),
+                      borderRadius: 50,
+                      textSize: blockFontSize,
+                      width: smallBoxWdith,
+                    ),
+                    SizedBox(width: sizedBetween),
+                  ],
+                ),
               ),
             ],
           ),

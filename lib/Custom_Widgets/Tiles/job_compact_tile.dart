@@ -49,47 +49,52 @@ class JobCompactTile extends StatelessWidget {
                     horizontal: 24,
                     vertical: 10,
                   ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      /// TITLE
-                      CustomText(
-                        text: title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1A1A1A),
-                      ),
-
-                      const SizedBox(height: 2),
-
-                      /// COMPANY + LOCATION
-                      CustomText(
-                        text: "$company · $location",
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        fontSize: 11.5,
-                        color: Color(0xFF8C8C8C),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      /// TAGS
-                      SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: [
-                            for (int i = 0; i < tags.length; i++) ...[
-                              _buildTag(tags[i]),
-                              if (i != tags.length - 1)
-                                const SizedBox(width: 6),
-                            ],
-                          ],
+                  child: SingleChildScrollView(
+                    physics: const ClampingScrollPhysics(),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        /// TITLE
+                        CustomText(
+                          text: title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1A1A1A),
                         ),
-                      ),
-                    ],
+
+                        const SizedBox(height: 2),
+
+                        /// COMPANY + LOCATION
+                        CustomText(
+                          text: "$company · $location",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          fontSize: 11.5,
+                          color: Color(0xFF8C8C8C),
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        /// TAGS
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const ClampingScrollPhysics(),
+                          child: Row(
+                            children: [
+                              for (int i = 0; i < tags.length; i++) ...[
+                                _buildTag(tags[i]),
+                                if (i != tags.length - 1)
+                                  const SizedBox(width: 6),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

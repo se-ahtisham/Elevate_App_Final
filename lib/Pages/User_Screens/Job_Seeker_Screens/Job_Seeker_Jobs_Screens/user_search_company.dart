@@ -135,8 +135,7 @@ class UserSearchCompanyState extends ConsumerState<UserSearchCompany> {
                                   borderWidth: 1,
                                   borderColor: const Color(0xFFE0E0E0),
                                   onTap: () {
-                                    Navigator.push(
-                                      context,
+                                    Navigator.of(context, rootNavigator: true).push(
                                       MaterialPageRoute(
                                         builder: (context) =>
                                             UserCheckCompanyProfile(
@@ -159,3 +158,4 @@ class UserSearchCompanyState extends ConsumerState<UserSearchCompany> {
     );
   }
 }
+

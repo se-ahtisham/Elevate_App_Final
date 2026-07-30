@@ -117,8 +117,7 @@ class CommunityViewCompanyProfileState
         otherAvatar: otherAvatar,
       );
       if (!mounted) return;
-      Navigator.push(
-        context,
+      Navigator.of(context, rootNavigator: true).push(
         MaterialPageRoute(
           builder: (_) => ChatRoomScreen(
             chatID: chatID,

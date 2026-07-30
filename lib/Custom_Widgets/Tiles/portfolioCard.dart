@@ -68,11 +68,21 @@ class PortfolioCard extends StatelessWidget {
                     color: isActive ? Colors.white : Colors.grey,
                   ),
                 ),
-                child: Text(
-                  role,
-                  style: TextStyle(
-                    color: isActive ? Colors.white : Colors.black54,
-                    fontSize: 11,
+                child: ConstrainedBox(
+                  // role has no width bound and sits as a fixed-size
+                  // sibling next to the Expanded title — a long role
+                  // string could push this Row past the available
+                  // width. Capping max width plus maxLines/ellipsis
+                  // keeps it safely bounded.
+                  constraints: const BoxConstraints(maxWidth: 100),
+                  child: Text(
+                    role,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: isActive ? Colors.white : Colors.black54,
+                      fontSize: 11,
+                    ),
                   ),
                 ),
               ),

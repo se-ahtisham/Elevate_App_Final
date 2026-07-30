@@ -195,8 +195,7 @@ class _UserRequestRatingCompanyState extends ConsumerState<UserRequestRatingComp
                             borderRadius: 50,
                             textSize: 9,
                             onTap: () {
-                              Navigator.push(
-                                context,
+                              Navigator.of(context, rootNavigator: true).push(
                                 MaterialPageRoute(
                                   builder: (context) => UserRatingCompany(
                                     company: widget.company,
@@ -321,3 +320,4 @@ class _UserRequestRatingCompanyState extends ConsumerState<UserRequestRatingComp
     );
   }
 }
+

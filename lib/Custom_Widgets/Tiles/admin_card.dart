@@ -19,15 +19,14 @@ class AdminCard extends StatelessWidget {
       height: 90,
       child: Row(
         children: [
-
           // 🔹 LEFT CONTAINER
           Expanded(
             flex: 2,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration:  BoxDecoration(
+              decoration: BoxDecoration(
                 color: Color(0xFFEAEAEA),
- border: Border.all(color: Colors.black),
+                border: Border.all(color: Colors.black),
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(16),
                   bottomLeft: Radius.circular(16),
@@ -37,25 +36,30 @@ class AdminCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-
-                
                   CustomText(
                     text: topText,
                     fontSize: 20,
                     color: const Color.fromARGB(214, 36, 36, 36),
                     fontWeight: FontWeight.w400,
                     lineHeight: 1.0,
+                    // Fixed card height (90) leaves no room for
+                    // wrapping; cap to a single line so a long
+                    // topText can't push the column past it.
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
 
                   const SizedBox(height: 5),
 
-                 
                   CustomText(
                     text: bottomText,
                     fontSize: 20,
                     color: Colors.black,
                     fontWeight: FontWeight.w700,
                     lineHeight: 1.0,
+                    // Same reasoning as topText above.
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
@@ -85,6 +89,8 @@ class AdminCard extends StatelessWidget {
                 fontWeight: FontWeight.w700,
                 lineHeight: 1.0,
                 textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ),

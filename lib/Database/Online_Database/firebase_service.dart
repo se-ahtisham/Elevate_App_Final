@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/skill_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/admin_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/application_model.dart';
@@ -15,6 +17,7 @@ import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/result_mod
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/review_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/test_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_seeker_model.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/question_model.dart';
 
 class FirebaseService {
   final FirebaseFirestore db = FirebaseFirestore.instance;
@@ -72,7 +75,12 @@ class FirebaseService {
 
   Future<List<JobSeekerModel>> listAllJobSeekers() async {
     final snap = await db.collection('jobSeekers').get();
-    return snap.docs.map((d) => JobSeekerModel.fromMap(d.data())).toList();
+    final list = snap.docs
+        .map((d) => JobSeekerModel.fromMap(d.data()))
+        .toList();
+    final seen = <String>{};
+    list.retainWhere((s) => seen.add(s.jobSeekerID));
+    return list;
   }
 
   Future<JobSeekerModel?> searchJobSeeker(String jobSeekerID) =>
@@ -102,7 +110,10 @@ class FirebaseService {
     );
 
     final batch = db.batch();
-    batch.set(db.collection('followRequests').doc(requestID), request.toMap());
+    batch.set(db.collection('followRequests').doc(requestID), {
+      ...request.toMap(),
+      'requestedAt': DateTime.now().toIso8601String(),
+    });
     batch.update(db.collection(toCollection).doc(toID), {
       'followRequests': FieldValue.arrayUnion([requestID]),
     });
@@ -250,7 +261,10 @@ class FirebaseService {
     );
 
     final batch = db.batch();
-    batch.set(db.collection('employees').doc(employeeID), employee.toMap());
+    batch.set(db.collection('employees').doc(employeeID), {
+      ...employee.toMap(),
+      'hiredAt': DateTime.now().toIso8601String(),
+    });
     batch.update(db.collection('jobSeekers').doc(jobSeekerID), {
       'becomeEmployee': FieldValue.arrayUnion([employeeID]),
     });
@@ -287,7 +301,10 @@ class FirebaseService {
 
   Future<List<CompanyModel>> listAllCompanies() async {
     final snap = await db.collection('companies').get();
-    return snap.docs.map((d) => CompanyModel.fromMap(d.data())).toList();
+    final list = snap.docs.map((d) => CompanyModel.fromMap(d.data())).toList();
+    final seen = <String>{};
+    list.retainWhere((c) => seen.add(c.companyID));
+    return list;
   }
 
   Future<CompanyModel?> searchCompany(String companyID) =>
@@ -719,11 +736,19 @@ class FirebaseService {
   }
 
   // Career Guidance Task
+  //
+  // NOTE: These older method names are kept for backward compatibility with
+  // any existing call sites, but now point at the SAME 'careerGuidance'
+  // collection that getGuidanceTasks/updateGuidanceTask/deleteGuidanceTask
+  // use (confirmed to be the collection the live Career Guidance screen
+  // actually reads/writes). This eliminates the two-silently-disconnected-
+  // collections bug. Prefer the newer saveGuidanceTask/getGuidanceTasks/
+  // updateGuidanceTask/deleteGuidanceTask methods below for new code.
   Future<List<CareerGuidanceTaskModel>> viewCareerTasks(
     String jobSeekerID,
   ) async {
     final snap = await db
-        .collection('careerTasks')
+        .collection('careerGuidance')
         .where('jobSeekerID', isEqualTo: jobSeekerID)
         .get();
     return snap.docs
@@ -743,19 +768,22 @@ class FirebaseService {
   }
 
   Future<void> markTaskComplete(String taskID) async {
-    await db.collection('careerTasks').doc(taskID).update({
+    await db.collection('careerGuidance').doc(taskID).update({
       'isCompleted': true,
       'completedAt': DateTime.now().toIso8601String(),
     });
   }
 
-  Future<void> deleteTask(String taskID) async {
-    await db.collection('careerTasks').doc(taskID).delete();
+  Future<void> deleteTask(String taskID, String jobSeekerID) async {
+    await db.collection('careerGuidance').doc(taskID).delete();
+    await db.collection('jobSeekers').doc(jobSeekerID).update({
+      'careerGuidanceTasks': FieldValue.arrayRemove([taskID]),
+    });
   }
 
   // Saves a CareerGuidanceTaskModel (aiGenerated: true, false if hand-created by an admin).
   Future<void> saveCareerTask(CareerGuidanceTaskModel task) async {
-    await db.collection('careerTasks').doc(task.taskID).set(task.toMap());
+    await db.collection('careerGuidance').doc(task.taskID).set(task.toMap());
     await db.collection('jobSeekers').doc(task.jobSeekerID).update({
       'careerGuidanceTasks': FieldValue.arrayUnion([task.taskID]),
     });
@@ -817,6 +845,12 @@ class FirebaseService {
 
   Future<void> updateBadge(String badgeID, Map<String, dynamic> newData) async {
     await db.collection('badges').doc(badgeID).update(newData);
+  }
+
+  Future<BadgeModel?> getBadgeById(String badgeID) async {
+    final doc = await db.collection('badges').doc(badgeID).get();
+    if (!doc.exists) return null;
+    return BadgeModel.fromMap(doc.data()!);
   }
 
   Future<void> deleteBadge(String badgeID) async {
@@ -1123,10 +1157,13 @@ class FirebaseService {
   ) async {
     if (companyIDs.isEmpty) return [];
     final results = <JobPostModel>[];
-    for (int i = 0; i < companyIDs.length; i += 10) {
-      final chunk = companyIDs.sublist(
+    // De-dupe companyIDs first so the same company can't produce the same
+    // job twice across chunks.
+    final uniqueCompanyIDs = companyIDs.toSet().toList();
+    for (int i = 0; i < uniqueCompanyIDs.length; i += 10) {
+      final chunk = uniqueCompanyIDs.sublist(
         i,
-        i + 10 > companyIDs.length ? companyIDs.length : i + 10,
+        i + 10 > uniqueCompanyIDs.length ? uniqueCompanyIDs.length : i + 10,
       );
       final snap = await db
           .collection('jobs')
@@ -1134,6 +1171,10 @@ class FirebaseService {
           .get();
       results.addAll(snap.docs.map((d) => JobPostModel.fromMap(d.data())));
     }
+
+    final seen = <String>{};
+    results.retainWhere((j) => seen.add(j.jobID));
+
     return results;
   }
 
@@ -1169,10 +1210,10 @@ class FirebaseService {
     );
 
     final batch = db.batch();
-    batch.set(
-      db.collection('applications').doc(application.applicationID),
-      application.toMap(),
-    );
+    batch.set(db.collection('applications').doc(application.applicationID), {
+      ...application.toMap(),
+      'appliedAt': DateTime.now().toIso8601String(),
+    });
     batch.update(db.collection('jobs').doc(jobID), {
       'applicants': FieldValue.arrayUnion([application.applicationID]),
     });
@@ -1361,13 +1402,16 @@ class FirebaseService {
     return recommendedJobs.take(limit).toList();
   }
 
+  // getOtherPlatformJobs — fixed: filter for isExternal: true, since these
+  // are jobs scraped in from other platforms via saveExternalJobs(), not
+  // our own internal postings.
   Future<List<JobPostModel>> getOtherPlatformJobs({
     List<String> excludeJobIDs = const [],
     int limit = 10,
   }) async {
     final snap = await db
         .collection('jobs')
-        .where('isExternal', isEqualTo: false)
+        .where('isExternal', isEqualTo: true)
         .where('isClosed', isEqualTo: false)
         .get();
 
@@ -1428,11 +1472,13 @@ class FirebaseService {
   // ─── Employees & Reviews ───────────────────────────────────────────────────
 
   /// Fetch all employments for a given job seeker.
+  // Fixed: was querying 'companyEmployees', but every write (applyAsEmployee,
+  // saveEmployee, terminateEmployee, seed data) writes to 'employees'.
   Future<List<CompanyEmployeeModel>> getEmployeesForJobSeeker(
     String jobSeekerID,
   ) async {
     final snap = await db
-        .collection('companyEmployees')
+        .collection('employees')
         .where('jobSeekerID', isEqualTo: jobSeekerID)
         .get();
     return snap.docs
@@ -1478,8 +1524,13 @@ class FirebaseService {
   // ─── Career Guidance Tasks ──────────────────────────────────────────────────
 
   /// Save a new AI-generated or manually created guidance task.
+  // Fixed: now keeps jobSeeker.careerGuidanceTasks in sync (was previously
+  // only done by the older saveCareerTask() path, leaving this array stale).
   Future<void> saveGuidanceTask(CareerGuidanceTaskModel task) async {
     await db.collection('careerGuidance').doc(task.taskID).set(task.toMap());
+    await db.collection('jobSeekers').doc(task.jobSeekerID).update({
+      'careerGuidanceTasks': FieldValue.arrayUnion([task.taskID]),
+    });
   }
 
   /// Fetch all guidance tasks for a specific job seeker, ordered by creation date.
@@ -1506,151 +1557,497 @@ class FirebaseService {
   }
 
   /// Permanently delete a guidance task.
-  Future<void> deleteGuidanceTask(String taskID) async {
+  // Fixed: now requires jobSeekerID so it can also clean up the stale
+  // careerGuidanceTasks array reference on the job seeker's document.
+  Future<void> deleteGuidanceTask(String taskID, String jobSeekerID) async {
     await db.collection('careerGuidance').doc(taskID).delete();
+    await db.collection('jobSeekers').doc(jobSeekerID).update({
+      'careerGuidanceTasks': FieldValue.arrayRemove([taskID]),
+    });
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // DEMO ONLY — all IDs are prefixed with "DEMO_" so they are instantly
-  // distinguishable from real data and can be safely bulk-deleted.
-  // No existing jobSeeker, company, or employee documents are ever touched.
+  // DEMO ONLY — ONE seeder, ONE deleter. All docs tagged isDemo: true so
+  // deleteDemoData() finds and removes everything, no matter which method
+  // created it. No fallback/duplicate doc IDs are ever written.
   // ─────────────────────────────────────────────────────────────────────────
 
-  static const String _demoJobSeekerID = 'DEMO_jobSeeker_Ahmad';
-  static const String _demoProjectID = 'DEMO_project_SampleTestFile';
-  static const String _demoCompanyID = 'DEMO_company_Elevate';
-  static const String _demoEmployeeID = 'DEMO_employee_Ahmad';
-
-  // Permanently uploaded to Firebase Storage — no seed script needed.
   static const String _demoFileDownloadUrl =
       'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app'
       '/o/demo_files%2Fsample_test_file.txt?alt=media&token=afd007ca-77e8-4b9f-b08f-59dc6b36dd59';
 
-  /// Seeds a fully self-contained demo dataset:
-  ///   • A demo JobSeeker  (collection: jobSeekers, doc: DEMO_jobSeeker_Ahmad)
-  ///   • A demo Project    (collection: projects,   doc: DEMO_project_SampleTestFile)
-  ///   • A demo Company    (collection: companies,  doc: DEMO_company_Elevate)
-  ///   • A demo Employee   (collection: employees,  doc: DEMO_employee_Ahmad)
-  ///
-  /// Uses the permanently uploaded sample_test_file.txt from Firebase Storage.
-  /// Safe to call multiple times — overwrites only DEMO_ documents.
-  Future<void> seedDemoProject({String? fileDownloadUrl}) async {
-    final String url = fileDownloadUrl ?? _demoFileDownloadUrl;
-    final batch = db.batch();
+  Future<String> _ensureDemoUserAuth(String email, String password) async {
+    final auth = FirebaseAuth.instance;
+    try {
+      final uc = await auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      return uc.user!.uid;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'email-already-in-use') {
+        final uc = await auth.signInWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+        return uc.user!.uid;
+      }
+      rethrow;
+    }
+  }
 
-    // 1 ── Demo JobSeeker
-    final jobSeekerRef = db.collection('jobSeekers').doc(_demoJobSeekerID);
-    batch.set(jobSeekerRef, {
-      'jobSeekerID': _demoJobSeekerID,
-      'name': 'Ahmad (Demo)',
-      'email': 'demo.ahmad@elevate.demo',
-      'password': '',
+  /// The ONE seeder. Creates:
+  ///   • 1 admin
+  ///   • 1 top-notch job seeker + 1 top-notch company (badges/tests/projects)
+  ///   • 3 small job seekers + 3 small companies, each with: 1 passed test,
+  ///     1 sent follow request, 1 job application, 1 pending employee
+  ///     request, and 1 community post — all cross-linked to different
+  ///     companies so nothing is self-referential.
+  /// Every doc is tagged isDemo: true. Safe to run multiple times.
+  Future<void> seedAllDemoData() async {
+    final now = DateTime.now();
+
+    // ── Admin ──────────────────────────────────────────────────────────────
+    final adminUid = await _ensureDemoUserAuth(
+      'admin.demo@elevate.demo',
+      'Test@123',
+    );
+    await db.collection('admins').doc(adminUid).set({
+      'adminID': adminUid,
+      'name': 'Super Admin',
+      'email': 'admin.demo@elevate.demo',
+      'password': 'Test@123',
+      'userType': 'Admin',
+      'about': 'System Administrator',
+      'location': 'HQ',
+      'profilePic': 'https://ui-avatars.com/api/?name=Admin',
+      'isDemo': true,
+    });
+
+    // ── Skills + Tests (shared by everyone) ──────────────────────────────────
+    const skillDefs = [
+      {'id': 'skill_flutter', 'name': 'Flutter', 'cat': 'Mobile Development'},
+      {'id': 'skill_react', 'name': 'React', 'cat': 'Frontend Development'},
+      {'id': 'skill_python', 'name': 'Python', 'cat': 'Backend Development'},
+    ];
+    for (final s in skillDefs) {
+      await db.collection('skills').doc(s['id']).set({
+        'skillID': s['id'],
+        'skillName': s['name'],
+        'skillDescription': '${s['name']} skill assessment.',
+        'skillImage': 'https://ui-avatars.com/api/?name=${s['name']}',
+        'category': s['cat'],
+        'isDemo': true,
+      });
+      await db.collection('tests').doc('DEMO_test_${s['id']}').set({
+        'testID': 'DEMO_test_${s['id']}',
+        'skillID': s['id'],
+        'testName': '${s['name']} Mastery Test',
+        'testType': 'Pure',
+        'totalQuestions': 1,
+        'durationMinutes': 15,
+        'passingScore': 50.0,
+        'questions': [
+          {
+            'questionID': 'q_${s['id']}',
+            'questionText': 'Placeholder question for ${s['name']}.',
+            'options': ['A', 'B', 'C', 'D'],
+            'correctAnswer': 'A',
+            'marks': 100,
+          },
+        ],
+        'isDemo': true,
+      });
+    }
+
+    // ── 1. Top-notch job seeker (Sara Khan) + top-notch company (NexCore) ────
+    final saraUid = await _ensureDemoUserAuth(
+      'sara.demo@elevate.demo',
+      'Test@123',
+    );
+    final nexcoreUid = await _ensureDemoUserAuth(
+      'nexcore.demo@elevate.demo',
+      'Test@123',
+    );
+
+    await db.collection('jobSeekers').doc(saraUid).set({
+      'jobSeekerID': saraUid,
+      'name': 'Sara Khan',
+      'email': 'sara.demo@elevate.demo',
+      'password': 'Test@123',
       'userType': 'JobSeeker',
-      'profilePic': '',
-      'location': 'Lahore, Pakistan',
-      'about': 'This is a demo account created for testing purposes only.',
-      'shortDescription': 'Demo Job Seeker',
-      'experienceLevel': 'Mid',
-      'skillCount': 1,
-      'passedResultIDs': <String>[],
+      'profilePic':
+          'https://ui-avatars.com/api/?name=Sara+Khan&background=6C63FF&color=fff&size=256',
+      'location': 'Karachi, Pakistan',
+      'about':
+          'Full-Stack Engineer with 5+ years of experience. Gold-badge holder.',
+      'shortDescription': 'Full-Stack Engineer',
+      'experienceLevel': 'Senior',
+      'skillCount': 3,
+      'passedResultIDs': ['DEMO_result_Sara_flutter'],
+      'mySkillTestsResultList': ['DEMO_result_Sara_flutter'],
+      'totalTestsTaken': 1,
+      'earnedBadges': <String>[],
+      'totalBadgesEarned': 0,
+      'portfolio': ['DEMO_project_Sara_1'],
+      'postList': <String>[],
       'following': <String>[],
       'followers': <String>[],
       'followRequests': <String>[],
-      'followedCompanies': <String>[],
-      'postList': <String>[],
-      'portfolio': [_demoProjectID],
-      'mySkillTestsResultList': <String>[],
-      'totalTestsTaken': 0,
+      'followedCompanies': [nexcoreUid],
       'appliedJobRequests': <String>[],
-      'becomeEmployee': [_demoEmployeeID],
+      'becomeEmployee': <String>[],
       'careerGuidanceTasks': <String>[],
-      'earnedBadges': <String>[],
-      'totalBadgesEarned': 0,
       'education': [
-        {'title': 'BS Computer Science', 'school': 'FAST-NUCES'},
+        {'title': 'BS Computer Science', 'school': 'NED University'},
       ],
       'jobExperience': [
         {
-          'jobTitle': 'Flutter Developer',
-          'company': 'Elevate Demo Corp',
-          'from': '2024',
+          'jobTitle': 'Senior Flutter Developer',
+          'company': 'NexCore Technologies',
+          'from': '2023',
           'to': '',
         },
       ],
-      // ── demo marker ──────────────────────────────────────────────────────
       'isDemo': true,
     });
 
-    // 2 ── Demo Project (with the uploaded file)
-    final projectRef = db.collection('projects').doc(_demoProjectID);
-    batch.set(projectRef, {
-      'projectID': _demoProjectID,
-      'jobSeekerID': _demoJobSeekerID,
-      'projectTitle': 'Project Test File',
+    await db.collection('results').doc('DEMO_result_Sara_flutter').set({
+      'resultID': 'DEMO_result_Sara_flutter',
+      'jobSeekerID': saraUid,
+      'testID': 'DEMO_test_skill_flutter',
+      'score': 95.0,
+      'isPassed': true,
+      'startedAt': now.subtract(const Duration(days: 10)).toIso8601String(),
+      'completedAt': now.subtract(const Duration(days: 10)).toIso8601String(),
+      'timeTakenSeconds': 1200,
+      'attemptNumber': 1,
+      'lastAttemptAt': now.subtract(const Duration(days: 10)).toIso8601String(),
+      'experienceLevel': 'Advanced',
+      'isDemo': true,
+    });
+
+    await db.collection('projects').doc('DEMO_project_Sara_1').set({
+      'projectID': 'DEMO_project_Sara_1',
+      'jobSeekerID': saraUid,
+      'projectTitle': 'Elevate Mobile App',
       'projectDescription':
-          'A sample test file created for demo purposes. '
-          'Contains random data, names, numbers and special characters. '
-          'Click the download icon to download sample_test_file.txt.',
-      'projectURL': '',
-      'techStack': ['sample_test_file.txt'],
-      'techFileUrls': [url],
+          'Full-featured Flutter career platform with Firebase backend.',
+      'projectURL': 'https://github.com/sara-demo/elevate-app',
+      'techStack': ['Flutter', 'Firebase'],
+      'techFileUrls': [_demoFileDownloadUrl],
       'mediaFiles': <String>[],
-      'createdAt': DateTime.now().toIso8601String(),
-      // ── demo marker ──────────────────────────────────────────────────────
+      'createdAt': now.subtract(const Duration(days: 60)).toIso8601String(),
       'isDemo': true,
     });
 
-    // 3 ── Demo Company
-    final companyRef = db.collection('companies').doc(_demoCompanyID);
-    batch.set(companyRef, {
-      'companyID': _demoCompanyID,
-      'email': 'demo.company@elevate.demo',
-      'password': '',
+    await db.collection('companies').doc(nexcoreUid).set({
+      'companyID': nexcoreUid,
+      'email': 'nexcore.demo@elevate.demo',
+      'password': 'Test@123',
       'userType': 'Company',
-      'companyName': 'Elevate Demo Corp',
-      'industry': 'Technology',
-      'website': 'https://elevate.demo',
-      'logo': '',
-      'description': 'Demo company account — for testing only.',
-      'location': 'Lahore, Pakistan',
-      'companySize': 10,
-      'activeJobs': 0,
-      'followersCount': 0,
-      'followers': <String>[],
+      'companyName': 'NexCore Technologies',
+      'industry': 'Software & AI',
+      'website': 'https://nexcore.demo',
+      'logo':
+          'https://ui-avatars.com/api/?name=NexCore&background=1A1A2E&color=fff&size=256',
+      'description':
+          'Enterprise software house building mobile and AI platforms.',
+      'location': 'Karachi, Pakistan',
+      'companySize': 200,
+      'activeJobs': 1,
+      'followersCount': 1,
+      'followers': [saraUid],
       'followRequests': <String>[],
-      'employeeList': [_demoEmployeeID],
+      'employeeList': <String>[],
       'companyWeaknessList': <String>[],
-      'companyStrengthList': <String>[],
-      'achievementList': <String>[],
+      'companyStrengthList': ['Strong AI/ML talent', 'Gold Cloud partner'],
+      'achievementList': ['PSEB Excellence Award 2024'],
       'receivedApplications': <String>[],
-      'postedJobs': <String>[],
-      // ── demo marker ──────────────────────────────────────────────────────
+      'postedJobs': ['DEMO_job_NexCore_1'],
       'isDemo': true,
     });
 
-    // 4 ── Demo Employee link (company ↔ job seeker)
-    final employeeRef = db.collection('employees').doc(_demoEmployeeID);
-    batch.set(employeeRef, {
-      'employeeID': _demoEmployeeID,
-      'jobSeekerID': _demoJobSeekerID,
-      'companyID': _demoCompanyID,
-      'position': 'Demo Flutter Developer',
-      'employeeStatus': 'Active',
-      // ── demo marker ──────────────────────────────────────────────────────
+    await db.collection('jobs').doc('DEMO_job_NexCore_1').set({
+      'jobID': 'DEMO_job_NexCore_1',
+      'companyID': nexcoreUid,
+      'title': 'Senior Flutter Developer',
+      'description':
+          'Architect and ship features for our flagship career platform.',
+      'requiredSkills': ['skill_flutter'],
+      'requiredBadges': <String>[],
+      'salary': '200,000 - 280,000 PKR/month',
+      'jobType': 'Full-time',
+      'location': 'Karachi, Pakistan',
+      'experienceLevel': 'Senior',
+      'postedAt': now.subtract(const Duration(days: 5)).toIso8601String(),
+      'applicants': <String>[],
+      'isExternal': false,
+      'sourceUrl': '',
+      'isClosed': false,
       'isDemo': true,
     });
 
-    await batch.commit();
+    // ── 2. 3 small companies (basic + 1 job post each) ────────────────────────
+    const smallCompanyDefs = [
+      {
+        'email': 'techcorp.demo@elevate.demo',
+        'name': 'TechCorp Innovations',
+        'industry': 'Software Development',
+        'skill': 'skill_flutter',
+      },
+      {
+        'email': 'creativestudio.demo@elevate.demo',
+        'name': 'Creative Studio',
+        'industry': 'Design',
+        'skill': 'skill_react',
+      },
+      {
+        'email': 'datagen.demo@elevate.demo',
+        'name': 'DataGen Analytics',
+        'industry': 'Data & AI',
+        'skill': 'skill_python',
+      },
+    ];
+    const smallSeekerDefs = [
+      {
+        'email': 'ahmadraza.demo@elevate.demo',
+        'name': 'Ahmad Raza',
+        'level': 'Mid',
+        'desc': 'Flutter Developer',
+        'skill': 'skill_flutter',
+      },
+      {
+        'email': 'usmantariq.demo@elevate.demo',
+        'name': 'Usman Tariq',
+        'level': 'Senior',
+        'desc': 'React Developer',
+        'skill': 'skill_react',
+      },
+      {
+        'email': 'yusufmalik.demo@elevate.demo',
+        'name': 'Yusuf Malik',
+        'level': 'Junior',
+        'desc': 'Python Developer',
+        'skill': 'skill_python',
+      },
+    ];
+
+    final smallCompanyUids = <String>[];
+    for (final c in smallCompanyDefs) {
+      final uid = await _ensureDemoUserAuth(c['email']!, 'Test@123');
+      smallCompanyUids.add(uid);
+      final jobID = 'DEMO_job_${c['name']!.replaceAll(' ', '')}';
+      await db.collection('companies').doc(uid).set({
+        'companyID': uid,
+        'email': c['email'],
+        'password': 'Test@123',
+        'userType': 'Company',
+        'companyName': c['name'],
+        'industry': c['industry'],
+        'website': 'https://www.example.com',
+        'logo': 'https://ui-avatars.com/api/?name=${c['name']}',
+        'description': 'Small demo company in ${c['industry']}.',
+        'location': 'Lahore, Pakistan',
+        'companySize': 20,
+        'activeJobs': 1,
+        'followersCount': 0,
+        'followers': <String>[],
+        'followRequests': <String>[],
+        'employeeList': <String>[],
+        'companyWeaknessList': <String>[],
+        'companyStrengthList': <String>[],
+        'achievementList': <String>[],
+        'receivedApplications': <String>[],
+        'postedJobs': [jobID],
+        'isDemo': true,
+      });
+      await db.collection('jobs').doc(jobID).set({
+        'jobID': jobID,
+        'companyID': uid,
+        'title': '${c['name']} Developer',
+        'description': 'Join ${c['name']} as a developer.',
+        'requiredSkills': [c['skill']],
+        'requiredBadges': <String>[],
+        'salary': '60,000 - 100,000 PKR/month',
+        'jobType': 'Full-time',
+        'location': 'Lahore, Pakistan',
+        'experienceLevel': '1 to 5 years',
+        'postedAt': now.subtract(const Duration(days: 2)).toIso8601String(),
+        'applicants': <String>[],
+        'isExternal': false,
+        'sourceUrl': '',
+        'isClosed': false,
+        'isDemo': true,
+      });
+    }
+
+    // ── 3. 3 small job seekers — with follow request, application, and
+    // pending employee request, each cross-linked to a DIFFERENT company ─────
+    for (int i = 0; i < smallSeekerDefs.length; i++) {
+      final s = smallSeekerDefs[i];
+      final uid = await _ensureDemoUserAuth(s['email']!, 'Test@123');
+      final resultID = 'DEMO_result_${s['name']!.replaceAll(' ', '')}';
+
+      final followTargetUid = smallCompanyUids[i % smallCompanyUids.length];
+      final applyTargetIndex = (i + 1) % smallCompanyUids.length;
+      final applyTargetUid = smallCompanyUids[applyTargetIndex];
+      final applyTargetJobID =
+          'DEMO_job_${smallCompanyDefs[applyTargetIndex]['name']!.replaceAll(' ', '')}';
+      final empTargetIndex = (i + 2) % smallCompanyUids.length;
+      final empTargetUid = smallCompanyUids[empTargetIndex];
+
+      final followRequestID =
+          'DEMO_followreq_${s['name']!.replaceAll(' ', '')}';
+      final appID = 'DEMO_app_${s['name']!.replaceAll(' ', '')}';
+      final empID = 'DEMO_emp_${s['name']!.replaceAll(' ', '')}';
+      final postID = 'DEMO_post_${s['name']!.replaceAll(' ', '')}';
+
+      await db.collection('jobSeekers').doc(uid).set({
+        'jobSeekerID': uid,
+        'name': s['name'],
+        'email': s['email'],
+        'password': 'Test@123',
+        'userType': 'JobSeeker',
+        'profilePic': 'https://ui-avatars.com/api/?name=${s['name']}',
+        'location': 'Lahore, Pakistan',
+        'about': 'Demo job seeker account.',
+        'shortDescription': s['desc'],
+        'experienceLevel': s['level'],
+        'skillCount': 1,
+        'passedResultIDs': [resultID],
+        'mySkillTestsResultList': [resultID],
+        'totalTestsTaken': 1,
+        'earnedBadges': <String>[],
+        'totalBadgesEarned': 0,
+        'portfolio': <String>[],
+        'postList': [postID],
+        'following': <String>[],
+        'followers': <String>[],
+        'followRequests': <String>[],
+        'followedCompanies': <String>[],
+        'appliedJobRequests': [appID],
+        'becomeEmployee': [empID],
+        'careerGuidanceTasks': <String>[],
+        'education': [
+          {'title': 'BSc Computer Science', 'school': 'Tech University'},
+        ],
+        'jobExperience': <Map<String, String>>[],
+        'isDemo': true,
+      });
+
+      await db.collection('results').doc(resultID).set({
+        'resultID': resultID,
+        'jobSeekerID': uid,
+        'testID': 'DEMO_test_${s['skill']}',
+        'score': 75.0,
+        'isPassed': true,
+        'startedAt': now.subtract(const Duration(days: 3)).toIso8601String(),
+        'completedAt': now.subtract(const Duration(days: 3)).toIso8601String(),
+        'timeTakenSeconds': 900,
+        'attemptNumber': 1,
+        'lastAttemptAt': now
+            .subtract(const Duration(days: 3))
+            .toIso8601String(),
+        'experienceLevel': s['level'],
+        'isDemo': true,
+      });
+
+      await db.collection('followRequests').doc(followRequestID).set({
+        'requestID': followRequestID,
+        'fromID': uid,
+        'toID': followTargetUid,
+        'status': 'Pending',
+        'requestedAt': now.toIso8601String(),
+        'isDemo': true,
+      });
+      await db.collection('companies').doc(followTargetUid).update({
+        'followRequests': FieldValue.arrayUnion([followRequestID]),
+      });
+
+      await db.collection('applications').doc(appID).set({
+        'applicationID': appID,
+        'jobID': applyTargetJobID,
+        'jobSeekerID': uid,
+        'companyID': applyTargetUid,
+        'status': 'Pending',
+        'appliedAt': now.toIso8601String(),
+        'coldEmail':
+            'Hi, I am very interested in this role and believe my skills are a strong match.',
+        'resumeUrl': _demoFileDownloadUrl,
+        'isDemo': true,
+      });
+      await db.collection('jobs').doc(applyTargetJobID).update({
+        'applicants': FieldValue.arrayUnion([appID]),
+      });
+      await db.collection('companies').doc(applyTargetUid).update({
+        'receivedApplications': FieldValue.arrayUnion([appID]),
+      });
+
+      await db.collection('employees').doc(empID).set({
+        'employeeID': empID,
+        'jobSeekerID': uid,
+        'companyID': empTargetUid,
+        'position': s['desc'],
+        'employeeStatus': 'Pending',
+        'hiredAt': now.toIso8601String(),
+        'isDemo': true,
+      });
+      await db.collection('companies').doc(empTargetUid).update({
+        'employeeList': FieldValue.arrayUnion([empID]),
+      });
+
+      await db.collection('posts').doc(postID).set({
+        'postID': postID,
+        'authorID': uid,
+        'authorName': s['name'],
+        'authorProfilePic': 'https://ui-avatars.com/api/?name=${s['name']}',
+        'authorType': 'JobSeeker',
+        'title': 'Just passed my ${s['skill']} skill test!',
+        'content': 'Excited to be applying for new roles on Elevate.',
+        'likes': 2,
+        'likedByUserIDs': <String>[],
+        'totalCommentCount': 0,
+        'createdAt': now.subtract(const Duration(days: 1)).toIso8601String(),
+        'isDemo': true,
+      });
+    }
   }
 
-  /// Removes ALL demo documents created by [seedDemoProject].
-  /// Call this to clean up the demo dataset without touching any real data.
+  /// The ONE deleter. Removes every document tagged isDemo: true across all
+  /// collections seedAllDemoData() writes to.
   Future<void> deleteDemoData() async {
-    final batch = db.batch();
-    batch.delete(db.collection('jobSeekers').doc(_demoJobSeekerID));
-    batch.delete(db.collection('projects').doc(_demoProjectID));
-    batch.delete(db.collection('companies').doc(_demoCompanyID));
-    batch.delete(db.collection('employees').doc(_demoEmployeeID));
-    await batch.commit();
+    const collections = [
+      'jobSeekers',
+      'companies',
+      'admins',
+      'employees',
+      'projects',
+      'results',
+      'badges',
+      'posts',
+      'careerGuidance',
+      'skills',
+      'tests',
+      'jobs',
+      'applications',
+      'followRequests',
+    ];
+    for (final collectionName in collections) {
+      QuerySnapshot<Map<String, dynamic>> snap;
+      do {
+        snap = await db
+            .collection(collectionName)
+            .where('isDemo', isEqualTo: true)
+            .limit(400)
+            .get();
+        if (snap.docs.isEmpty) break;
+        final batch = db.batch();
+        for (final doc in snap.docs) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+      } while (snap.docs.length == 400);
+    }
   }
 }
