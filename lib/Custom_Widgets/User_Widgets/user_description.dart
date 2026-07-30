@@ -2,6 +2,32 @@ import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 
+/*StatelessWidget: UserDescription
+└── Row
+    ├── Container (Profile Image)
+    ├── SizedBox (width: 10)
+    └── Expanded
+        └── Column (crossAxisAlignment: start)
+            ├── CustomText (name)
+            ├── CustomText (shortDescription)
+            ├── SizedBox (height: 10)
+            └── Row (Stats)
+                ├── Column (Skills)
+                │   ├── CustomText (skills count)
+                │   └── CustomText ("SKILLS")
+                ├── SizedBox (width: 12)
+                ├── Container (divider)
+                ├── SizedBox (width: 12)
+                ├── Column (Followers)
+                │   ├── CustomText (followers count)
+                │   └── CustomText ("Followers")
+                ├── SizedBox (width: 12)
+                ├── Container (divider)
+                ├── SizedBox (width: 12)
+                └── Column (Following)
+                    ├── CustomText (followings count)
+                    └── CustomText ("Following") */
+
 class UserDescription extends StatelessWidget {
   final String imageURL;
   final String name;

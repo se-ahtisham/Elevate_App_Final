@@ -128,6 +128,14 @@ class _SeedScreenState extends State<_SeedScreen> {
     _log('\n🚀  Seeding top-notch demo accounts…');
     await firebaseService.seedTopNotchDemo();
     _log('   ✔  JobSeeker        → DEMO_jobSeeker_Sara');
+    _log('     • 2 employees, strengths, achievements, 1240 followers');
+    _log(
+      '\n🎲  Seeding explorer job pool (30 jobs: 10 Bronze/10 Silver/10 Gold)…',
+    );
+    await firebaseService.seedExplorerJobPool();
+    _log(
+      '   ✔  30 filler jobs seeded so no-skills users see a full random pool.',
+    );
     _log(
       '     • 5 skill results (Flutter 95%, React 92%, Python 75%, ML 97%, Cloud 82%)',
     );

@@ -320,11 +320,6 @@ class _JobSeekerProfileScreenState
                     const SizedBox(height: 28),
                     Row(
                       children: [
-                        const Icon(
-                          Icons.military_tech_rounded,
-                          color: Color(0xFFFFD700),
-                          size: 24,
-                        ),
                         const SizedBox(width: 8),
                         const CustomText(
                           text: "EARNED BADGES",
@@ -342,13 +337,19 @@ class _JobSeekerProfileScreenState
                               vertical: 3,
                             ),
                             decoration: BoxDecoration(
-                              color: const Color(
-                                0xFFFFD700,
+                              color: const Color.fromARGB(
+                                36,
+                                87,
+                                87,
+                                87,
                               ).withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: const Color(
-                                  0xFFFFD700,
+                                color: const Color.fromARGB(
+                                  255,
+                                  10,
+                                  10,
+                                  10,
                                 ).withValues(alpha: 0.4),
                               ),
                             ),
@@ -357,7 +358,7 @@ class _JobSeekerProfileScreenState
                               style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFFB8860B),
+                                color: Color.fromARGB(255, 0, 0, 0),
                               ),
                             ),
                           ),
@@ -419,8 +420,19 @@ class _JobSeekerProfileScreenState
                                   width: 40,
                                   height: 40,
                                   fit: BoxFit.contain,
-                                  errorBuilder: (_, __, ___) =>
-                                      const SizedBox(width: 40, height: 40),
+                                  errorBuilder: (_, __, ___) => Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF0F0F0),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Icon(
+                                      Icons.military_tech_outlined,
+                                      size: 22,
+                                      color: Colors.black26,
+                                    ),
+                                  ),
                                 ),
                                 const SizedBox(width: 10),
                                 Expanded(

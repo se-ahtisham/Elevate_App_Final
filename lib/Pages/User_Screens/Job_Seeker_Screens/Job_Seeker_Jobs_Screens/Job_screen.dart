@@ -43,6 +43,28 @@ class JobScreenState extends ConsumerState<JobScreen> {
   String? selectedSkillID;
   String selectedTierFilter = 'All'; // 'All', 'Gold', 'Silver', 'Bronze'
 
+  // ── Cloud Storage badge images (same 3 files used across the app) ────────
+  // Only 3 badge images exist: Gold, Silver, Bronze. Each passed-skill card
+  // shows the image matching that skill's tier + the skill name below it.
+  static const String _bronzeCloudUrl =
+      'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fbronze.png?alt=media&token=116cd0ca-d646-430a-8246-dfff9d29b673';
+  static const String _silverCloudUrl =
+      'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fsilver.png?alt=media&token=8ace9945-0206-4491-b175-db75e70b9ff7';
+  static const String _goldCloudUrl =
+      'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fgold.png?alt=media&token=8fa4f2b5-07f5-4b84-a943-02abb5989d72';
+
+  String _badgeImageForTier(String tier) {
+    switch (tier.toLowerCase()) {
+      case 'gold':
+        return _goldCloudUrl;
+      case 'silver':
+        return _silverCloudUrl;
+      case 'bronze':
+      default:
+        return _bronzeCloudUrl;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -127,10 +149,14 @@ class JobScreenState extends ConsumerState<JobScreen> {
         ..._randomSample(goldPool, 10),
       ];
 
+      final recommendedOrRandom = recommended.isNotEmpty
+          ? recommended
+          : _randomSample(fetchedJobs, 10);
+
       if (!mounted) return;
       setState(() {
         mySkills = skillMap;
-        recommendedJobs = recommended;
+        recommendedJobs = recommendedOrRandom;
         companiesByID = companyMap;
         allCompaniesList = companies;
         // Only show actually followed companies - don't fallback to all
@@ -298,7 +324,7 @@ class JobScreenState extends ConsumerState<JobScreen> {
                           padding: EdgeInsets.symmetric(vertical: 16),
                           child: CustomText(
                             text:
-                                "Pass a skill test to unlock matched jobs here.",
+                                "No jobs available right now. Check back soon!",
                             fontSize: 13,
                             color: ElevateColor.gray,
                             fontWeight: FontWeight.w500,
@@ -327,10 +353,8 @@ class JobScreenState extends ConsumerState<JobScreen> {
                                   jobType: job.jobType,
                                   salary: job.salary,
                                   onApplyTap: () {
-                                    Navigator.of(
+                                    Navigator.push(
                                       context,
-                                      rootNavigator: true,
-                                    ).push(
                                       MaterialPageRoute(
                                         builder: (_) => JobSelection(
                                           jobPost: job,
@@ -349,7 +373,8 @@ class JobScreenState extends ConsumerState<JobScreen> {
 
                   const SizedBox(height: 24),
 
-                  // 3. YOUR PASSED SKILLS (OUTLINE CARDS, THEME MATCHED)
+                  // 3. YOUR PASSED SKILLS — simple outlined card:
+                  // badge image on top, skill name below. Minimal styling.
                   if (mySkills.isNotEmpty) ...[
                     const CustomText(
                       text: 'Your Passed Skills',
@@ -360,7 +385,7 @@ class JobScreenState extends ConsumerState<JobScreen> {
                     const SizedBox(height: 12),
 
                     SizedBox(
-                      height: 80,
+                      height: 110,
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: mySkills.length,
@@ -370,73 +395,59 @@ class JobScreenState extends ConsumerState<JobScreen> {
                           final entry = mySkills.entries.elementAt(index);
                           final skillID = entry.key;
                           final name = entry.value['name'] as String;
-                          final score = (entry.value['score'] as double)
-                              .toStringAsFixed(0);
                           final tier = entry.value['tier'] as String;
                           final isSelected = selectedSkillID == skillID;
+                          final badgeImageUrl = _badgeImageForTier(tier);
 
                           return GestureDetector(
                             onTap: () => onSelectSkill(skillID),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              width: 160,
+                            child: Container(
+                              width: 90,
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
                                 vertical: 10,
+                                horizontal: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: isSelected
-                                    ? Colors.grey.shade900
-                                    : Colors.white,
-                                borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
                                   color: isSelected
                                       ? Colors.black
                                       : const Color(0xFFE0E0E0),
                                   width: isSelected ? 2 : 1,
                                 ),
+                                borderRadius: BorderRadius.circular(10),
                               ),
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        getBadgeSymbol(tier),
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w700,
-                                          color: isSelected
-                                              ? Colors.white70
-                                              : Colors.grey.shade700,
-                                        ),
+                                  Image.network(
+                                    badgeImageUrl,
+                                    width: 40,
+                                    height: 40,
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF0F0F0),
+                                        borderRadius: BorderRadius.circular(8),
                                       ),
-                                      Text(
-                                        "$score%",
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w900,
-                                          color: isSelected
-                                              ? Colors.white
-                                              : Colors.black87,
-                                        ),
+                                      child: const Icon(
+                                        Icons.emoji_events_outlined,
+                                        size: 22,
+                                        color: Colors.black26,
                                       ),
-                                    ],
+                                    ),
                                   ),
                                   const SizedBox(height: 6),
                                   Text(
                                     name,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color: isSelected
-                                          ? Colors.white
-                                          : Colors.black87,
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.black87,
                                     ),
                                   ),
                                 ],
@@ -693,7 +704,8 @@ class JobScreenState extends ConsumerState<JobScreen> {
                         onTap: () {
                           final jobSeeker = ref.read(authProvider).jobSeeker;
                           if (jobSeeker != null) {
-                            Navigator.of(context, rootNavigator: true).push(
+                            Navigator.push(
+                              context,
                               MaterialPageRoute(
                                 builder: (_) => CareerGuidanceScreen(
                                   jobSeekerID: jobSeeker.jobSeekerID,
@@ -737,7 +749,8 @@ class JobScreenState extends ConsumerState<JobScreen> {
                       InkWell(
                         borderRadius: BorderRadius.circular(20),
                         onTap: () {
-                          Navigator.of(context, rootNavigator: true).push(
+                          Navigator.push(
+                            context,
                             MaterialPageRoute(
                               builder: (context) => const OtherPlatformJobs(),
                             ),
@@ -795,7 +808,8 @@ class JobScreenState extends ConsumerState<JobScreen> {
                             ),
                             jobType: job.jobType,
                             onTap: () {
-                              Navigator.of(context, rootNavigator: true).push(
+                              Navigator.push(
+                                context,
                                 MaterialPageRoute(
                                   builder: (_) => JobSelection(
                                     jobPost: job,

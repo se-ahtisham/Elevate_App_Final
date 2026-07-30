@@ -17,6 +17,7 @@ import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/result_mod
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/review_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/test_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_seeker_model.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/question_model.dart';
 
 class FirebaseService {
   final FirebaseFirestore db = FirebaseFirestore.instance;
@@ -1730,7 +1731,7 @@ class FirebaseService {
   }
 
   // ── Top-notch demo seed ────────────────────────────────────────────────────
-
+  // ── Top-notch demo seed ────────────────────────────────────────────────────
   Future<void> seedTopNotchDemo() async {
     final saraUid = await _ensureDemoUserAuth(
       'sara.demo@elevate.demo',
@@ -1833,16 +1834,16 @@ class FirebaseService {
       ],
       'isDemo': true,
     };
+    // ── CHANGE (Step 1): removed duplicate write to _demoProJobSeekerID ──────
     batch.set(db.collection('jobSeekers').doc(saraUid), saraData);
-    if (saraUid != _demoProJobSeekerID) {
-      batch.set(db.collection('jobSeekers').doc(_demoProJobSeekerID), saraData);
-    }
 
     // ── 2. Skill Test Results ────────────────────────────────────────────────
+    // ── CHANGE (Step 2): 'jobSeekerID' now uses saraUid instead of the fixed
+    // constant, so getBestPassedScoresBySkill(myID) actually finds these. ────
     final results = [
       {
         'resultID': _demoResult1ID,
-        'jobSeekerID': _demoProJobSeekerID,
+        'jobSeekerID': saraUid,
         'testID': 'DEMO_test_Flutter',
         'score': 95.0,
         'isPassed': true,
@@ -1860,7 +1861,7 @@ class FirebaseService {
       },
       {
         'resultID': _demoResult2ID,
-        'jobSeekerID': _demoProJobSeekerID,
+        'jobSeekerID': saraUid,
         'testID': 'DEMO_test_React',
         'score': 92.0,
         'isPassed': true,
@@ -1878,7 +1879,7 @@ class FirebaseService {
       },
       {
         'resultID': _demoResult3ID,
-        'jobSeekerID': _demoProJobSeekerID,
+        'jobSeekerID': saraUid,
         'testID': 'DEMO_test_Python',
         'score': 75.0,
         'isPassed': true,
@@ -1896,7 +1897,7 @@ class FirebaseService {
       },
       {
         'resultID': _demoResult4ID,
-        'jobSeekerID': _demoProJobSeekerID,
+        'jobSeekerID': saraUid,
         'testID': 'DEMO_test_ML',
         'score': 97.0,
         'isPassed': true,
@@ -1914,7 +1915,7 @@ class FirebaseService {
       },
       {
         'resultID': _demoResult5ID,
-        'jobSeekerID': _demoProJobSeekerID,
+        'jobSeekerID': saraUid,
         'testID': 'DEMO_test_Cloud',
         'score': 82.0,
         'isPassed': true,
@@ -1933,6 +1934,120 @@ class FirebaseService {
     ];
     for (final r in results) {
       batch.set(db.collection('results').doc(r['resultID'] as String), r);
+    }
+
+    // ── 2.5. Skill + Test docs ────────────────────────────────────────────────
+    const skillFlutterID = 'skill_flutter';
+    const skillReactID = 'skill_react';
+    const skillPythonID = 'skill_python';
+    const skillMLID = 'skill_ml';
+    const skillCloudID = 'skill_cloud';
+
+    final skills = [
+      SkillModel(
+        skillID: skillFlutterID,
+        skillName: 'Flutter',
+        skillDescription:
+            'Cross-platform mobile development with Flutter & Dart.',
+        skillImage: 'https://ui-avatars.com/api/?name=Flutter',
+        category: 'Mobile Development',
+      ),
+      SkillModel(
+        skillID: skillReactID,
+        skillName: 'React',
+        skillDescription:
+            'Modern frontend development with React & TypeScript.',
+        skillImage: 'https://ui-avatars.com/api/?name=React',
+        category: 'Frontend Development',
+      ),
+      SkillModel(
+        skillID: skillPythonID,
+        skillName: 'Python',
+        skillDescription: 'Backend engineering with Python.',
+        skillImage: 'https://ui-avatars.com/api/?name=Python',
+        category: 'Backend Development',
+      ),
+      SkillModel(
+        skillID: skillMLID,
+        skillName: 'Machine Learning',
+        skillDescription: 'ML pipelines, NLP, and model deployment.',
+        skillImage: 'https://ui-avatars.com/api/?name=ML',
+        category: 'Data Science',
+      ),
+      SkillModel(
+        skillID: skillCloudID,
+        skillName: 'Cloud Computing',
+        skillDescription: 'Cloud infrastructure, AWS, and DevOps.',
+        skillImage: 'https://ui-avatars.com/api/?name=Cloud',
+        category: 'Cloud',
+      ),
+    ];
+    for (final s in skills) {
+      batch.set(db.collection('skills').doc(s.skillID), s.toMap());
+    }
+
+    final fillerQuestion = QuestionModel(
+      questionID: 'q_filler',
+      questionText: 'Placeholder question for seeded demo test.',
+      options: const ['A', 'B', 'C', 'D'],
+      correctAnswer: 'A',
+      marks: 100,
+    );
+
+    final tests = [
+      TestModel(
+        testID: 'DEMO_test_Flutter',
+        skillID: skillFlutterID,
+        testName: 'Flutter Mastery Test',
+        testType: 'Pure',
+        totalQuestions: 1,
+        durationMinutes: 15,
+        passingScore: 50.0,
+        questions: [fillerQuestion],
+      ),
+      TestModel(
+        testID: 'DEMO_test_React',
+        skillID: skillReactID,
+        testName: 'React Mastery Test',
+        testType: 'Pure',
+        totalQuestions: 1,
+        durationMinutes: 15,
+        passingScore: 50.0,
+        questions: [fillerQuestion],
+      ),
+      TestModel(
+        testID: 'DEMO_test_Python',
+        skillID: skillPythonID,
+        testName: 'Python Backend Test',
+        testType: 'Pure',
+        totalQuestions: 1,
+        durationMinutes: 15,
+        passingScore: 50.0,
+        questions: [fillerQuestion],
+      ),
+      TestModel(
+        testID: 'DEMO_test_ML',
+        skillID: skillMLID,
+        testName: 'Machine Learning Test',
+        testType: 'Pure',
+        totalQuestions: 1,
+        durationMinutes: 15,
+        passingScore: 50.0,
+        questions: [fillerQuestion],
+      ),
+      TestModel(
+        testID: 'DEMO_test_Cloud',
+        skillID: skillCloudID,
+        testName: 'Cloud Computing Test',
+        testType: 'Pure',
+        totalQuestions: 1,
+        durationMinutes: 15,
+        passingScore: 50.0,
+        questions: [fillerQuestion],
+      ),
+    ];
+    for (final t in tests) {
+      batch.set(db.collection('tests').doc(t.testID), t.toMap());
     }
 
     // ── 3. Badge documents ───────────────────────────────────────────────────
@@ -1993,10 +2108,11 @@ class FirebaseService {
     }
 
     // ── 4. Portfolio Projects ────────────────────────────────────────────────
+    // ── CHANGE (Step 3): 'jobSeekerID' now uses saraUid in all 4 projects ────
     final projects = [
       {
         'projectID': _demoProProject1ID,
-        'jobSeekerID': _demoProJobSeekerID,
+        'jobSeekerID': saraUid,
         'projectTitle': 'Elevate Mobile App',
         'projectDescription':
             'A full-featured Flutter-based career platform with Firebase backend, '
@@ -2011,7 +2127,7 @@ class FirebaseService {
       },
       {
         'projectID': _demoProProject2ID,
-        'jobSeekerID': _demoProJobSeekerID,
+        'jobSeekerID': saraUid,
         'projectTitle': 'Intelligent ML Data Pipeline',
         'projectDescription':
             'End-to-end machine learning pipeline for resume screening and candidate ranking. '
@@ -2026,7 +2142,7 @@ class FirebaseService {
       },
       {
         'projectID': _demoProProject3ID,
-        'jobSeekerID': _demoProJobSeekerID,
+        'jobSeekerID': saraUid,
         'projectTitle': 'Cloud Infrastructure Dashboard',
         'projectDescription':
             'Real-time monitoring dashboard for AWS infrastructure. Aggregates metrics '
@@ -2041,7 +2157,7 @@ class FirebaseService {
       },
       {
         'projectID': _demoProProject4ID,
-        'jobSeekerID': _demoProJobSeekerID,
+        'jobSeekerID': saraUid,
         'projectTitle': 'E-Commerce React Storefront',
         'projectDescription':
             'High-performance e-commerce storefront built with React, Redux, and Stripe '
@@ -2060,9 +2176,10 @@ class FirebaseService {
     }
 
     // ── 5. Community Post (Sara) ─────────────────────────────────────────────
+    // ── CHANGE (Step 4): 'authorID' now uses saraUid ─────────────────────────
     batch.set(db.collection('posts').doc(_demoProPost1ID), {
       'postID': _demoProPost1ID,
-      'authorID': _demoProJobSeekerID,
+      'authorID': saraUid,
       'authorName': 'Sara Khan',
       'authorType': 'JobSeeker',
       'authorProfilePic':
@@ -2082,6 +2199,7 @@ class FirebaseService {
     });
 
     // ── 6. Top-notch Demo Company (NexCore Technologies) ─────────────────────
+    // ── CHANGE (Step 5): 'followers' now only contains saraUid ───────────────
     final nexcoreData = {
       'companyID': nexcoreUid,
       'email': 'nexcore.demo@elevate.demo',
@@ -2103,7 +2221,7 @@ class FirebaseService {
       'companySize': 200,
       'activeJobs': 3,
       'followersCount': 1240,
-      'followers': <String>[saraUid, _demoProJobSeekerID],
+      'followers': <String>[saraUid],
       'followRequests': <String>[],
       'employeeList': [_demoProEmployee1ID, _demoProEmployee2ID],
       'companyWeaknessList': [
@@ -2126,16 +2244,15 @@ class FirebaseService {
       'postedJobs': [_demoProJob1ID, _demoProJob2ID, _demoProJob3ID],
       'isDemo': true,
     };
+    // ── CHANGE (Step 5): removed duplicate write to _demoProCompanyID ────────
     batch.set(db.collection('companies').doc(nexcoreUid), nexcoreData);
-    if (nexcoreUid != _demoProCompanyID) {
-      batch.set(db.collection('companies').doc(_demoProCompanyID), nexcoreData);
-    }
 
     // ── 7. Employees ─────────────────────────────────────────────────────────
+    // ── CHANGE (Step 6): jobSeekerID/companyID now use real UIDs ─────────────
     batch.set(db.collection('employees').doc(_demoProEmployee1ID), {
       'employeeID': _demoProEmployee1ID,
-      'jobSeekerID': _demoProJobSeekerID,
-      'companyID': _demoProCompanyID,
+      'jobSeekerID': saraUid,
+      'companyID': nexcoreUid,
       'position': 'Senior Flutter & ML Engineer',
       'employeeStatus': 'Active',
       'isDemo': true,
@@ -2143,24 +2260,25 @@ class FirebaseService {
     batch.set(db.collection('employees').doc(_demoProEmployee2ID), {
       'employeeID': _demoProEmployee2ID,
       'jobSeekerID': _demoJobSeekerID, // Ahmad from original seed
-      'companyID': _demoProCompanyID,
+      'companyID': nexcoreUid,
       'position': 'Junior Flutter Developer',
       'employeeStatus': 'Active',
       'isDemo': true,
     });
 
     // ── 8. Job Posts ─────────────────────────────────────────────────────────
+    // ── CHANGE (Step 7): 'companyID' now uses nexcoreUid in all 3 jobs ───────
     final jobs = [
       {
         'jobID': _demoProJob1ID,
-        'companyID': _demoProCompanyID,
+        'companyID': nexcoreUid,
         'title': 'Senior Flutter Developer',
         'description':
             'We are looking for a Senior Flutter Developer to join our mobile division. '
             'You will architect and ship features for our flagship career platform, '
             'mentor junior engineers, and collaborate with the AI team on integrations. '
             'Gold Flutter badge preferred. 3+ years of production Flutter experience required.',
-        'requiredSkills': ['Flutter', 'Dart', 'Firebase', 'REST APIs'],
+        'requiredSkills': [skillFlutterID],
         'requiredBadges': ['Flutter'],
         'salary': '200,000 – 280,000 PKR/month',
         'jobType': 'Full-time',
@@ -2175,14 +2293,14 @@ class FirebaseService {
       },
       {
         'jobID': _demoProJob2ID,
-        'companyID': _demoProCompanyID,
+        'companyID': nexcoreUid,
         'title': 'Machine Learning Engineer',
         'description':
             'Join our AI Research division to build intelligent automation systems. '
             'You will design and deploy ML models (NLP, CV), build data pipelines, '
             'and integrate AI into our product suite. MSc AI or equivalent experience required. '
             'Gold ML badge is a strong differentiator.',
-        'requiredSkills': ['Python', 'TensorFlow', 'PyTorch', 'MLOps', 'SQL'],
+        'requiredSkills': [skillMLID],
         'requiredBadges': ['Machine Learning'],
         'salary': '220,000 – 300,000 PKR/month',
         'jobType': 'Full-time',
@@ -2197,14 +2315,14 @@ class FirebaseService {
       },
       {
         'jobID': _demoProJob3ID,
-        'companyID': _demoProCompanyID,
+        'companyID': nexcoreUid,
         'title': 'Cloud Infrastructure Engineer',
         'description':
             'Own and evolve our cloud infrastructure across AWS and GCP. '
             'Design fault-tolerant, auto-scaling architectures, manage CI/CD pipelines, '
             'implement monitoring & alerting, and drive cost optimisation initiatives. '
             'AWS/GCP certifications and Cloud Computing badge preferred.',
-        'requiredSkills': ['AWS', 'Terraform', 'Docker', 'Kubernetes', 'CI/CD'],
+        'requiredSkills': [skillCloudID],
         'requiredBadges': ['Cloud Computing'],
         'salary': '180,000 – 260,000 PKR/month',
         'jobType': 'Full-time',
@@ -2225,10 +2343,97 @@ class FirebaseService {
     await batch.commit();
   }
 
-  /// Removes ALL demo documents created by [seedDemoProject] and [seedTopNotchDemo].
-  /// Call this to clean up the demo dataset without touching any real data.
+  Future<void> seedExplorerJobPool() async {
+    final companyID = _demoProCompanyID;
+    final batch = db.batch();
+
+    const tiers = {
+      'Bronze': 'Entry Level',
+      'Silver': '1 to 5 years',
+      'Gold': '5+ years',
+    };
+
+    final titlesByTier = {
+      'Bronze': [
+        'Junior Frontend Developer',
+        'Support Engineer Intern',
+        'Junior QA Tester',
+        'Data Entry Analyst',
+        'Junior Backend Developer',
+        'Graphic Design Intern',
+        'Junior DevOps Assistant',
+        'Customer Success Associate',
+        'Junior Mobile Developer',
+        'Content & Social Media Assistant',
+      ],
+      'Silver': [
+        'Mid Frontend Developer',
+        'Backend Engineer',
+        'QA Automation Engineer',
+        'Product Analyst',
+        'Mobile App Developer',
+        'UI/UX Designer',
+        'DevOps Engineer',
+        'Technical Support Lead',
+        'Database Administrator',
+        'Marketing Automation Specialist',
+      ],
+      'Gold': [
+        'Senior Software Architect',
+        'Principal Backend Engineer',
+        'Lead QA Engineer',
+        'Senior Product Manager',
+        'Staff Mobile Engineer',
+        'Lead UI/UX Designer',
+        'Senior DevOps Architect',
+        'Engineering Manager',
+        'Senior Database Architect',
+        'Head of Growth Marketing',
+      ],
+    };
+
+    for (final tier in tiers.keys) {
+      final experienceLevel = tiers[tier]!;
+      final titles = titlesByTier[tier]!;
+      for (int i = 0; i < titles.length; i++) {
+        final jobID = 'DEMO_explorer_${tier}_$i';
+        batch.set(db.collection('jobs').doc(jobID), {
+          'jobID': jobID,
+          'companyID': companyID,
+          'title': titles[i],
+          'description':
+              'Explore this $tier-level opportunity at NexCore Technologies. Open to candidates matching the $experienceLevel experience range.',
+          'requiredSkills': <String>[],
+          'requiredBadges': <String>[],
+          'salary': tier == 'Gold'
+              ? '250,000 – 350,000 PKR/month'
+              : tier == 'Silver'
+              ? '120,000 – 200,000 PKR/month'
+              : '50,000 – 90,000 PKR/month',
+          'jobType': 'Full-time',
+          'location': 'Karachi, Pakistan',
+          'experienceLevel': experienceLevel,
+          'postedAt': DateTime.now()
+              .subtract(Duration(days: i))
+              .toIso8601String(),
+          'applicants': <String>[],
+          'isExternal': false,
+          'sourceUrl': '',
+          'isClosed': false,
+          'isDemo': true,
+        });
+      }
+    }
+
+    await batch.commit();
+  }
+
+  /// Removes ALL demo documents created by [seedDemoProject], [seedTopNotchDemo],
+  /// and [seedExplorerJobPool]. Call this to clean up the demo dataset without
+  /// touching any real data.
   Future<void> deleteDemoData() async {
     final batch = db.batch();
+
     // Original seed
     batch.delete(db.collection('jobSeekers').doc(_demoJobSeekerID));
     batch.delete(db.collection('projects').doc(_demoProjectID));
@@ -2265,12 +2470,39 @@ class FirebaseService {
     }
     batch.delete(db.collection('posts').doc(_demoProPost1ID));
 
+    // Skill + Test docs
+    for (final id in [
+      'skill_flutter',
+      'skill_react',
+      'skill_python',
+      'skill_ml',
+      'skill_cloud',
+    ]) {
+      batch.delete(db.collection('skills').doc(id));
+    }
+    for (final id in [
+      'DEMO_test_Flutter',
+      'DEMO_test_React',
+      'DEMO_test_Python',
+      'DEMO_test_ML',
+      'DEMO_test_Cloud',
+    ]) {
+      batch.delete(db.collection('tests').doc(id));
+    }
+
     // Top-notch company (NexCore)
     batch.delete(db.collection('companies').doc(_demoProCompanyID));
     batch.delete(db.collection('employees').doc(_demoProEmployee1ID));
     batch.delete(db.collection('employees').doc(_demoProEmployee2ID));
     for (final id in [_demoProJob1ID, _demoProJob2ID, _demoProJob3ID]) {
       batch.delete(db.collection('jobs').doc(id));
+    }
+
+    // Explorer job pool (30 filler jobs)
+    for (final tier in ['Bronze', 'Silver', 'Gold']) {
+      for (int i = 0; i < 10; i++) {
+        batch.delete(db.collection('jobs').doc('DEMO_explorer_${tier}_$i'));
+      }
     }
 
     await batch.commit();
