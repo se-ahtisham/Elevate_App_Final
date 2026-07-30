@@ -34,7 +34,6 @@ class _CompanyMessageScreenState extends State<CompanyMessageScreen> {
     super.initState();
     currentUserId = _authService.currentUser?.uid ?? '';
     final String rId = widget.receiverId ?? 'unknown';
-    // Ensure consistent chat ID regardless of who started it
     chatId = currentUserId.compareTo(rId) > 0 
         ? '${currentUserId}_$rId' 
         : '${rId}_$currentUserId';

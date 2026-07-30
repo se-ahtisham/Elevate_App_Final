@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/skill_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/admin_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/application_model.dart';
@@ -819,6 +821,12 @@ class FirebaseService {
     await db.collection('badges').doc(badgeID).update(newData);
   }
 
+  Future<BadgeModel?> getBadgeById(String badgeID) async {
+    final doc = await db.collection('badges').doc(badgeID).get();
+    if (!doc.exists) return null;
+    return BadgeModel.fromMap(doc.data()!);
+  }
+
   Future<void> deleteBadge(String badgeID) async {
     await db.collection('badges').doc(badgeID).delete();
   }
@@ -1552,6 +1560,40 @@ class FirebaseService {
       'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app'
       '/o/demo_files%2Fsample_test_file.txt?alt=media&token=afd007ca-77e8-4b9f-b08f-59dc6b36dd59';
 
+  // ── Helper to ensure Firebase Auth account exists for demo credentials ─────
+  Future<String> _ensureDemoUserAuth(
+    String email,
+    String password,
+    String fallbackId,
+  ) async {
+    try {
+      final auth = FirebaseAuth.instance;
+      UserCredential uc;
+      try {
+        uc = await auth.createUserWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+        return uc.user!.uid;
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'email-already-in-use') {
+          try {
+            uc = await auth.signInWithEmailAndPassword(
+              email: email,
+              password: password,
+            );
+            return uc.user!.uid;
+          } catch (signInErr) {
+            debugPrint("Sign in existing demo user failed: $signInErr");
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint("Auth creation error for $email: $e");
+    }
+    return fallbackId;
+  }
+
   /// Seeds a fully self-contained demo dataset:
   ///   • A demo JobSeeker  (collection: jobSeekers, doc: DEMO_jobSeeker_Ahmad)
   ///   • A demo Project    (collection: projects,   doc: DEMO_project_SampleTestFile)
@@ -1562,12 +1604,23 @@ class FirebaseService {
   /// Safe to call multiple times — overwrites only DEMO_ documents.
   Future<void> seedDemoProject({String? fileDownloadUrl}) async {
     final String url = fileDownloadUrl ?? _demoFileDownloadUrl;
+
+    final ahmadUid = await _ensureDemoUserAuth(
+      'demo.ahmad@elevate.demo',
+      'Test@123',
+      _demoJobSeekerID,
+    );
+    final companyUid = await _ensureDemoUserAuth(
+      'demo.company@elevate.demo',
+      'Test@123',
+      _demoCompanyID,
+    );
+
     final batch = db.batch();
 
     // 1 ── Demo JobSeeker
-    final jobSeekerRef = db.collection('jobSeekers').doc(_demoJobSeekerID);
-    batch.set(jobSeekerRef, {
-      'jobSeekerID': _demoJobSeekerID,
+    final ahmadData = {
+      'jobSeekerID': ahmadUid,
       'name': 'Ahmad (Demo)',
       'email': 'demo.ahmad@elevate.demo',
       'password': 'Test@123',
@@ -1605,7 +1658,11 @@ class FirebaseService {
       ],
       // ── demo marker ──────────────────────────────────────────────────────
       'isDemo': true,
-    });
+    };
+    batch.set(db.collection('jobSeekers').doc(ahmadUid), ahmadData);
+    if (ahmadUid != _demoJobSeekerID) {
+      batch.set(db.collection('jobSeekers').doc(_demoJobSeekerID), ahmadData);
+    }
 
     // 2 ── Demo Project (with the uploaded file)
     final projectRef = db.collection('projects').doc(_demoProjectID);
@@ -1627,9 +1684,8 @@ class FirebaseService {
     });
 
     // 3 ── Demo Company
-    final companyRef = db.collection('companies').doc(_demoCompanyID);
-    batch.set(companyRef, {
-      'companyID': _demoCompanyID,
+    final companyData = {
+      'companyID': companyUid,
       'email': 'demo.company@elevate.demo',
       'password': 'Test@123',
       'userType': 'Company',
@@ -1652,7 +1708,11 @@ class FirebaseService {
       'postedJobs': <String>[],
       // ── demo marker ──────────────────────────────────────────────────────
       'isDemo': true,
-    });
+    };
+    batch.set(db.collection('companies').doc(companyUid), companyData);
+    if (companyUid != _demoCompanyID) {
+      batch.set(db.collection('companies').doc(_demoCompanyID), companyData);
+    }
 
     // 4 ── Demo Employee link (company ↔ job seeker)
     final employeeRef = db.collection('employees').doc(_demoEmployeeID);
@@ -1672,19 +1732,32 @@ class FirebaseService {
   // ── Top-notch demo seed ────────────────────────────────────────────────────
 
   Future<void> seedTopNotchDemo() async {
+    final saraUid = await _ensureDemoUserAuth(
+      'sara.demo@elevate.demo',
+      'Test@123',
+      _demoProJobSeekerID,
+    );
+    final nexcoreUid = await _ensureDemoUserAuth(
+      'nexcore.demo@elevate.demo',
+      'Test@123',
+      _demoProCompanyID,
+    );
+
     final batch = db.batch();
     final now = DateTime.now();
 
     // ── 1. Top-notch Job Seeker (Sara Khan) ──────────────────────────────────
-    batch.set(db.collection('jobSeekers').doc(_demoProJobSeekerID), {
-      'jobSeekerID': _demoProJobSeekerID,
-      'name': 'Sara Khan (Demo)',
+    final saraData = {
+      'jobSeekerID': saraUid,
+      'name': 'Sara Khan',
       'email': 'sara.demo@elevate.demo',
       'password': 'Test@123',
       'userType': 'JobSeeker',
-      'profilePic': 'https://ui-avatars.com/api/?name=Sara+Khan&background=6C63FF&color=fff&size=256',
+      'profilePic':
+          'https://ui-avatars.com/api/?name=Sara+Khan&background=6C63FF&color=fff&size=256',
       'location': 'Karachi, Pakistan',
-      'about': 'Full-Stack & ML Engineer with 5+ years building production-grade mobile apps, '
+      'about':
+          'Full-Stack & ML Engineer with 5+ years building production-grade mobile apps, '
           'intelligent data pipelines, and cloud-native systems. '
           'Gold-badge holder in Flutter, React, and Machine Learning. '
           'Passionate about bridging elegant UI with powerful AI backends.',
@@ -1692,28 +1765,39 @@ class FirebaseService {
       'experienceLevel': 'Senior',
       'skillCount': 5,
       'passedResultIDs': [
-        _demoResult1ID, _demoResult2ID, _demoResult3ID,
-        _demoResult4ID, _demoResult5ID,
+        _demoResult1ID,
+        _demoResult2ID,
+        _demoResult3ID,
+        _demoResult4ID,
+        _demoResult5ID,
       ],
       'mySkillTestsResultList': [
-        _demoResult1ID, _demoResult2ID, _demoResult3ID,
-        _demoResult4ID, _demoResult5ID,
+        _demoResult1ID,
+        _demoResult2ID,
+        _demoResult3ID,
+        _demoResult4ID,
+        _demoResult5ID,
       ],
       'totalTestsTaken': 5,
       'earnedBadges': [
-        _demoBadge1ID, _demoBadge2ID, _demoBadge3ID,
-        _demoBadge4ID, _demoBadge5ID,
+        _demoBadge1ID,
+        _demoBadge2ID,
+        _demoBadge3ID,
+        _demoBadge4ID,
+        _demoBadge5ID,
       ],
       'totalBadgesEarned': 5,
       'portfolio': [
-        _demoProProject1ID, _demoProProject2ID,
-        _demoProProject3ID, _demoProProject4ID,
+        _demoProProject1ID,
+        _demoProProject2ID,
+        _demoProProject3ID,
+        _demoProProject4ID,
       ],
       'postList': [_demoProPost1ID],
       'following': <String>[],
       'followers': <String>[],
       'followRequests': <String>[],
-      'followedCompanies': [_demoProCompanyID],
+      'followedCompanies': [nexcoreUid],
       'appliedJobRequests': <String>[],
       'becomeEmployee': [_demoProEmployee1ID],
       'careerGuidanceTasks': <String>[],
@@ -1748,7 +1832,11 @@ class FirebaseService {
         },
       ],
       'isDemo': true,
-    });
+    };
+    batch.set(db.collection('jobSeekers').doc(saraUid), saraData);
+    if (saraUid != _demoProJobSeekerID) {
+      batch.set(db.collection('jobSeekers').doc(_demoProJobSeekerID), saraData);
+    }
 
     // ── 2. Skill Test Results ────────────────────────────────────────────────
     final results = [
@@ -1762,7 +1850,9 @@ class FirebaseService {
         'completedAt': now.subtract(const Duration(days: 30)).toIso8601String(),
         'timeTakenSeconds': 1420,
         'attemptNumber': 1,
-        'lastAttemptAt': now.subtract(const Duration(days: 30)).toIso8601String(),
+        'lastAttemptAt': now
+            .subtract(const Duration(days: 30))
+            .toIso8601String(),
         'cooldownUntil': null,
         'experienceLevel': 'Advanced',
         'badgeEarned': _demoBadge1ID,
@@ -1778,7 +1868,9 @@ class FirebaseService {
         'completedAt': now.subtract(const Duration(days: 25)).toIso8601String(),
         'timeTakenSeconds': 1580,
         'attemptNumber': 1,
-        'lastAttemptAt': now.subtract(const Duration(days: 25)).toIso8601String(),
+        'lastAttemptAt': now
+            .subtract(const Duration(days: 25))
+            .toIso8601String(),
         'cooldownUntil': null,
         'experienceLevel': 'Advanced',
         'badgeEarned': _demoBadge2ID,
@@ -1794,7 +1886,9 @@ class FirebaseService {
         'completedAt': now.subtract(const Duration(days: 20)).toIso8601String(),
         'timeTakenSeconds': 1900,
         'attemptNumber': 1,
-        'lastAttemptAt': now.subtract(const Duration(days: 20)).toIso8601String(),
+        'lastAttemptAt': now
+            .subtract(const Duration(days: 20))
+            .toIso8601String(),
         'cooldownUntil': null,
         'experienceLevel': 'Mid',
         'badgeEarned': _demoBadge3ID,
@@ -1810,7 +1904,9 @@ class FirebaseService {
         'completedAt': now.subtract(const Duration(days: 15)).toIso8601String(),
         'timeTakenSeconds': 1200,
         'attemptNumber': 1,
-        'lastAttemptAt': now.subtract(const Duration(days: 15)).toIso8601String(),
+        'lastAttemptAt': now
+            .subtract(const Duration(days: 15))
+            .toIso8601String(),
         'cooldownUntil': null,
         'experienceLevel': 'Advanced',
         'badgeEarned': _demoBadge4ID,
@@ -1826,7 +1922,9 @@ class FirebaseService {
         'completedAt': now.subtract(const Duration(days: 10)).toIso8601String(),
         'timeTakenSeconds': 1750,
         'attemptNumber': 1,
-        'lastAttemptAt': now.subtract(const Duration(days: 10)).toIso8601String(),
+        'lastAttemptAt': now
+            .subtract(const Duration(days: 10))
+            .toIso8601String(),
         'cooldownUntil': null,
         'experienceLevel': 'Mid',
         'badgeEarned': _demoBadge5ID,
@@ -1845,7 +1943,8 @@ class FirebaseService {
         'badgeLevel': 'Gold',
         'minScore': 90.0,
         'maxScore': 100.0,
-        'badgeImage': 'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fgold.png?alt=media&token=8fa4f2b5-07f5-4b84-a943-02abb5989d72',
+        'badgeImage':
+            'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fgold.png?alt=media&token=8fa4f2b5-07f5-4b84-a943-02abb5989d72',
         'isDemo': true,
       },
       {
@@ -1854,7 +1953,8 @@ class FirebaseService {
         'badgeLevel': 'Gold',
         'minScore': 90.0,
         'maxScore': 100.0,
-        'badgeImage': 'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fgold.png?alt=media&token=8fa4f2b5-07f5-4b84-a943-02abb5989d72',
+        'badgeImage':
+            'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fgold.png?alt=media&token=8fa4f2b5-07f5-4b84-a943-02abb5989d72',
         'isDemo': true,
       },
       {
@@ -1863,7 +1963,8 @@ class FirebaseService {
         'badgeLevel': 'Silver',
         'minScore': 60.0,
         'maxScore': 90.0,
-        'badgeImage': 'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fsilver.png?alt=media&token=8ace9945-0206-4491-b175-db75e70b9ff7',
+        'badgeImage':
+            'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fsilver.png?alt=media&token=8ace9945-0206-4491-b175-db75e70b9ff7',
         'isDemo': true,
       },
       {
@@ -1872,7 +1973,8 @@ class FirebaseService {
         'badgeLevel': 'Gold',
         'minScore': 90.0,
         'maxScore': 100.0,
-        'badgeImage': 'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fgold.png?alt=media&token=8fa4f2b5-07f5-4b84-a943-02abb5989d72',
+        'badgeImage':
+            'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fgold.png?alt=media&token=8fa4f2b5-07f5-4b84-a943-02abb5989d72',
         'isDemo': true,
       },
       {
@@ -1881,7 +1983,8 @@ class FirebaseService {
         'badgeLevel': 'Silver',
         'minScore': 60.0,
         'maxScore': 90.0,
-        'badgeImage': 'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fsilver.png?alt=media&token=8ace9945-0206-4491-b175-db75e70b9ff7',
+        'badgeImage':
+            'https://firebasestorage.googleapis.com/v0/b/elevate-988ab.firebasestorage.app/o/badge_images%2Fsilver.png?alt=media&token=8ace9945-0206-4491-b175-db75e70b9ff7',
         'isDemo': true,
       },
     ];
@@ -1960,9 +2063,10 @@ class FirebaseService {
     batch.set(db.collection('posts').doc(_demoProPost1ID), {
       'postID': _demoProPost1ID,
       'authorID': _demoProJobSeekerID,
-      'authorName': 'Sara Khan (Demo)',
+      'authorName': 'Sara Khan',
       'authorType': 'JobSeeker',
-      'authorProfilePic': 'https://ui-avatars.com/api/?name=Sara+Khan&background=6C63FF&color=fff&size=256',
+      'authorProfilePic':
+          'https://ui-avatars.com/api/?name=Sara+Khan&background=6C63FF&color=fff&size=256',
       'title': '🚀 Just earned my 5th Gold Badge on Elevate!',
       'content':
           'Incredibly proud to have passed the Machine Learning Advanced test with 97%! '
@@ -1978,15 +2082,16 @@ class FirebaseService {
     });
 
     // ── 6. Top-notch Demo Company (NexCore Technologies) ─────────────────────
-    batch.set(db.collection('companies').doc(_demoProCompanyID), {
-      'companyID': _demoProCompanyID,
+    final nexcoreData = {
+      'companyID': nexcoreUid,
       'email': 'nexcore.demo@elevate.demo',
       'password': 'Test@123',
       'userType': 'Company',
       'companyName': 'NexCore Technologies',
       'industry': 'Software & AI',
       'website': 'https://nexcore.demo',
-      'logo': 'https://ui-avatars.com/api/?name=NexCore&background=1A1A2E&color=fff&size=256',
+      'logo':
+          'https://ui-avatars.com/api/?name=NexCore&background=1A1A2E&color=fff&size=256',
       'description':
           'NexCore Technologies is a cutting-edge software house and AI research firm '
           'founded in 2018 and headquartered in Karachi, Pakistan. We build enterprise-grade '
@@ -1998,7 +2103,7 @@ class FirebaseService {
       'companySize': 200,
       'activeJobs': 3,
       'followersCount': 1240,
-      'followers': <String>[_demoProJobSeekerID],
+      'followers': <String>[saraUid, _demoProJobSeekerID],
       'followRequests': <String>[],
       'employeeList': [_demoProEmployee1ID, _demoProEmployee2ID],
       'companyWeaknessList': [
@@ -2020,7 +2125,11 @@ class FirebaseService {
       'receivedApplications': <String>[],
       'postedJobs': [_demoProJob1ID, _demoProJob2ID, _demoProJob3ID],
       'isDemo': true,
-    });
+    };
+    batch.set(db.collection('companies').doc(nexcoreUid), nexcoreData);
+    if (nexcoreUid != _demoProCompanyID) {
+      batch.set(db.collection('companies').doc(_demoProCompanyID), nexcoreData);
+    }
 
     // ── 7. Employees ─────────────────────────────────────────────────────────
     batch.set(db.collection('employees').doc(_demoProEmployee1ID), {
@@ -2129,20 +2238,28 @@ class FirebaseService {
     // Top-notch job seeker (Sara)
     batch.delete(db.collection('jobSeekers').doc(_demoProJobSeekerID));
     for (final id in [
-      _demoResult1ID, _demoResult2ID, _demoResult3ID,
-      _demoResult4ID, _demoResult5ID,
+      _demoResult1ID,
+      _demoResult2ID,
+      _demoResult3ID,
+      _demoResult4ID,
+      _demoResult5ID,
     ]) {
       batch.delete(db.collection('results').doc(id));
     }
     for (final id in [
-      _demoBadge1ID, _demoBadge2ID, _demoBadge3ID,
-      _demoBadge4ID, _demoBadge5ID,
+      _demoBadge1ID,
+      _demoBadge2ID,
+      _demoBadge3ID,
+      _demoBadge4ID,
+      _demoBadge5ID,
     ]) {
       batch.delete(db.collection('badges').doc(id));
     }
     for (final id in [
-      _demoProProject1ID, _demoProProject2ID,
-      _demoProProject3ID, _demoProProject4ID,
+      _demoProProject1ID,
+      _demoProProject2ID,
+      _demoProProject3ID,
+      _demoProProject4ID,
     ]) {
       batch.delete(db.collection('projects').doc(id));
     }
@@ -2152,13 +2269,10 @@ class FirebaseService {
     batch.delete(db.collection('companies').doc(_demoProCompanyID));
     batch.delete(db.collection('employees').doc(_demoProEmployee1ID));
     batch.delete(db.collection('employees').doc(_demoProEmployee2ID));
-    for (final id in [
-      _demoProJob1ID, _demoProJob2ID, _demoProJob3ID,
-    ]) {
+    for (final id in [_demoProJob1ID, _demoProJob2ID, _demoProJob3ID]) {
       batch.delete(db.collection('jobs').doc(id));
     }
 
     await batch.commit();
   }
 }
-

@@ -357,7 +357,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         onTap: () async {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Step 1/2 — Seeding users, jobs & skills...'),
+                              content: Text('Step 1/3 — Seeding users, jobs & skills...'),
                               duration: Duration(seconds: 4),
                             ),
                           );
@@ -368,7 +368,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             if (!context.mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Step 2/2 — Seeding portfolio demo project...'),
+                                content: Text('Step 2/3 — Seeding portfolio demo project...'),
                                 duration: Duration(seconds: 4),
                               ),
                             );
@@ -379,8 +379,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             if (!context.mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('✅ Demo Data Seeded Successfully!'),
+                                content: Text('Step 3/3 — Seeding top-notch Sara & NexCore demo accounts...'),
+                                duration: Duration(seconds: 4),
+                              ),
+                            );
+
+                            // Step 3: Seed top-notch demo accounts (sara.demo & nexcore.demo)
+                            // This registers them in Firebase Auth so login works!
+                            await FirebaseService().seedTopNotchDemo();
+
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('✅ All Demo Data Seeded! Login: sara.demo@elevate.demo / Test@123'),
                                 backgroundColor: Colors.green,
+                                duration: Duration(seconds: 6),
                               ),
                             );
                           } catch (e) {

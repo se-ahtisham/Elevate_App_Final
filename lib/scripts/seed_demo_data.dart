@@ -128,35 +128,40 @@ class _SeedScreenState extends State<_SeedScreen> {
     _log('\n🚀  Seeding top-notch demo accounts…');
     await firebaseService.seedTopNotchDemo();
     _log('   ✔  JobSeeker        → DEMO_jobSeeker_Sara');
-    _log('     • 5 skill results (Flutter 95%, React 92%, Python 75%, ML 97%, Cloud 82%)');
+    _log(
+      '     • 5 skill results (Flutter 95%, React 92%, Python 75%, ML 97%, Cloud 82%)',
+    );
     _log('     • 5 badges        (3× Gold, 2× Silver)');
     _log('     • 4 portfolio projects');
     _log('     • 3 work experiences, 2 education entries, 1 community post');
-    _log('   ✔  Company          → DEMO_company_NexCore (NexCore Technologies)');
+    _log(
+      '   ✔  Company          → DEMO_company_NexCore (NexCore Technologies)',
+    );
     _log('     • 3 active job posts (Flutter / ML / Cloud)');
     _log('     • 2 employees, strengths, achievements, 1240 followers');
 
-    _log('\n✅  SEED COMPLETE!\n'
-        'Top-notch profiles are live in Firebase.\n'
-        'Sara Khan  →  jobSeekers/DEMO_jobSeeker_Sara\n'
-        'NexCore    →  companies/DEMO_company_NexCore\n'
-        'Original Ahmad demo also seeded (DEMO_jobSeeker_Ahmad).');
+    _log(
+      '\n✅  SEED COMPLETE!\n'
+      'Top-notch profiles are live in Firebase.\n'
+      'Sara Khan  →  jobSeekers/DEMO_jobSeeker_Sara\n'
+      'NexCore    →  companies/DEMO_company_NexCore\n'
+      'Original Ahmad demo also seeded (DEMO_jobSeeker_Ahmad).',
+    );
   }
 
   // ── Cleanup ──────────────────────────────────────────────────────────────
 
   Future<void> _cleanup() async {
-    // Delete demo Firestore documents only.
-    // Note: demo_files/sample_test_file.txt is kept in Firebase Storage
-    // permanently so the download URL remains valid.
     _log('🗑  Deleting Firestore demo documents…');
     final firebaseService = FirebaseService();
     await firebaseService.deleteDemoData();
     _log('   ✔  Deleted all DEMO_ Firestore documents.');
 
-    _log('\n✅  CLEANUP COMPLETE. All demo Firestore data removed.\n'
-        '   (Storage file kept so download URL stays valid.\n'
-        '    Original Ahmad + NexCore/Sara data all deleted.)');
+    _log(
+      '\n✅  CLEANUP COMPLETE. All demo Firestore data removed.\n'
+      '   (Storage file kept so download URL stays valid.\n'
+      '    Original Ahmad + NexCore/Sara data all deleted.)',
+    );
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
@@ -176,9 +181,9 @@ class _SeedScreenState extends State<_SeedScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_runCleanupInstead
-            ? 'Demo Cleanup Script'
-            : 'Demo Seed Script'),
+        title: Text(
+          _runCleanupInstead ? 'Demo Cleanup Script' : 'Demo Seed Script',
+        ),
         backgroundColor: _runCleanupInstead
             ? Colors.red.shade900
             : const Color(0xFF1A1A2E),

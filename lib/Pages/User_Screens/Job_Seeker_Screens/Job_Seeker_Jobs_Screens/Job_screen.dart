@@ -327,7 +327,10 @@ class JobScreenState extends ConsumerState<JobScreen> {
                                   jobType: job.jobType,
                                   salary: job.salary,
                                   onApplyTap: () {
-                                    Navigator.of(context, rootNavigator: true).push(
+                                    Navigator.of(
+                                      context,
+                                      rootNavigator: true,
+                                    ).push(
                                       MaterialPageRoute(
                                         builder: (_) => JobSelection(
                                           jobPost: job,
@@ -818,4 +821,3 @@ class JobScreenState extends ConsumerState<JobScreen> {
     );
   }
 }
-

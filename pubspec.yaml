@@ -94,9 +94,6 @@ flutter:
     - lib/Resources/Images/Job_Image.png
     - lib/Resources/Images/Elevate_Large_Logo.png
     - lib/Resources/Images/Elevate_Logo.png
-    - lib/Resources/Images/Badges/gold.png
-    - lib/Resources/Images/Badges/silver.png
-    - lib/Resources/Images/Badges/bronze.png
     - lib/Resources/Images/mock.png
     - lib/Resources/Images/mock2.png
     - lib/Resources/Icons/
