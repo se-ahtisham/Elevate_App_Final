@@ -42,7 +42,6 @@ class ShowAppliedCandidatesScreenState
 
     try {
       List<JobSeekerModel> fetched = [];
-      // applicants[] stores applicationIDs — look up each application first
       for (String applicationID in widget.job.applicants) {
         final appDoc = await FirebaseFirestore.instance
             .collection('applications')

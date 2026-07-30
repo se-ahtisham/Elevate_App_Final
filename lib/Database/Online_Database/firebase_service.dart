@@ -153,7 +153,6 @@ class FirebaseService {
     batch.update(db.collection(toCollection).doc(req.toID), {
       'followers': FieldValue.arrayUnion([req.fromID]),
       'followRequests': FieldValue.arrayRemove([requestID]),
-      // Increment the stored followersCount so company profile header updates
       if (toCollection == 'companies')
         'followersCount': FieldValue.increment(1),
     });
