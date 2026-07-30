@@ -80,7 +80,7 @@ class _CompanySearchUserState extends State<CompanySearchUser> {
                           }
 
                           final docs = snapshot.data?.docs ?? [];
-                          final seen = <String>{};
+                          final seenNames = <String>{};
 
                           final seekers = docs
                               .map(
@@ -88,7 +88,7 @@ class _CompanySearchUserState extends State<CompanySearchUser> {
                                   d.data() as Map<String, dynamic>,
                                 ),
                               )
-                              .where((s) => seen.add(s.jobSeekerID))
+                              .where((s) => seenNames.add(s.name.toLowerCase()))
                               .where((s) {
                                 if (_query.trim().isEmpty) return true;
 

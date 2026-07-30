@@ -81,8 +81,8 @@ class UserCommunityMycommunityScreenState
           .toList();
     }
 
-    final seen = <String>{};
-    members = members.where((m) => seen.add(m['id'] ?? '')).toList();
+    final seenNames = <String>{};
+    members = members.where((m) => seenNames.add((m['name'] ?? '').toLowerCase())).toList();
 
     return members;
   }
@@ -177,29 +177,34 @@ class UserCommunityMycommunityScreenState
                     fontWeight: FontWeight.w500,
                   ),
                 )
-              : SingleChildScrollView(
-                  child: Column(
-                    children: visibleMembers.map((member) {
-                      final imageUrl = member['imageUrl'] ?? '';
-                      return Padding(
-                        key: ValueKey(member['id']),
-                        padding: const EdgeInsets.only(bottom: 10),
-                        child: WhiteBlackUser(
-                          imageURL: imageUrl.isNotEmpty
-                              ? imageUrl
-                              : (member['type'] == 'Company'
-                                    ? "lib/Resources/Images/Profile_Images/Company_Logo.jpg"
-                                    : "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg"),
-                          name: member['name'] ?? '',
-                          shortDescription: member['subtitle'] ?? '',
-                          experience: member['type'] ?? '',
-                          firstContainerWidth: 270,
-                          experienceBoxWidth: 240,
-                          tileHeight: 80,
-                          onTap: () => openProfile(member),
-                        ),
-                      );
-                    }).toList(),
+              : RefreshIndicator(
+                  color: Colors.black,
+                  onRefresh: loadCommunity,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      children: visibleMembers.map((member) {
+                        final imageUrl = member['imageUrl'] ?? '';
+                        return Padding(
+                          key: ValueKey(member['id']),
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: WhiteBlackUser(
+                            imageURL: imageUrl.isNotEmpty
+                                ? imageUrl
+                                : (member['type'] == 'Company'
+                                      ? "lib/Resources/Images/Profile_Images/Company_Logo.jpg"
+                                      : "lib/Resources/Images/Profile_Images/ahtisham_Profile_image.jpg"),
+                            name: member['name'] ?? '',
+                            shortDescription: member['subtitle'] ?? '',
+                            experience: member['type'] ?? '',
+                            firstContainerWidth: 270,
+                            experienceBoxWidth: 240,
+                            tileHeight: 80,
+                            onTap: () => openProfile(member),
+                          ),
+                        );
+                      }).toList(),
+                    ),
                   ),
                 ),
         ),

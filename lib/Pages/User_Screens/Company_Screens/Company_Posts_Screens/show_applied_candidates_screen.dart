@@ -42,15 +42,24 @@ class ShowAppliedCandidatesScreenState
 
     try {
       List<JobSeekerModel> fetched = [];
-      // Fetch each applicant profile
-      for (String uid in widget.job.applicants) {
-        final doc = await FirebaseFirestore.instance
-            .collection('jobSeekers')
-            .doc(uid)
+      // applicants[] stores applicationIDs — look up each application first
+      for (String applicationID in widget.job.applicants) {
+        final appDoc = await FirebaseFirestore.instance
+            .collection('applications')
+            .doc(applicationID)
             .get();
-        if (doc.exists) {
+        if (!appDoc.exists) continue;
+
+        final jobSeekerID = appDoc.data()?['jobSeekerID'] as String?;
+        if (jobSeekerID == null || jobSeekerID.isEmpty) continue;
+
+        final seekerDoc = await FirebaseFirestore.instance
+            .collection('jobSeekers')
+            .doc(jobSeekerID)
+            .get();
+        if (seekerDoc.exists) {
           fetched.add(
-            JobSeekerModel.fromMap(doc.data() as Map<String, dynamic>),
+            JobSeekerModel.fromMap(seekerDoc.data() as Map<String, dynamic>),
           );
         }
       }

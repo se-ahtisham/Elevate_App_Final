@@ -80,7 +80,7 @@ class _CompanySearchCompanyState extends State<CompanySearchCompany> {
                           }
 
                           final docs = snapshot.data?.docs ?? [];
-                          final seen = <String>{};
+                          final seenNames = <String>{};
 
                           final companies = docs
                               .map((d) {
@@ -90,7 +90,7 @@ class _CompanySearchCompanyState extends State<CompanySearchCompany> {
                                 data['companyID'] = d.id;
                                 return CompanyModel.fromMap(data);
                               })
-                              .where((c) => seen.add(c.companyID))
+                              .where((c) => seenNames.add(c.companyName.toLowerCase()))
                               .where((c) {
                                 if (_query.trim().isEmpty) return true;
 

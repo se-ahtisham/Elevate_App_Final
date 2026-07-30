@@ -21,6 +21,13 @@ class UserSearchCompanyState extends ConsumerState<UserSearchCompany> {
   List<CompanyModel> allCompanies = [];
   List<CompanyModel> filteredCompanies = [];
   bool isLoading = false;
+  final TextEditingController searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -89,6 +96,7 @@ class UserSearchCompanyState extends ConsumerState<UserSearchCompany> {
                       height: 48,
                       textSize: 14,
                       iconSize: 22,
+                      controller: searchController,
                       onChanged: onSearchChanged,
                     ),
                     const SizedBox(height: 16),

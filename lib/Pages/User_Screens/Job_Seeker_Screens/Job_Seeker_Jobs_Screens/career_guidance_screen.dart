@@ -151,8 +151,8 @@ class _CareerGuidanceScreenState extends State<CareerGuidanceScreen>
         ],
       ),
     );
-    /* if (confirm == true) {
-      await _service.deleteGuidanceTask(task.taskID);
+    if (confirm == true) {
+      await _service.deleteGuidanceTask(task.taskID, widget.jobSeekerID);
       await _loadTasks();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -166,7 +166,7 @@ class _CareerGuidanceScreenState extends State<CareerGuidanceScreen>
           ),
         );
       }
-    }*/
+    }
   }
 
   Future<void> _editTask(CareerGuidanceTaskModel task) async {
