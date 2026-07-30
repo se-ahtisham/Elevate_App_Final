@@ -385,9 +385,26 @@ class FirebaseService {
       final double avgRating = reviewsSnap.docs.isNotEmpty
           ? totalRating / reviewsSnap.docs.length
           : 0.0;
+
+      List<String> strengths = List<String>.from(companyDoc.data()?['companyStrengthList'] ?? []);
+      List<String> weaknesses = List<String>.from(companyDoc.data()?['companyWeaknessList'] ?? []);
+      
+      final words = review.text.split(' ');
+      final snippet = words.take(4).join(' ') + (words.length > 4 ? '...' : '');
+      
+      if (review.sentiment == 'Positive') {
+        if (!strengths.contains(snippet)) strengths.add(snippet);
+      } else if (review.sentiment == 'Negative') {
+        if (!weaknesses.contains(snippet)) weaknesses.add(snippet);
+      } else {
+        if (!strengths.contains(snippet)) strengths.add(snippet);
+      }
+
       await db.collection('companies').doc(review.companyID).update({
         'rating': avgRating,
         'reviewCount': reviewsSnap.docs.length,
+        'companyStrengthList': strengths,
+        'companyWeaknessList': weaknesses,
       });
     }
     return review;
@@ -2342,37 +2359,9 @@ class FirebaseService {
       ]),
     });
 
-    // ── 5. Add 5 follow requests to Sara Khan and 5 pending reviews (she is active employee) ──
-    for (int i = 1; i <= 5; i++) {
-      final compEmail = 'reviewco$i.demo@elevate.demo';
-      final compUid = await _ensureDemoUserAuth(compEmail, 'Test@123');
-      final compName = 'Review Company $i';
-
-      await db.collection('companies').doc(compUid).set({
-        'companyID': compUid,
-        'email': compEmail,
-        'password': 'Test@123',
-        'userType': 'Company',
-        'companyName': compName,
-        'industry': 'Testing',
-        'website': 'https://www.reviewco$i.com',
-        'logo': 'https://ui-avatars.com/api/?name=Review+Company+$i',
-        'description':
-            'Dummy company for testing pending reviews and follow requests.',
-        'location': 'Islamabad, Pakistan',
-        'companySize': 50,
-        'activeJobs': 0,
-        'followersCount': 0,
-        'followers': <String>[],
-        'followRequests': <String>[],
-        'employeeList': <String>[],
-        'companyWeaknessList': <String>[],
-        'companyStrengthList': <String>[],
-        'achievementList': <String>[],
-        'receivedApplications': <String>[],
-        'postedJobs': <String>[],
-        'isDemo': true,
-      });
+    // ── 5. Add follow requests to Sara Khan and pending reviews using small companies ──
+    for (int i = 0; i < smallCompanyUids.length; i++) {
+      final compUid = smallCompanyUids[i];
 
       // 1. Follow Request to Sara Khan
       final followReqID = 'DEMO_followreq_to_sara_$i';
@@ -2389,14 +2378,14 @@ class FirebaseService {
       });
 
       // 2. Make Sara an Active Employee (so she has a pending review)
-      final empID = 'DEMO_emp_sara_reviewco_$i';
+      final empID = 'DEMO_emp_sara_smallco_$i';
       await db.collection('employees').doc(empID).set({
         'employeeID': empID,
         'jobSeekerID': saraUid,
         'companyID': compUid,
         'position': 'Software Engineer',
         'employeeStatus': 'Active',
-        'hiredAt': now.subtract(Duration(days: 30 * i)).toIso8601String(),
+        'hiredAt': now.subtract(Duration(days: 30 * (i + 1))).toIso8601String(),
         'isDemo': true,
       });
       await db.collection('companies').doc(compUid).update({

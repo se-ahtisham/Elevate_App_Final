@@ -57,26 +57,20 @@ class _ComapanyEmployeeRequestState extends State<ComapanyEmployeeRequest> {
     }
 
     try {
-      final List<CompanyEmployeeModel> allEmployees = await _firebaseService
-          .getEmployeesByCompany(companyId);
+      final all = await _firebaseService.getEmployeesByCompany(companyId);
+      final pending = all.where((e) => e.employeeStatus == 'Pending').toList();
 
-      final List<CompanyEmployeeModel> pendingEmployees = allEmployees
-          .where((emp) => emp.employeeStatus == 'Pending')
-          .toList();
-
-      List<Map<String, dynamic>> employeeData = [];
-      for (var emp in pendingEmployees) {
-        final JobSeekerModel? seeker = await _firebaseService.getJobSeeker(
-          emp.jobSeekerID,
-        );
+      List<Map<String, dynamic>> list = [];
+      for (final emp in pending) {
+        final seeker = await _firebaseService.getJobSeeker(emp.jobSeekerID);
         if (seeker != null) {
-          employeeData.add({'employeeModel': emp, 'jobSeeker': seeker});
+          list.add({'emp': emp, 'seeker': seeker});
         }
       }
 
       if (!mounted) return;
       setState(() {
-        _allRequests = employeeData;
+        _allRequests = list;
         _visibleRequests = _applySearch();
         _isLoading = false;
       });
@@ -94,7 +88,7 @@ class _ComapanyEmployeeRequestState extends State<ComapanyEmployeeRequest> {
     final query = _searchController.text.trim().toLowerCase();
     if (query.isEmpty) return _allRequests;
     return _allRequests.where((item) {
-      final JobSeekerModel seeker = item['jobSeeker'];
+      final JobSeekerModel seeker = item['seeker'];
       return seeker.name.toLowerCase().contains(query);
     }).toList();
   }
@@ -123,12 +117,12 @@ class _ComapanyEmployeeRequestState extends State<ComapanyEmployeeRequest> {
       setState(() {
         _allRequests.removeWhere(
           (item) =>
-              (item['employeeModel'] as CompanyEmployeeModel).employeeID ==
+              (item['emp'] as CompanyEmployeeModel).employeeID ==
               emp.employeeID,
         );
         _visibleRequests.removeWhere(
           (item) =>
-              (item['employeeModel'] as CompanyEmployeeModel).employeeID ==
+              (item['emp'] as CompanyEmployeeModel).employeeID ==
               emp.employeeID,
         );
         _processingIDs.remove(emp.employeeID);
@@ -171,7 +165,10 @@ class _ComapanyEmployeeRequestState extends State<ComapanyEmployeeRequest> {
             ),
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 30.0, vertical: 20),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 30.0,
+                  vertical: 20,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -184,63 +181,66 @@ class _ComapanyEmployeeRequestState extends State<ComapanyEmployeeRequest> {
                       controller: _searchController,
                       onChanged: _onSearchChanged,
                     ),
-              const SizedBox(height: 10),
-              Expanded(
-                child: _isLoading
-                    ? const Center(
-                        child: CircularProgressIndicator(color: Colors.black),
-                      )
-                    : _visibleRequests.isEmpty
-                    ? Center(
-                        child: CustomText(
-                          text: _allRequests.isEmpty
-                              ? "No pending requests found."
-                              : "No results found.",
-                          fontSize: 14,
-                          color: ElevateColor.gray,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _loadRequests,
-                        child: ListView.builder(
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          itemCount: _visibleRequests.length,
-                          itemBuilder: (context, index) {
-                            final data = _visibleRequests[index];
-                            final JobSeekerModel jobSeeker = data['jobSeeker'];
-                            final CompanyEmployeeModel employee =
-                                data['employeeModel'];
-                            final isBusy = _processingIDs.contains(
-                              employee.employeeID,
-                            );
-
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 5.0),
-                              child: EmployeeRequestTile(
-                                height: 120,
-                                width: 330,
-                                backgroundColor: ElevateColor.white,
-                                borderRadius: 20,
-                                imageURL: jobSeeker.profilePic.isNotEmpty
-                                    ? jobSeeker.profilePic
-                                    : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(jobSeeker.name.isNotEmpty ? jobSeeker.name : "User")}&background=random&color=fff&size=128&bold=true',
-                                name: jobSeeker.name.isNotEmpty
-                                    ? jobSeeker.name
-                                    : 'Unknown User',
-                                shortDescription: employee.position,
-                                acceptonTap: isBusy
-                                    ? null
-                                    : () => _respond(employee, true),
-                                rejectonTap: isBusy
-                                    ? null
-                                    : () => _respond(employee, false),
+                    const SizedBox(height: 10),
+                    Expanded(
+                      child: _isLoading
+                          ? const Center(
+                              child: CircularProgressIndicator(
+                                color: Colors.black,
                               ),
-                            );
-                          },
-                        ),
-                      ),
-              ),
+                            )
+                          : _visibleRequests.isEmpty
+                          ? Center(
+                              child: CustomText(
+                                text: _allRequests.isEmpty
+                                    ? "No pending requests found."
+                                    : "No results found.",
+                                fontSize: 14,
+                                color: ElevateColor.gray,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            )
+                          : RefreshIndicator(
+                              onRefresh: _loadRequests,
+                              child: ListView.builder(
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                itemCount: _visibleRequests.length,
+                                itemBuilder: (context, index) {
+                                  final data = _visibleRequests[index];
+                                  final JobSeekerModel jobSeeker =
+                                      data['seeker'];
+                                  final CompanyEmployeeModel employee =
+                                      data['emp'];
+                                  final isBusy = _processingIDs.contains(
+                                    employee.employeeID,
+                                  );
+
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 5.0),
+                                    child: EmployeeRequestTile(
+                                      height: 120,
+                                      width: 330,
+                                      backgroundColor: ElevateColor.white,
+                                      borderRadius: 20,
+                                      imageURL: jobSeeker.profilePic.isNotEmpty
+                                          ? jobSeeker.profilePic
+                                          : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(jobSeeker.name.isNotEmpty ? jobSeeker.name : "User")}&background=random&color=fff&size=128&bold=true',
+                                      name: jobSeeker.name.isNotEmpty
+                                          ? jobSeeker.name
+                                          : 'Unknown User',
+                                      shortDescription: employee.position,
+                                      acceptonTap: isBusy
+                                          ? null
+                                          : () => _respond(employee, true),
+                                      rejectonTap: isBusy
+                                          ? null
+                                          : () => _respond(employee, false),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                    ),
                   ],
                 ),
               ),

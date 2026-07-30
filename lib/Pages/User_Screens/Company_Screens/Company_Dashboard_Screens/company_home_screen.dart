@@ -24,48 +24,45 @@ class CompanyHomeScreen extends StatefulWidget {
 class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
   final FirebaseService _firebaseService = FirebaseService();
   final AuthService _authService = AuthService();
-  String _searchQuery = '';
-  late Future<List<Map<String, dynamic>>> _employeesFuture;
 
-  @override
-  void initState() {
-    super.initState();
-    _employeesFuture = _fetchActiveEmployees();
+  Future<List<Map<String, dynamic>>>? _activeEmployeesFuture;
+  String? _initializedCompanyId;
+
+  void _initFutures(String companyId) {
+    _initializedCompanyId = companyId;
+    _activeEmployeesFuture = _fetchActiveEmployees(companyId);
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchActiveEmployees(
+    String companyId,
+  ) async {
+    final all = await _firebaseService.getEmployeesByCompany(companyId);
+    final active = all.where((e) => e.employeeStatus == 'Active').toList();
+    List<Map<String, dynamic>> list = [];
+    for (final emp in active) {
+      final seeker = await _firebaseService.getJobSeeker(emp.jobSeekerID);
+      if (seeker != null) {
+        list.add({'emp': emp, 'seeker': seeker});
+      }
+    }
+    return list;
   }
 
   void _refresh() {
-    setState(() {
-      _employeesFuture = _fetchActiveEmployees();
-    });
-  }
-
-  Future<List<Map<String, dynamic>>> _fetchActiveEmployees() async {
     final String companyId = _authService.currentUser?.uid ?? '';
-    if (companyId.isEmpty) return [];
-
-    final List<CompanyEmployeeModel> allEmployees =
-        await _firebaseService.getEmployeesByCompany(companyId);
-
-    final List<CompanyEmployeeModel> activeEmployees = allEmployees
-        .where((emp) => emp.employeeStatus == 'Active')
-        .toList();
-
-    List<Map<String, dynamic>> employeeData = [];
-    for (var emp in activeEmployees) {
-      final JobSeekerModel? seeker =
-          await _firebaseService.getJobSeeker(emp.jobSeekerID);
-      if (seeker != null) {
-        if (_searchQuery.isEmpty ||
-            seeker.name.toLowerCase().contains(_searchQuery.toLowerCase())) {
-          employeeData.add({'employeeModel': emp, 'jobSeeker': seeker});
-        }
-      }
-    }
-    return employeeData;
+    if (companyId.isEmpty) return;
+    setState(() {
+      _activeEmployeesFuture = _fetchActiveEmployees(companyId);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final String companyId = _authService.currentUser?.uid ?? '';
+    if (companyId.isNotEmpty && _initializedCompanyId != companyId) {
+      _initFutures(companyId);
+    }
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       backgroundColor: const Color.fromARGB(255, 241, 241, 241),
@@ -95,10 +92,8 @@ class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
                           height: 50,
                           textSize: 15,
                           onChanged: (val) {
-                            setState(() {
-                              _searchQuery = val;
-                            });
-                            _refresh();
+                            // client-side filter, no refetch needed
+                            setState(() {});
                           },
                         ),
                         Expanded(
@@ -134,7 +129,7 @@ class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
                         color: Colors.black,
                         onRefresh: () async => _refresh(),
                         child: FutureBuilder<List<Map<String, dynamic>>>(
-                          future: _employeesFuture,
+                          future: _activeEmployeesFuture,
                           builder: (context, snapshot) {
                             if (snapshot.connectionState ==
                                 ConnectionState.waiting) {
@@ -165,23 +160,20 @@ class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
                               itemCount: employees.length,
                               itemBuilder: (context, index) {
                                 final data = employees[index];
-                                final JobSeekerModel jobSeeker =
-                                    data['jobSeeker'];
+                                final JobSeekerModel jobSeeker = data['seeker'];
                                 final CompanyEmployeeModel employee =
-                                    data['employeeModel'];
+                                    data['emp'];
 
                                 return Padding(
-                                  padding:
-                                      const EdgeInsets.only(bottom: 10.0),
+                                  padding: const EdgeInsets.only(bottom: 10.0),
                                   child: ShortDescriptionRoundCircleIconTile(
                                     height: 80,
                                     width: 350,
                                     backgroundColor: ElevateColor.white,
                                     borderRadius: 12,
-                                    imageURL:
-                                        jobSeeker.profilePic.isNotEmpty
-                                            ? jobSeeker.profilePic
-                                            : 'lib/Resources/Images/Profile_Images/default_profile.png',
+                                    imageURL: jobSeeker.profilePic.isNotEmpty
+                                        ? jobSeeker.profilePic
+                                        : 'lib/Resources/Images/Profile_Images/default_profile.png',
                                     name: jobSeeker.name.isNotEmpty
                                         ? jobSeeker.name
                                         : 'Unknown User',
@@ -199,10 +191,10 @@ class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
                                         MaterialPageRoute(
                                           builder: (context) =>
                                               CompanyViewEmployeeProfile(
-                                            jobSeekerID:
-                                                jobSeeker.jobSeekerID,
-                                            employeeID: employee.employeeID,
-                                          ),
+                                                jobSeekerID:
+                                                    jobSeeker.jobSeekerID,
+                                                employeeID: employee.employeeID,
+                                              ),
                                         ),
                                       );
                                     },
