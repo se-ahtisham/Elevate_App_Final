@@ -8,20 +8,11 @@ import 'package:elevate_app/Custom_Widgets/User_Widgets/user_socialMedia.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/company_model.dart';
 import 'package:elevate_app/Database/Online_Database/auth_provider.dart';
 import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
-import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Jobs_Screens/user_request_rating_company.dart';
+import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Jobs_Screens/user_rating_company.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
-import 'package:elevate_app/Database/Online_Database/chat_service.dart';
-import 'package:elevate_app/Pages/Shared_Screens/chat_room_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import "package:elevate_app/Data_Model_Classes/Firebase_Online_Models/company_employee_model.dart";
-import "package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_post_model.dart";
-import "package:elevate_app/Data_Model_Classes/Firebase_Online_Models/post_model.dart";
-import "package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_seeker_model.dart";
-import "package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Jobs_Screens/job_selection.dart";
-import "package:elevate_app/Custom_Widgets/Tiles/user_post_tile.dart";
 
 class UserCheckCompanyProfile extends ConsumerStatefulWidget {
   final CompanyModel company;
@@ -38,45 +29,13 @@ class _UserCheckCompanyProfileState
   final _firebaseService = FirebaseService();
   String _followStatus = "None";
   bool _isFollowingLoading = false;
-  bool _isApplyingEmployee = false;
   int _followersCount = 0;
-
-  Future<List<Map<String, dynamic>>>? _activeEmployeesFuture;
-  Future<List<JobPostModel>>? _jobsFuture;
-  Future<List<PostModel>>? _postsFuture;
 
   @override
   void initState() {
     super.initState();
     _followersCount = widget.company.followers.length;
     _checkFollowStatus();
-    _activeEmployeesFuture = _fetchActiveEmployees(widget.company.companyID);
-    _jobsFuture = _fetchJobs(widget.company.companyID);
-    _postsFuture = _fetchPosts(widget.company.companyID);
-  }
-
-  Future<List<Map<String, dynamic>>> _fetchActiveEmployees(
-    String companyId,
-  ) async {
-    final all = await _firebaseService.getEmployeesByCompany(companyId);
-    final active = all.where((e) => e.employeeStatus == 'Active').toList();
-    List<Map<String, dynamic>> list = [];
-    for (final emp in active) {
-      final seeker = await _firebaseService.getJobSeeker(emp.jobSeekerID);
-      if (seeker != null) {
-        list.add({'emp': emp, 'seeker': seeker});
-      }
-    }
-    return list;
-  }
-
-  Future<List<JobPostModel>> _fetchJobs(String companyId) async {
-    return await _firebaseService.getJobsByCompany(companyId);
-  }
-
-  Future<List<PostModel>> _fetchPosts(String companyId) async {
-    final all = await _firebaseService.listAllPosts();
-    return all.where((p) => p.authorID == companyId).toList();
   }
 
   Future<void> _checkFollowStatus() async {
@@ -137,9 +96,9 @@ class _UserCheckCompanyProfileState
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Failed to change follow state: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Failed to toggle follow: $e")));
       }
     } finally {
       if (mounted) {
@@ -148,51 +107,11 @@ class _UserCheckCompanyProfileState
     }
   }
 
-  Future<void> _joinAsEmployee() async {
-    final jobSeeker = ref.read(authProvider).jobSeeker;
-    if (jobSeeker == null) return;
-
-    setState(() => _isApplyingEmployee = true);
-    try {
-      final position = jobSeeker.shortDescription.isNotEmpty
-          ? jobSeeker.shortDescription
-          : "Employee";
-
-      await _firebaseService.applyAsEmployee(
-        jobSeeker.jobSeekerID,
-        widget.company.companyID,
-        position,
-      );
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Employee application submitted!")),
-      );
-
-      Navigator.of(context, rootNavigator: true).push(
-        MaterialPageRoute(
-          builder: (context) =>
-              UserRequestRatingCompany(company: widget.company),
-        ),
-      );
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text("Application failed: $e")));
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isApplyingEmployee = false);
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final logoUrl = widget.company.logo.isNotEmpty
         ? widget.company.logo
-        : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(widget.company.companyName.isNotEmpty ? widget.company.companyName : "Company")}&background=random&color=fff&size=128&bold=true';
+        : 'https://mir-s3-cdn-cf.behance.net/projects/404/e87f90243740647.Y3JvcCwxNTM0LDEyMDAsMzQsMA.jpg';
 
     final achievements = widget.company.achievementList.isNotEmpty
         ? widget.company.achievementList.join(", ")
@@ -216,9 +135,10 @@ class _UserCheckCompanyProfileState
           child: SingleChildScrollView(
             child: Column(
               children: [
-                const ElevateHeader(
+                ElevateHeader(
                   title: "Explore Companies",
                   subTitle: "Explore roles from top companies",
+                  showBackButton: true,
                 ),
                 Padding(
                   padding: const EdgeInsets.only(left: 10.0, right: 20),
@@ -231,7 +151,6 @@ class _UserCheckCompanyProfileState
                     skills: widget.company.activeJobs,
                     followers: _followersCount,
                     followings: widget.company.employeeList.length,
-                    showSkills: false,
                   ),
                 ),
 
@@ -282,31 +201,13 @@ class _UserCheckCompanyProfileState
                                   onTap: _toggleFollow,
                                 ),
                           const SizedBox(width: 8),
-                          _isApplyingEmployee
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.black,
-                                  ),
-                                )
-                              : IconTextButton(
-                                  text: "JOIN AS EMPLOYEE",
-                                  iconData: Icons.work,
-                                  backgroundColor: ElevateColor.white,
-                                  iconColor: ElevateColor.lightgray,
-                                  textColor: ElevateColor.gray,
-                                  textWeight: FontWeight.bold,
-                                  borderColor: ElevateColor.gray,
-                                  borderRadius: 50,
-                                  textSize: 9,
-                                  onTap: _joinAsEmployee,
-                                ),
                           const SizedBox(width: 8),
                           IconTextButton(
-                            text: "MESSAGE",
-                            iconData: Icons.message,
+                            text: "JOIN AS EMPLOYEE",
+                            iconTextSpacing: 8,
+                            paddingLeft: 16,
+                            paddingRight: 16,
+                            iconData: Icons.badge_outlined,
                             backgroundColor: ElevateColor.white,
                             iconColor: ElevateColor.lightgray,
                             textColor: ElevateColor.gray,
@@ -315,47 +216,37 @@ class _UserCheckCompanyProfileState
                             borderRadius: 50,
                             textSize: 9,
                             onTap: () async {
-                              final authState = ref.read(authProvider);
-                              final myID =
-                                  authState.jobSeeker?.jobSeekerID ?? '';
-                              final myName =
-                                  authState.jobSeeker?.name ?? 'User';
-                              final myAvatar =
-                                  authState.jobSeeker?.profilePic ?? '';
-
-                              if (myID.isEmpty) return;
-
-                              final otherAvatar = widget.company.logo.isNotEmpty
-                                  ? widget.company.logo
-                                  : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(widget.company.companyName)}&background=random&color=fff&size=128&bold=true';
-
                               try {
-                                final chatID = await ChatService()
-                                    .getOrCreateChat(
-                                      myID: myID,
-                                      myName: myName,
-                                      myAvatar: myAvatar,
-                                      otherID: widget.company.companyID,
-                                      otherName: widget.company.companyName,
-                                      otherAvatar: otherAvatar,
-                                    );
-                                if (!mounted) return;
-                                Navigator.of(context, rootNavigator: true).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => ChatRoomScreen(
-                                      chatID: chatID,
-                                      otherUserName: widget.company.companyName,
-                                      otherUserAvatar: otherAvatar,
+                                final myID = ref
+                                    .read(authProvider)
+                                    .jobSeeker
+                                    ?.jobSeekerID;
+                                if (myID == null) return;
+
+                                await _firebaseService.sendEmployeeJoinRequest(
+                                  companyID: widget.company.companyID,
+                                  jobSeekerID: myID,
+                                );
+
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        "Employee request sent successfully.",
+                                      ),
                                     ),
-                                  ),
-                                );
-                              } catch (_) {
-                                if (!mounted) return;
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Could not open chat.'),
-                                  ),
-                                );
+                                  );
+                                }
+                              } catch (e) {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        "Failed to send request: $e",
+                                      ),
+                                    ),
+                                  );
+                                }
                               }
                             },
                           ),
@@ -446,232 +337,6 @@ class _UserCheckCompanyProfileState
                             fontWeight: FontWeight.w400,
                             textAlign: TextAlign.left,
                             lineHeight: 1.2,
-                          ),
-
-                          const SizedBox(height: 30),
-                          CustomText(
-                            text: "Working Employees",
-                            fontSize: 18,
-                            color: ElevateColor.lightgray,
-                            fontWeight: FontWeight.bold,
-                            textAlign: TextAlign.left,
-                            lineHeight: 1.0,
-                          ),
-                          const SizedBox(height: 12),
-                          FutureBuilder<List<Map<String, dynamic>>>(
-                            future: _activeEmployeesFuture,
-                            builder: (context, empSnapshot) {
-                              if (empSnapshot.connectionState ==
-                                  ConnectionState.waiting) {
-                                return const CircularProgressIndicator();
-                              }
-                              final list = empSnapshot.data ?? [];
-                              if (list.isEmpty) {
-                                return CustomText(
-                                  text: "No active employees found.",
-                                  fontSize: 12,
-                                  color: ElevateColor.whitegray,
-                                );
-                              }
-                              return SizedBox(
-                                height: 120,
-                                child: ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: list.length,
-                                  itemBuilder: (context, index) {
-                                    final item = list[index];
-                                    final JobSeekerModel seeker =
-                                        item['seeker'];
-                                    final CompanyEmployeeModel emp =
-                                        item['emp'];
-                                    return Container(
-                                      width: 100,
-                                      margin: const EdgeInsets.only(right: 12),
-                                      child: Column(
-                                        children: [
-                                          CircleAvatar(
-                                            radius: 30,
-                                            backgroundImage: NetworkImage(
-                                              seeker.profilePic,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 6),
-                                          CustomText(
-                                            text: seeker.name,
-                                            fontSize: 12,
-                                            color: ElevateColor.lightgray,
-                                            fontWeight: FontWeight.bold,
-                                            textAlign: TextAlign.center,
-                                            maxLines: 1,
-                                          ),
-                                          CustomText(
-                                            text: emp.position,
-                                            fontSize: 10,
-                                            color: ElevateColor.whitegray,
-                                            textAlign: TextAlign.center,
-                                            maxLines: 1,
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                ),
-                              );
-                            },
-                          ),
-
-                          const SizedBox(height: 30),
-                          CustomText(
-                            text: "Job Posts",
-                            fontSize: 18,
-                            color: ElevateColor.lightgray,
-                            fontWeight: FontWeight.bold,
-                            textAlign: TextAlign.left,
-                            lineHeight: 1.0,
-                          ),
-                          const SizedBox(height: 12),
-                          FutureBuilder<List<JobPostModel>>(
-                            future: _jobsFuture,
-                            builder: (context, jobsSnapshot) {
-                              if (jobsSnapshot.connectionState ==
-                                  ConnectionState.waiting) {
-                                return const CircularProgressIndicator();
-                              }
-                              final list = jobsSnapshot.data ?? [];
-                              if (list.isEmpty) {
-                                return CustomText(
-                                  text: "No jobs posted yet.",
-                                  fontSize: 12,
-                                  color: ElevateColor.whitegray,
-                                );
-                              }
-                              return ListView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: list.length,
-                                itemBuilder: (context, index) {
-                                  final job = list[index];
-                                  return Container(
-                                    margin: const EdgeInsets.only(bottom: 12),
-                                    padding: const EdgeInsets.all(16),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: ElevateColor.lightgray
-                                            .withOpacity(0.2),
-                                      ),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              CustomText(
-                                                text: job.title,
-                                                fontSize: 15,
-                                                color: ElevateColor.lightgray,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                              const SizedBox(height: 4),
-                                              CustomText(
-                                                text:
-                                                    "${job.location} • ${job.salary}",
-                                                fontSize: 12,
-                                                color: ElevateColor.whitegray,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        IconTextButton(
-                                          text: "VIEW JOB",
-                                          iconData: Icons.arrow_forward,
-                                          backgroundColor: ElevateColor.white,
-                                          iconColor: ElevateColor.lightgray,
-                                          textColor: ElevateColor.gray,
-                                          textWeight: FontWeight.bold,
-                                          borderColor: ElevateColor.gray,
-                                          borderRadius: 50,
-                                          textSize: 9,
-                                          onTap: () {
-                                            Navigator.of(
-                                              context,
-                                              rootNavigator: true,
-                                            ).push(
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    JobSelection(
-                                                      jobPost: job,
-                                                      companyName: widget
-                                                          .company
-                                                          .companyName,
-                                                      companyEmail:
-                                                          widget.company.email,
-                                                    ),
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                          ),
-
-                          const SizedBox(height: 30),
-                          CustomText(
-                            text: "Community Posts",
-                            fontSize: 18,
-                            color: ElevateColor.lightgray,
-                            fontWeight: FontWeight.bold,
-                            textAlign: TextAlign.left,
-                            lineHeight: 1.0,
-                          ),
-                          const SizedBox(height: 12),
-                          FutureBuilder<List<PostModel>>(
-                            future: _postsFuture,
-                            builder: (context, postsSnapshot) {
-                              if (postsSnapshot.connectionState ==
-                                  ConnectionState.waiting) {
-                                return const CircularProgressIndicator();
-                              }
-                              final list = postsSnapshot.data ?? [];
-                              if (list.isEmpty) {
-                                return CustomText(
-                                  text: "No community posts yet.",
-                                  fontSize: 12,
-                                  color: ElevateColor.whitegray,
-                                );
-                              }
-                              return ListView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: list.length,
-                                itemBuilder: (context, index) {
-                                  final post = list[index];
-                                  return UserPostTile(
-                                    postID: post.postID,
-                                    title: post.title,
-                                    text: post.content,
-                                    commentCount: post.totalCommentCount,
-                                    comments: const [],
-                                    imageURL: post.authorProfilePic.isNotEmpty
-                                        ? post.authorProfilePic
-                                        : widget.company.logo,
-                                    name: post.authorName,
-                                    shortDescription: widget.company.industry,
-                                    likeCount: post.likes,
-                                    isLiked: false,
-                                  );
-                                },
-                              );
-                            },
                           ),
                         ],
                       ),
