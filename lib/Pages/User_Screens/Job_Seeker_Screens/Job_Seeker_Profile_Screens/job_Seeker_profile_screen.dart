@@ -33,7 +33,7 @@ class _JobSeekerProfileScreenState
 
   // ── Badges State ──────────────────────────────────────────────────────────
   bool _badgesLoading = false;
-  List<BadgeModel> _earnedBadges = [];
+  List<Map<String, dynamic>> _passedSkills = [];
 
   // ── Cloud Storage Fallback URLs for Badges ────────────────────────────────
   static const String _bronzeCloudUrl =
@@ -56,7 +56,7 @@ class _JobSeekerProfileScreenState
     await _loadBadges();
   }
 
-  // ── Fetch earned badges from Firebase ─────────────────────────────────────
+  // ── Fetch passed skills and tiers from Firebase ───────────────────────────
   Future<void> _loadBadges() async {
     final jobSeeker = ref.read(authProvider).jobSeeker;
     if (jobSeeker == null) return;
@@ -64,18 +64,33 @@ class _JobSeekerProfileScreenState
     setState(() => _badgesLoading = true);
 
     final service = FirebaseService();
-    final List<BadgeModel> badges = [];
 
-    for (final badgeID in jobSeeker.earnedBadges) {
-      final badge = await service.getBadgeById(badgeID);
-      if (badge != null) badges.add(badge);
+    try {
+      final bestScores = await service.getBestPassedScoresBySkill(
+        jobSeeker.jobSeekerID,
+      );
+      final allSkills = await service.listAllSkills();
+      final skillsById = {for (final s in allSkills) s.skillID: s};
+
+      final List<Map<String, dynamic>> skillsWithTiers = [];
+      for (final entry in bestScores.entries) {
+        final skill = skillsById[entry.key];
+        if (skill == null) continue;
+        skillsWithTiers.add({
+          'name': skill.skillName,
+          'tier': FirebaseService.tierForScore(entry.value),
+        });
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _passedSkills = skillsWithTiers;
+        _badgesLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _badgesLoading = false);
     }
-
-    if (!mounted) return;
-    setState(() {
-      _earnedBadges = badges;
-      _badgesLoading = false;
-    });
   }
 
   void _handleLogout() async {
@@ -87,13 +102,8 @@ class _JobSeekerProfileScreenState
     );
   }
 
-  // ── Cloud Image URL helper ────────────────────────────────────────────────
-  // Only 3 badge images exist in Firebase Storage: Gold, Silver, Bronze.
-  // Every badge uses its level's fixed cloud image + the skill name as the
-  // text label — the image is intentionally shared across badges of the
-  // same level, so we always resolve by level (not by a per-badge field).
-  String _getBadgeImageUrl(BadgeModel badge) {
-    switch (badge.badgeLevel.toLowerCase()) {
+  String _getBadgeImageUrl(String tier) {
+    switch (tier.toLowerCase()) {
       case 'gold':
         return _goldCloudUrl;
       case 'silver':
@@ -330,7 +340,7 @@ class _JobSeekerProfileScreenState
                           lineHeight: 1.0,
                         ),
                         const Spacer(),
-                        if (jobSeeker.earnedBadges.isNotEmpty)
+                        if (_passedSkills.isNotEmpty && !_badgesLoading)
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 10,
@@ -354,7 +364,7 @@ class _JobSeekerProfileScreenState
                               ),
                             ),
                             child: Text(
-                              '${jobSeeker.earnedBadges.length} badge${jobSeeker.earnedBadges.length == 1 ? '' : 's'}',
+                              '${_passedSkills.length} badge${_passedSkills.length == 1 ? '' : 's'}',
                               style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -376,7 +386,7 @@ class _JobSeekerProfileScreenState
                           ),
                         ),
                       )
-                    else if (_earnedBadges.isEmpty)
+                    else if (_passedSkills.isEmpty)
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(18),
@@ -393,14 +403,13 @@ class _JobSeekerProfileScreenState
                               color: Colors.grey.shade400,
                             ),
                             const SizedBox(height: 8),
-                            Text(
-                              'No badges earned yet.\nPass a skill test to earn your first badge!',
+                            CustomText(
+                              text:
+                                  'No badges earned yet.\nPass a skill test to earn your first badge!',
                               textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Colors.grey.shade500,
-                                height: 1.5,
-                              ),
+                              fontSize: 13,
+                              color: Colors.grey.shade500,
+                              lineHeight: 1.5,
                             ),
                           ],
                         ),
@@ -408,11 +417,11 @@ class _JobSeekerProfileScreenState
                     else
                       Column(
                         children: [
-                          for (final badge in _earnedBadges) ...[
+                          for (final skill in _passedSkills) ...[
                             Row(
                               children: [
                                 Image.network(
-                                  _getBadgeImageUrl(badge),
+                                  _getBadgeImageUrl(skill['tier'] as String),
                                   width: 40,
                                   height: 40,
                                   fit: BoxFit.contain,
@@ -432,24 +441,19 @@ class _JobSeekerProfileScreenState
                                 ),
                                 const SizedBox(width: 10),
                                 Expanded(
-                                  child: Text(
-                                    badge.badgeName.isNotEmpty
-                                        ? badge.badgeName
-                                        : badge.badgeID,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF222222),
-                                    ),
+                                  child: CustomText(
+                                    text: skill['name'] as String,
+
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF222222),
                                   ),
                                 ),
-                                Text(
-                                  badge.badgeLevel,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.grey,
-                                  ),
+                                CustomText(
+                                  text: skill['tier'] as String,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.grey,
                                 ),
                               ],
                             ),

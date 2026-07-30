@@ -1660,6 +1660,40 @@ class FirebaseService {
       });
     }
 
+    // ── Seed Standard Badges ───────────────────────────────────────────────
+    final badges = [
+      {
+        'badgeID': 'DEMO_badge_bronze',
+        'badgeName': 'Bronze Achiever',
+        'badgeLevel': 'Bronze',
+        'minScore': 50.0,
+        'maxScore': 75.0,
+        'badgeImage': 'https://ui-avatars.com/api/?name=Bronze+Badge&background=CD7F32&color=fff',
+        'isDemo': true,
+      },
+      {
+        'badgeID': 'DEMO_badge_silver',
+        'badgeName': 'Silver Professional',
+        'badgeLevel': 'Silver',
+        'minScore': 75.0,
+        'maxScore': 90.0,
+        'badgeImage': 'https://ui-avatars.com/api/?name=Silver+Badge&background=C0C0C0&color=fff',
+        'isDemo': true,
+      },
+      {
+        'badgeID': 'DEMO_badge_gold',
+        'badgeName': 'Gold Specialist',
+        'badgeLevel': 'Gold',
+        'minScore': 90.0,
+        'maxScore': 100.0,
+        'badgeImage': 'https://ui-avatars.com/api/?name=Gold+Badge&background=FFD700&color=fff',
+        'isDemo': true,
+      },
+    ];
+    for (final b in badges) {
+      await db.collection('badges').doc(b['badgeID'] as String).set(b);
+    }
+
     // ── 1. Top-notch job seeker (Sara Khan) + top-notch company (NexCore) ────
     final saraUid = await _ensureDemoUserAuth(
       'sara.demo@elevate.demo',
@@ -1684,11 +1718,11 @@ class FirebaseService {
       'shortDescription': 'Full-Stack Engineer',
       'experienceLevel': 'Senior',
       'skillCount': 3,
-      'passedResultIDs': ['DEMO_result_Sara_flutter'],
-      'mySkillTestsResultList': ['DEMO_result_Sara_flutter'],
-      'totalTestsTaken': 1,
-      'earnedBadges': <String>[],
-      'totalBadgesEarned': 0,
+      'passedResultIDs': ['DEMO_result_Sara_flutter', 'DEMO_result_Sara_react', 'DEMO_result_Sara_python'],
+      'mySkillTestsResultList': ['DEMO_result_Sara_flutter', 'DEMO_result_Sara_react', 'DEMO_result_Sara_python'],
+      'totalTestsTaken': 3,
+      'earnedBadges': ['DEMO_badge_bronze', 'DEMO_badge_silver', 'DEMO_badge_gold'],
+      'totalBadgesEarned': 3,
       'portfolio': ['DEMO_project_Sara_1'],
       'postList': <String>[],
       'following': <String>[],
@@ -1724,6 +1758,36 @@ class FirebaseService {
       'attemptNumber': 1,
       'lastAttemptAt': now.subtract(const Duration(days: 10)).toIso8601String(),
       'experienceLevel': 'Advanced',
+      'isDemo': true,
+    });
+
+    await db.collection('results').doc('DEMO_result_Sara_react').set({
+      'resultID': 'DEMO_result_Sara_react',
+      'jobSeekerID': saraUid,
+      'testID': 'DEMO_test_skill_react',
+      'score': 82.0,
+      'isPassed': true,
+      'startedAt': now.subtract(const Duration(days: 9)).toIso8601String(),
+      'completedAt': now.subtract(const Duration(days: 9)).toIso8601String(),
+      'timeTakenSeconds': 1000,
+      'attemptNumber': 1,
+      'lastAttemptAt': now.subtract(const Duration(days: 9)).toIso8601String(),
+      'experienceLevel': 'Advanced',
+      'isDemo': true,
+    });
+
+    await db.collection('results').doc('DEMO_result_Sara_python').set({
+      'resultID': 'DEMO_result_Sara_python',
+      'jobSeekerID': saraUid,
+      'testID': 'DEMO_test_skill_python',
+      'score': 65.0,
+      'isPassed': true,
+      'startedAt': now.subtract(const Duration(days: 8)).toIso8601String(),
+      'completedAt': now.subtract(const Duration(days: 8)).toIso8601String(),
+      'timeTakenSeconds': 800,
+      'attemptNumber': 1,
+      'lastAttemptAt': now.subtract(const Duration(days: 8)).toIso8601String(),
+      'experienceLevel': 'Intermediate',
       'isDemo': true,
     });
 
@@ -1884,9 +1948,11 @@ class FirebaseService {
 
     // ── 3. 3 small job seekers — with follow request, application, and
     // pending employee request, each cross-linked to a DIFFERENT company ─────
+    final smallSeekerUids = <String>[];
     for (int i = 0; i < smallSeekerDefs.length; i++) {
       final s = smallSeekerDefs[i];
       final uid = await _ensureDemoUserAuth(s['email']!, 'Test@123');
+      smallSeekerUids.add(uid);
       final resultID = 'DEMO_result_${s['name']!.replaceAll(' ', '')}';
 
       final followTargetUid = smallCompanyUids[i % smallCompanyUids.length];
@@ -2012,6 +2078,229 @@ class FirebaseService {
         'isDemo': true,
       });
     }
+
+    // ── 4. Extra Rich Seeding for Top-Notch Demo (Sara Khan & NexCore) ─────
+    // Sara Khan follows multiple companies
+    await db.collection('jobSeekers').doc(saraUid).update({
+      'followedCompanies': FieldValue.arrayUnion([nexcoreUid, ...smallCompanyUids]),
+    });
+
+    // NexCore employee reviews
+    final reviews = [
+      {
+        'reviewID': 'DEMO_review_NexCore_1',
+        'companyID': nexcoreUid,
+        'jobSeekerID': smallSeekerUids[0], // Ahmad Raza
+        'rating': 4.0,
+        'text': 'Great company culture and friendly environment.',
+        'sentiment': 'Positive',
+        'createdAt': now.subtract(const Duration(days: 4)).toIso8601String(),
+        'isDemo': true,
+      },
+      {
+        'reviewID': 'DEMO_review_NexCore_2',
+        'companyID': nexcoreUid,
+        'jobSeekerID': smallSeekerUids[1], // Usman Tariq
+        'rating': 5.0,
+        'text': 'Highly professional team and amazing growth opportunities.',
+        'sentiment': 'Positive',
+        'createdAt': now.subtract(const Duration(days: 3)).toIso8601String(),
+        'isDemo': true,
+      },
+      {
+        'reviewID': 'DEMO_review_NexCore_3',
+        'companyID': nexcoreUid,
+        'jobSeekerID': smallSeekerUids[2], // Yusuf Malik
+        'rating': 3.0,
+        'text': 'Good compensation but long working hours.',
+        'sentiment': 'Neutral',
+        'createdAt': now.subtract(const Duration(days: 2)).toIso8601String(),
+        'isDemo': true,
+      },
+    ];
+    for (final r in reviews) {
+      await db.collection('reviews').doc(r['reviewID'] as String).set(r);
+    }
+    await db.collection('companies').doc(nexcoreUid).update({
+      'rating': 4.0,
+      'reviewCount': 3,
+    });
+
+    // NexCore extra job postings
+    await db.collection('jobs').doc('DEMO_job_NexCore_2').set({
+      'jobID': 'DEMO_job_NexCore_2',
+      'companyID': nexcoreUid,
+      'title': 'Frontend React Developer',
+      'description': 'Help us build beautiful web dashboards with React and Tailwind.',
+      'requiredSkills': ['skill_react'],
+      'requiredBadges': <String>[],
+      'salary': '150,000 - 220,000 PKR/month',
+      'jobType': 'Full-time',
+      'location': 'Karachi, Pakistan',
+      'experienceLevel': 'Mid-level',
+      'postedAt': now.subtract(const Duration(days: 4)).toIso8601String(),
+      'applicants': <String>[],
+      'isExternal': false,
+      'sourceUrl': '',
+      'isClosed': false,
+      'isDemo': true,
+    });
+    await db.collection('jobs').doc('DEMO_job_NexCore_3').set({
+      'jobID': 'DEMO_job_NexCore_3',
+      'companyID': nexcoreUid,
+      'title': 'AI Python Engineer',
+      'description': 'Develop backend API endpoints and integrate Gemini/OpenAI models.',
+      'requiredSkills': ['skill_python'],
+      'requiredBadges': <String>[],
+      'salary': '180,000 - 250,000 PKR/month',
+      'jobType': 'Remote',
+      'location': 'Karachi, Pakistan',
+      'experienceLevel': 'Mid-level',
+      'postedAt': now.subtract(const Duration(days: 3)).toIso8601String(),
+      'applicants': <String>[],
+      'isExternal': false,
+      'sourceUrl': '',
+      'isClosed': false,
+      'isDemo': true,
+    });
+    await db.collection('companies').doc(nexcoreUid).update({
+      'postedJobs': FieldValue.arrayUnion(['DEMO_job_NexCore_2', 'DEMO_job_NexCore_3']),
+      'activeJobs': 3,
+    });
+
+    // NexCore community posts
+    await db.collection('posts').doc('DEMO_post_NexCore_1').set({
+      'postID': 'DEMO_post_NexCore_1',
+      'authorID': nexcoreUid,
+      'authorName': 'NexCore Technologies',
+      'authorProfilePic': 'https://ui-avatars.com/api/?name=NexCore&background=1A1A2E&color=fff&size=256',
+      'authorType': 'Company',
+      'title': 'Excited to announce our new AI Division!',
+      'content': 'We are officially launching our new division dedicated to custom AI solutions. Looking forward to driving innovation on Elevate!',
+      'likes': 15,
+      'likedByUserIDs': <String>[],
+      'totalCommentCount': 0,
+      'createdAt': now.subtract(const Duration(days: 4)).toIso8601String(),
+      'isDemo': true,
+    });
+    await db.collection('posts').doc('DEMO_post_NexCore_2').set({
+      'postID': 'DEMO_post_NexCore_2',
+      'authorID': nexcoreUid,
+      'authorName': 'NexCore Technologies',
+      'authorProfilePic': 'https://ui-avatars.com/api/?name=NexCore&background=1A1A2E&color=fff&size=256',
+      'authorType': 'Company',
+      'title': 'Join our growing team!',
+      'content': 'We have 3 open positions for Flutter, React, and Python developers. Explore our job board and apply directly on the app!',
+      'likes': 8,
+      'likedByUserIDs': <String>[],
+      'totalCommentCount': 0,
+      'createdAt': now.subtract(const Duration(days: 2)).toIso8601String(),
+      'isDemo': true,
+    });
+
+    // NexCore working employees (Usman Tariq is Active)
+    await db.collection('employees').doc('DEMO_emp_NexCore_active_1').set({
+      'employeeID': 'DEMO_emp_NexCore_active_1',
+      'jobSeekerID': smallSeekerUids[1], // Usman Tariq
+      'companyID': nexcoreUid,
+      'position': 'React Developer',
+      'employeeStatus': 'Active',
+      'hiredAt': now.subtract(const Duration(days: 15)).toIso8601String(),
+      'isDemo': true,
+    });
+    await db.collection('companies').doc(nexcoreUid).update({
+      'employeeList': FieldValue.arrayUnion(['DEMO_emp_NexCore_active_1']),
+    });
+
+    // NexCore pending employee requests (Ahmad Raza and Yusuf Malik are Pending)
+    await db.collection('employees').doc('DEMO_emp_NexCore_pending_1').set({
+      'employeeID': 'DEMO_emp_NexCore_pending_1',
+      'jobSeekerID': smallSeekerUids[0], // Ahmad Raza
+      'companyID': nexcoreUid,
+      'position': 'Flutter Developer',
+      'employeeStatus': 'Pending',
+      'hiredAt': now.toIso8601String(),
+      'isDemo': true,
+    });
+    await db.collection('employees').doc('DEMO_emp_NexCore_pending_2').set({
+      'employeeID': 'DEMO_emp_NexCore_pending_2',
+      'jobSeekerID': smallSeekerUids[2], // Yusuf Malik
+      'companyID': nexcoreUid,
+      'position': 'Python Developer',
+      'employeeStatus': 'Pending',
+      'hiredAt': now.toIso8601String(),
+      'isDemo': true,
+    });
+    await db.collection('companies').doc(nexcoreUid).update({
+      'employeeList': FieldValue.arrayUnion([
+        'DEMO_emp_NexCore_pending_1',
+        'DEMO_emp_NexCore_pending_2',
+      ]),
+    });
+
+    // ── 5. Add 5 follow requests to Sara Khan and 5 pending reviews (she is active employee) ──
+    for (int i = 1; i <= 5; i++) {
+      final compEmail = 'reviewco$i.demo@elevate.demo';
+      final compUid = await _ensureDemoUserAuth(compEmail, 'Test@123');
+      final compName = 'Review Company $i';
+
+      await db.collection('companies').doc(compUid).set({
+        'companyID': compUid,
+        'email': compEmail,
+        'password': 'Test@123',
+        'userType': 'Company',
+        'companyName': compName,
+        'industry': 'Testing',
+        'website': 'https://www.reviewco$i.com',
+        'logo': 'https://ui-avatars.com/api/?name=Review+Company+$i',
+        'description': 'Dummy company for testing pending reviews and follow requests.',
+        'location': 'Islamabad, Pakistan',
+        'companySize': 50,
+        'activeJobs': 0,
+        'followersCount': 0,
+        'followers': <String>[],
+        'followRequests': <String>[],
+        'employeeList': <String>[],
+        'companyWeaknessList': <String>[],
+        'companyStrengthList': <String>[],
+        'achievementList': <String>[],
+        'receivedApplications': <String>[],
+        'postedJobs': <String>[],
+        'isDemo': true,
+      });
+
+      // 1. Follow Request to Sara Khan
+      final followReqID = 'DEMO_followreq_to_sara_$i';
+      await db.collection('followRequests').doc(followReqID).set({
+        'requestID': followReqID,
+        'fromID': compUid,
+        'toID': saraUid,
+        'status': 'Pending',
+        'requestedAt': now.toIso8601String(),
+        'isDemo': true,
+      });
+      await db.collection('jobSeekers').doc(saraUid).update({
+        'followRequests': FieldValue.arrayUnion([followReqID]),
+      });
+
+      // 2. Make Sara an Active Employee (so she has a pending review)
+      final empID = 'DEMO_emp_sara_reviewco_$i';
+      await db.collection('employees').doc(empID).set({
+        'employeeID': empID,
+        'jobSeekerID': saraUid,
+        'companyID': compUid,
+        'position': 'Software Engineer',
+        'employeeStatus': 'Active',
+        'hiredAt': now.subtract(Duration(days: 30 * i)).toIso8601String(),
+        'isDemo': true,
+      });
+      await db.collection('companies').doc(compUid).update({
+        'employeeList': FieldValue.arrayUnion([empID]),
+      });
+      await db.collection('jobSeekers').doc(saraUid).update({
+        'becomeEmployee': FieldValue.arrayUnion([empID]),
+      });
+    }
   }
 
   /// The ONE deleter. Removes every document tagged isDemo: true across all
@@ -2032,6 +2321,7 @@ class FirebaseService {
       'jobs',
       'applications',
       'followRequests',
+      'reviews',
     ];
     for (final collectionName in collections) {
       QuerySnapshot<Map<String, dynamic>> snap;

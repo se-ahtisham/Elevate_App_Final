@@ -16,6 +16,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import "package:elevate_app/Data_Model_Classes/Firebase_Online_Models/company_employee_model.dart";
+import "package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_post_model.dart";
+import "package:elevate_app/Data_Model_Classes/Firebase_Online_Models/post_model.dart";
+import "package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_seeker_model.dart";
+import "package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Jobs_Screens/job_selection.dart";
+import "package:elevate_app/Custom_Widgets/Tiles/user_post_tile.dart";
+
 class UserCheckCompanyProfile extends ConsumerStatefulWidget {
   final CompanyModel company;
 
@@ -32,11 +39,40 @@ class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfil
   bool _isApplyingEmployee = false;
   int _followersCount = 0;
 
+  Future<List<Map<String, dynamic>>>? _activeEmployeesFuture;
+  Future<List<JobPostModel>>? _jobsFuture;
+  Future<List<PostModel>>? _postsFuture;
+
   @override
   void initState() {
     super.initState();
     _followersCount = widget.company.followers.length;
     _checkFollowStatus();
+    _activeEmployeesFuture = _fetchActiveEmployees(widget.company.companyID);
+    _jobsFuture = _fetchJobs(widget.company.companyID);
+    _postsFuture = _fetchPosts(widget.company.companyID);
+  }
+
+  Future<List<Map<String, dynamic>>> _fetchActiveEmployees(String companyId) async {
+    final all = await _firebaseService.getEmployeesByCompany(companyId);
+    final active = all.where((e) => e.employeeStatus == 'Active').toList();
+    List<Map<String, dynamic>> list = [];
+    for (final emp in active) {
+      final seeker = await _firebaseService.getJobSeeker(emp.jobSeekerID);
+      if (seeker != null) {
+        list.add({'emp': emp, 'seeker': seeker});
+      }
+    }
+    return list;
+  }
+
+  Future<List<JobPostModel>> _fetchJobs(String companyId) async {
+    return await _firebaseService.getJobsByCompany(companyId);
+  }
+
+  Future<List<PostModel>> _fetchPosts(String companyId) async {
+    final all = await _firebaseService.listAllPosts();
+    return all.where((p) => p.authorID == companyId).toList();
   }
 
   Future<void> _checkFollowStatus() async {
@@ -380,6 +416,212 @@ class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfil
                             fontWeight: FontWeight.w400,
                             textAlign: TextAlign.left,
                             lineHeight: 1.2,
+                          ),
+
+                          const SizedBox(height: 30),
+                          CustomText(
+                            text: "Working Employees",
+                            fontSize: 18,
+                            color: ElevateColor.lightgray,
+                            fontWeight: FontWeight.bold,
+                            textAlign: TextAlign.left,
+                            lineHeight: 1.0,
+                          ),
+                          const SizedBox(height: 12),
+                          FutureBuilder<List<Map<String, dynamic>>>(
+                            future: _activeEmployeesFuture,
+                            builder: (context, empSnapshot) {
+                              if (empSnapshot.connectionState == ConnectionState.waiting) {
+                                return const CircularProgressIndicator();
+                              }
+                              final list = empSnapshot.data ?? [];
+                              if (list.isEmpty) {
+                                return CustomText(
+                                  text: "No active employees found.",
+                                  fontSize: 12,
+                                  color: ElevateColor.whitegray,
+                                );
+                              }
+                              return SizedBox(
+                                height: 120,
+                                child: ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: list.length,
+                                  itemBuilder: (context, index) {
+                                    final item = list[index];
+                                    final JobSeekerModel seeker = item['seeker'];
+                                    final CompanyEmployeeModel emp = item['emp'];
+                                    return Container(
+                                      width: 100,
+                                      margin: const EdgeInsets.only(right: 12),
+                                      child: Column(
+                                        children: [
+                                          CircleAvatar(
+                                            radius: 30,
+                                            backgroundImage: NetworkImage(seeker.profilePic),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          CustomText(
+                                            text: seeker.name,
+                                            fontSize: 12,
+                                            color: ElevateColor.lightgray,
+                                            fontWeight: FontWeight.bold,
+                                            textAlign: TextAlign.center,
+                                            maxLines: 1,
+                                          ),
+                                          CustomText(
+                                            text: emp.position,
+                                            fontSize: 10,
+                                            color: ElevateColor.whitegray,
+                                            textAlign: TextAlign.center,
+                                            maxLines: 1,
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+
+                          const SizedBox(height: 30),
+                          CustomText(
+                            text: "Job Posts",
+                            fontSize: 18,
+                            color: ElevateColor.lightgray,
+                            fontWeight: FontWeight.bold,
+                            textAlign: TextAlign.left,
+                            lineHeight: 1.0,
+                          ),
+                          const SizedBox(height: 12),
+                          FutureBuilder<List<JobPostModel>>(
+                            future: _jobsFuture,
+                            builder: (context, jobsSnapshot) {
+                              if (jobsSnapshot.connectionState == ConnectionState.waiting) {
+                                return const CircularProgressIndicator();
+                              }
+                              final list = jobsSnapshot.data ?? [];
+                              if (list.isEmpty) {
+                                return CustomText(
+                                  text: "No jobs posted yet.",
+                                  fontSize: 12,
+                                  color: ElevateColor.whitegray,
+                                );
+                              }
+                              return ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: list.length,
+                                itemBuilder: (context, index) {
+                                  final job = list[index];
+                                  return Container(
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: ElevateColor.lightgray.withOpacity(0.2)),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              CustomText(
+                                                text: job.title,
+                                                fontSize: 15,
+                                                color: ElevateColor.lightgray,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                              const SizedBox(height: 4),
+                                              CustomText(
+                                                text: "${job.location} • ${job.salary}",
+                                                fontSize: 12,
+                                                color: ElevateColor.whitegray,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        IconTextButton(
+                                          text: "VIEW JOB",
+                                          iconData: Icons.arrow_forward,
+                                          backgroundColor: ElevateColor.white,
+                                          iconColor: ElevateColor.lightgray,
+                                          textColor: ElevateColor.gray,
+                                          textWeight: FontWeight.bold,
+                                          borderColor: ElevateColor.gray,
+                                          borderRadius: 50,
+                                          textSize: 9,
+                                          onTap: () {
+                                            Navigator.of(context, rootNavigator: true).push(
+                                              MaterialPageRoute(
+                                                builder: (context) => JobSelection(
+                                                  jobPost: job,
+                                                  companyName: widget.company.companyName,
+                                                  companyEmail: widget.company.email,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          ),
+
+                          const SizedBox(height: 30),
+                          CustomText(
+                            text: "Community Posts",
+                            fontSize: 18,
+                            color: ElevateColor.lightgray,
+                            fontWeight: FontWeight.bold,
+                            textAlign: TextAlign.left,
+                            lineHeight: 1.0,
+                          ),
+                          const SizedBox(height: 12),
+                          FutureBuilder<List<PostModel>>(
+                            future: _postsFuture,
+                            builder: (context, postsSnapshot) {
+                              if (postsSnapshot.connectionState == ConnectionState.waiting) {
+                                return const CircularProgressIndicator();
+                              }
+                              final list = postsSnapshot.data ?? [];
+                              if (list.isEmpty) {
+                                return CustomText(
+                                  text: "No community posts yet.",
+                                  fontSize: 12,
+                                  color: ElevateColor.whitegray,
+                                );
+                              }
+                              return ListView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: list.length,
+                                itemBuilder: (context, index) {
+                                  final post = list[index];
+                                  return UserPostTile(
+                                    postID: post.postID,
+                                    title: post.title,
+                                    text: post.content,
+                                    commentCount: post.totalCommentCount,
+                                    comments: const [],
+                                    imageURL: post.authorProfilePic.isNotEmpty
+                                        ? post.authorProfilePic
+                                        : widget.company.logo,
+                                    name: post.authorName,
+                                    shortDescription: widget.company.industry,
+                                    likeCount: post.likes,
+                                    isLiked: false,
+                                  );
+                                },
+                              );
+                            },
                           ),
                         ],
                       ),
