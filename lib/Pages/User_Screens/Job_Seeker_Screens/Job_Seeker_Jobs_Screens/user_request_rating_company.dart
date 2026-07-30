@@ -20,10 +20,12 @@ class UserRequestRatingCompany extends ConsumerStatefulWidget {
   const UserRequestRatingCompany({super.key, required this.company});
 
   @override
-  ConsumerState<UserRequestRatingCompany> createState() => _UserRequestRatingCompanyState();
+  ConsumerState<UserRequestRatingCompany> createState() =>
+      _UserRequestRatingCompanyState();
 }
 
-class _UserRequestRatingCompanyState extends ConsumerState<UserRequestRatingCompany> {
+class _UserRequestRatingCompanyState
+    extends ConsumerState<UserRequestRatingCompany> {
   final _firebaseService = FirebaseService();
   String _followStatus = "None";
   bool _isFollowingLoading = false;
@@ -40,7 +42,10 @@ class _UserRequestRatingCompanyState extends ConsumerState<UserRequestRatingComp
     final myID = ref.read(authProvider).jobSeeker?.jobSeekerID;
     if (myID == null) return;
     try {
-      final status = await _firebaseService.getFollowStatus(myID, widget.company.companyID);
+      final status = await _firebaseService.getFollowStatus(
+        myID,
+        widget.company.companyID,
+      );
       if (mounted) {
         setState(() {
           _followStatus = status;
@@ -56,7 +61,11 @@ class _UserRequestRatingCompanyState extends ConsumerState<UserRequestRatingComp
     setState(() => _isFollowingLoading = true);
     try {
       if (_followStatus == "Following") {
-        await _firebaseService.unfollowUser(myID, widget.company.companyID, toCollection: 'companies');
+        await _firebaseService.unfollowUser(
+          myID,
+          widget.company.companyID,
+          toCollection: 'companies',
+        );
         setState(() {
           _followStatus = "None";
           _followersCount = (_followersCount - 1).clamp(0, 99999);
@@ -67,21 +76,29 @@ class _UserRequestRatingCompanyState extends ConsumerState<UserRequestRatingComp
           );
         }
       } else if (_followStatus == "None") {
-  await _firebaseService.followUser(myID, widget.company.companyID, toCollection: 'companies');
-  setState(() {
-    _followStatus = "Pending";
-  });
-  if (mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Follow request sent to ${widget.company.companyName}")),
-    );
-  }
-}
+        await _firebaseService.followUser(
+          myID,
+          widget.company.companyID,
+          toCollection: 'companies',
+        );
+        setState(() {
+          _followStatus = "Pending";
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                "Follow request sent to ${widget.company.companyName}",
+              ),
+            ),
+          );
+        }
+      }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Failed to toggle follow: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Failed to toggle follow: $e")));
       }
     } finally {
       if (mounted) {
@@ -160,14 +177,17 @@ class _UserRequestRatingCompanyState extends ConsumerState<UserRequestRatingComp
                               ? const SizedBox(
                                   width: 20,
                                   height: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.black,
+                                  ),
                                 )
                               : IconTextButton(
                                   text: _followStatus == "Following"
                                       ? "UNFOLLOW"
                                       : _followStatus == "Pending"
-                                          ? "PENDING"
-                                          : "FOLLOW",
+                                      ? "PENDING"
+                                      : "FOLLOW",
                                   iconData: _followStatus == "Following"
                                       ? Icons.remove_circle_outline
                                       : Icons.add_circle_outline,
@@ -181,12 +201,13 @@ class _UserRequestRatingCompanyState extends ConsumerState<UserRequestRatingComp
                                   onTap: _toggleFollow,
                                 ),
                           const SizedBox(width: 8),
+                          const SizedBox(width: 8),
                           IconTextButton(
-                            text: "FEEDBACK",
+                            text: "JOIN AS EMPLOYEE",
                             iconTextSpacing: 8,
                             paddingLeft: 16,
                             paddingRight: 16,
-                            iconData: Icons.emoji_emotions_outlined,
+                            iconData: Icons.badge_outlined,
                             backgroundColor: ElevateColor.white,
                             iconColor: ElevateColor.lightgray,
                             textColor: ElevateColor.gray,
@@ -194,14 +215,39 @@ class _UserRequestRatingCompanyState extends ConsumerState<UserRequestRatingComp
                             borderColor: ElevateColor.gray,
                             borderRadius: 50,
                             textSize: 9,
-                            onTap: () {
-                              Navigator.of(context, rootNavigator: true).push(
-                                MaterialPageRoute(
-                                  builder: (context) => UserRatingCompany(
-                                    company: widget.company,
-                                  ),
-                                ),
-                              );
+                            onTap: () async {
+                              try {
+                                final myID = ref
+                                    .read(authProvider)
+                                    .jobSeeker
+                                    ?.jobSeekerID;
+                                if (myID == null) return;
+
+                                await _firebaseService.sendEmployeeJoinRequest(
+                                  companyID: widget.company.companyID,
+                                  jobSeekerID: myID,
+                                );
+
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        "Employee request sent successfully.",
+                                      ),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        "Failed to send request: $e",
+                                      ),
+                                    ),
+                                  );
+                                }
+                              }
                             },
                           ),
                         ],
@@ -320,4 +366,3 @@ class _UserRequestRatingCompanyState extends ConsumerState<UserRequestRatingComp
     );
   }
 }
-

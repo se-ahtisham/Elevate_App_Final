@@ -29,10 +29,12 @@ class UserCheckCompanyProfile extends ConsumerStatefulWidget {
   const UserCheckCompanyProfile({super.key, required this.company});
 
   @override
-  ConsumerState<UserCheckCompanyProfile> createState() => _UserCheckCompanyProfileState();
+  ConsumerState<UserCheckCompanyProfile> createState() =>
+      _UserCheckCompanyProfileState();
 }
 
-class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfile> {
+class _UserCheckCompanyProfileState
+    extends ConsumerState<UserCheckCompanyProfile> {
   final _firebaseService = FirebaseService();
   String _followStatus = "None";
   bool _isFollowingLoading = false;
@@ -53,7 +55,9 @@ class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfil
     _postsFuture = _fetchPosts(widget.company.companyID);
   }
 
-  Future<List<Map<String, dynamic>>> _fetchActiveEmployees(String companyId) async {
+  Future<List<Map<String, dynamic>>> _fetchActiveEmployees(
+    String companyId,
+  ) async {
     final all = await _firebaseService.getEmployeesByCompany(companyId);
     final active = all.where((e) => e.employeeStatus == 'Active').toList();
     List<Map<String, dynamic>> list = [];
@@ -79,7 +83,10 @@ class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfil
     final myID = ref.read(authProvider).jobSeeker?.jobSeekerID;
     if (myID == null) return;
     try {
-      final status = await _firebaseService.getFollowStatus(myID, widget.company.companyID);
+      final status = await _firebaseService.getFollowStatus(
+        myID,
+        widget.company.companyID,
+      );
       if (mounted) {
         setState(() {
           _followStatus = status;
@@ -95,7 +102,11 @@ class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfil
     setState(() => _isFollowingLoading = true);
     try {
       if (_followStatus == "Following") {
-        await _firebaseService.unfollowUser(myID, widget.company.companyID, toCollection: 'companies');
+        await _firebaseService.unfollowUser(
+          myID,
+          widget.company.companyID,
+          toCollection: 'companies',
+        );
         setState(() {
           _followStatus = "None";
           _followersCount = (_followersCount - 1).clamp(0, 99999);
@@ -105,17 +116,25 @@ class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfil
             SnackBar(content: Text("Unfollowed ${widget.company.companyName}")),
           );
         }
-     } else if (_followStatus == "None") {
-  await _firebaseService.followUser(myID, widget.company.companyID, toCollection: 'companies');
-  setState(() {
-    _followStatus = "Pending";
-  });
-  if (mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Follow request sent to ${widget.company.companyName}")),
-    );
-  }
-}
+      } else if (_followStatus == "None") {
+        await _firebaseService.followUser(
+          myID,
+          widget.company.companyID,
+          toCollection: 'companies',
+        );
+        setState(() {
+          _followStatus = "Pending";
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                "Follow request sent to ${widget.company.companyName}",
+              ),
+            ),
+          );
+        }
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -152,16 +171,15 @@ class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfil
 
       Navigator.of(context, rootNavigator: true).push(
         MaterialPageRoute(
-          builder: (context) => UserRequestRatingCompany(
-            company: widget.company,
-          ),
+          builder: (context) =>
+              UserRequestRatingCompany(company: widget.company),
         ),
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Application failed: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Application failed: $e")));
       }
     } finally {
       if (mounted) {
@@ -240,14 +258,17 @@ class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfil
                               ? const SizedBox(
                                   width: 20,
                                   height: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.black,
+                                  ),
                                 )
                               : IconTextButton(
                                   text: _followStatus == "Following"
                                       ? "UNFOLLOW"
                                       : _followStatus == "Pending"
-                                          ? "PENDING"
-                                          : "FOLLOW",
+                                      ? "PENDING"
+                                      : "FOLLOW",
                                   iconData: _followStatus == "Following"
                                       ? Icons.remove_circle_outline
                                       : Icons.add_circle_outline,
@@ -265,7 +286,10 @@ class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfil
                               ? const SizedBox(
                                   width: 20,
                                   height: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.black,
+                                  ),
                                 )
                               : IconTextButton(
                                   text: "JOIN AS EMPLOYEE",
@@ -292,9 +316,12 @@ class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfil
                             textSize: 9,
                             onTap: () async {
                               final authState = ref.read(authProvider);
-                              final myID = authState.jobSeeker?.jobSeekerID ?? '';
-                              final myName = authState.jobSeeker?.name ?? 'User';
-                              final myAvatar = authState.jobSeeker?.profilePic ?? '';
+                              final myID =
+                                  authState.jobSeeker?.jobSeekerID ?? '';
+                              final myName =
+                                  authState.jobSeeker?.name ?? 'User';
+                              final myAvatar =
+                                  authState.jobSeeker?.profilePic ?? '';
 
                               if (myID.isEmpty) return;
 
@@ -303,14 +330,15 @@ class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfil
                                   : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(widget.company.companyName)}&background=random&color=fff&size=128&bold=true';
 
                               try {
-                                final chatID = await ChatService().getOrCreateChat(
-                                  myID: myID,
-                                  myName: myName,
-                                  myAvatar: myAvatar,
-                                  otherID: widget.company.companyID,
-                                  otherName: widget.company.companyName,
-                                  otherAvatar: otherAvatar,
-                                );
+                                final chatID = await ChatService()
+                                    .getOrCreateChat(
+                                      myID: myID,
+                                      myName: myName,
+                                      myAvatar: myAvatar,
+                                      otherID: widget.company.companyID,
+                                      otherName: widget.company.companyName,
+                                      otherAvatar: otherAvatar,
+                                    );
                                 if (!mounted) return;
                                 Navigator.of(context, rootNavigator: true).push(
                                   MaterialPageRoute(
@@ -324,7 +352,9 @@ class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfil
                               } catch (_) {
                                 if (!mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Could not open chat.')),
+                                  const SnackBar(
+                                    content: Text('Could not open chat.'),
+                                  ),
                                 );
                               }
                             },
@@ -431,7 +461,8 @@ class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfil
                           FutureBuilder<List<Map<String, dynamic>>>(
                             future: _activeEmployeesFuture,
                             builder: (context, empSnapshot) {
-                              if (empSnapshot.connectionState == ConnectionState.waiting) {
+                              if (empSnapshot.connectionState ==
+                                  ConnectionState.waiting) {
                                 return const CircularProgressIndicator();
                               }
                               final list = empSnapshot.data ?? [];
@@ -449,8 +480,10 @@ class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfil
                                   itemCount: list.length,
                                   itemBuilder: (context, index) {
                                     final item = list[index];
-                                    final JobSeekerModel seeker = item['seeker'];
-                                    final CompanyEmployeeModel emp = item['emp'];
+                                    final JobSeekerModel seeker =
+                                        item['seeker'];
+                                    final CompanyEmployeeModel emp =
+                                        item['emp'];
                                     return Container(
                                       width: 100,
                                       margin: const EdgeInsets.only(right: 12),
@@ -458,7 +491,9 @@ class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfil
                                         children: [
                                           CircleAvatar(
                                             radius: 30,
-                                            backgroundImage: NetworkImage(seeker.profilePic),
+                                            backgroundImage: NetworkImage(
+                                              seeker.profilePic,
+                                            ),
                                           ),
                                           const SizedBox(height: 6),
                                           CustomText(
@@ -498,7 +533,8 @@ class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfil
                           FutureBuilder<List<JobPostModel>>(
                             future: _jobsFuture,
                             builder: (context, jobsSnapshot) {
-                              if (jobsSnapshot.connectionState == ConnectionState.waiting) {
+                              if (jobsSnapshot.connectionState ==
+                                  ConnectionState.waiting) {
                                 return const CircularProgressIndicator();
                               }
                               final list = jobsSnapshot.data ?? [];
@@ -521,14 +557,19 @@ class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfil
                                     decoration: BoxDecoration(
                                       color: Colors.white,
                                       borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: ElevateColor.lightgray.withOpacity(0.2)),
+                                      border: Border.all(
+                                        color: ElevateColor.lightgray
+                                            .withOpacity(0.2),
+                                      ),
                                     ),
                                     child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
                                       children: [
                                         Expanded(
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               CustomText(
                                                 text: job.title,
@@ -538,7 +579,8 @@ class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfil
                                               ),
                                               const SizedBox(height: 4),
                                               CustomText(
-                                                text: "${job.location} • ${job.salary}",
+                                                text:
+                                                    "${job.location} • ${job.salary}",
                                                 fontSize: 12,
                                                 color: ElevateColor.whitegray,
                                               ),
@@ -556,13 +598,20 @@ class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfil
                                           borderRadius: 50,
                                           textSize: 9,
                                           onTap: () {
-                                            Navigator.of(context, rootNavigator: true).push(
+                                            Navigator.of(
+                                              context,
+                                              rootNavigator: true,
+                                            ).push(
                                               MaterialPageRoute(
-                                                builder: (context) => JobSelection(
-                                                  jobPost: job,
-                                                  companyName: widget.company.companyName,
-                                                  companyEmail: widget.company.email,
-                                                ),
+                                                builder: (context) =>
+                                                    JobSelection(
+                                                      jobPost: job,
+                                                      companyName: widget
+                                                          .company
+                                                          .companyName,
+                                                      companyEmail:
+                                                          widget.company.email,
+                                                    ),
                                               ),
                                             );
                                           },
@@ -588,7 +637,8 @@ class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfil
                           FutureBuilder<List<PostModel>>(
                             future: _postsFuture,
                             builder: (context, postsSnapshot) {
-                              if (postsSnapshot.connectionState == ConnectionState.waiting) {
+                              if (postsSnapshot.connectionState ==
+                                  ConnectionState.waiting) {
                                 return const CircularProgressIndicator();
                               }
                               final list = postsSnapshot.data ?? [];
@@ -651,4 +701,3 @@ class _UserCheckCompanyProfileState extends ConsumerState<UserCheckCompanyProfil
     );
   }
 }
-

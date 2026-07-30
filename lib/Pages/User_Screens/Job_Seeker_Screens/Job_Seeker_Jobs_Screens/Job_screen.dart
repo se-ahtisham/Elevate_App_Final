@@ -811,28 +811,31 @@ class JobScreenState extends ConsumerState<JobScreen> {
                         final company = companiesByID[job.companyID];
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 10),
-                          child: JobCompactTile(
-                            title: job.title,
-                            company: company?.companyName ?? 'Company',
-                            location: job.location,
-                            salary: job.salary,
-                            isRemote: job.location.toLowerCase().contains(
-                              'remote',
-                            ),
-                            jobType: job.jobType,
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => JobSelection(
-                                    jobPost: job,
-                                    companyEmail: company?.email,
-                                    companyName:
-                                        company?.companyName ?? 'Company',
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 12.0),
+                            child: JobCompactTile(
+                              title: job.title,
+                              company: company?.companyName ?? 'Company',
+                              location: job.location,
+                              salary: job.salary,
+                              isRemote: job.location.toLowerCase().contains(
+                                'remote',
+                              ),
+                              jobType: job.jobType,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => JobSelection(
+                                      jobPost: job,
+                                      companyEmail: company?.email,
+                                      companyName:
+                                          company?.companyName ?? 'Company',
+                                    ),
                                   ),
-                                ),
-                              );
-                            },
+                                );
+                              },
+                            ),
                           ),
                         );
                       }).toList(),

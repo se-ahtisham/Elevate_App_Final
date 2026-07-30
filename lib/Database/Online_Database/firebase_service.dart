@@ -69,6 +69,29 @@ class FirebaseService {
     });
   }
 
+  Future<void> sendEmployeeJoinRequest({
+    required String companyID,
+    required String jobSeekerID,
+  }) async {
+    final existing = await db
+        .collection("employeeRequests")
+        .where("companyID", isEqualTo: companyID)
+        .where("jobSeekerID", isEqualTo: jobSeekerID)
+        .get();
+
+    if (existing.docs.isNotEmpty) {
+      throw Exception("Employee request already sent.");
+    }
+
+    // Create new request
+    await db.collection("employeeRequests").add({
+      "companyID": companyID,
+      "jobSeekerID": jobSeekerID,
+      "status": "Pending",
+      "createdAt": FieldValue.serverTimestamp(),
+    });
+  }
+
   Future<void> deleteJobSeeker(String jobSeekerID) async {
     await db.collection('jobSeekers').doc(jobSeekerID).delete();
   }
@@ -688,17 +711,30 @@ class FirebaseService {
       if (request == null || request.status != 'Pending') continue;
 
       final fromUser = await getJobSeeker(request.fromID);
-      if (fromUser == null) continue;
-
-      result.add({
-        'requestID': request.requestID,
-        'fromID': request.fromID,
-        'name': fromUser.name,
-        'imageURL': fromUser.profilePic,
-        'shortDescription': fromUser.experienceLevel.isNotEmpty
-            ? fromUser.experienceLevel
-            : 'Job Seeker',
-      });
+      if (fromUser != null) {
+        result.add({
+          'requestID': request.requestID,
+          'fromID': request.fromID,
+          'name': fromUser.name,
+          'imageURL': fromUser.profilePic,
+          'shortDescription': fromUser.experienceLevel.isNotEmpty
+              ? fromUser.experienceLevel
+              : 'Job Seeker',
+        });
+      } else {
+        final fromCompany = await getCompany(request.fromID);
+        if (fromCompany != null) {
+          result.add({
+            'requestID': request.requestID,
+            'fromID': request.fromID,
+            'name': fromCompany.companyName,
+            'imageURL': fromCompany.logo,
+            'shortDescription': fromCompany.industry.isNotEmpty
+                ? fromCompany.industry
+                : 'Company',
+          });
+        }
+      }
     }
     return result;
   }
@@ -715,17 +751,30 @@ class FirebaseService {
       if (request == null || request.status != 'Pending') continue;
 
       final fromUser = await getJobSeeker(request.fromID);
-      if (fromUser == null) continue;
-
-      result.add({
-        'requestID': request.requestID,
-        'fromID': request.fromID,
-        'name': fromUser.name,
-        'imageURL': fromUser.profilePic,
-        'shortDescription': fromUser.experienceLevel.isNotEmpty
-            ? fromUser.experienceLevel
-            : 'Job Seeker',
-      });
+      if (fromUser != null) {
+        result.add({
+          'requestID': request.requestID,
+          'fromID': request.fromID,
+          'name': fromUser.name,
+          'imageURL': fromUser.profilePic,
+          'shortDescription': fromUser.experienceLevel.isNotEmpty
+              ? fromUser.experienceLevel
+              : 'Job Seeker',
+        });
+      } else {
+        final fromCompany = await getCompany(request.fromID);
+        if (fromCompany != null) {
+          result.add({
+            'requestID': request.requestID,
+            'fromID': request.fromID,
+            'name': fromCompany.companyName,
+            'imageURL': fromCompany.logo,
+            'shortDescription': fromCompany.industry.isNotEmpty
+                ? fromCompany.industry
+                : 'Company',
+          });
+        }
+      }
     }
     return result;
   }
@@ -1670,7 +1719,8 @@ class FirebaseService {
         'badgeLevel': 'Bronze',
         'minScore': 50.0,
         'maxScore': 75.0,
-        'badgeImage': 'https://ui-avatars.com/api/?name=Bronze+Badge&background=CD7F32&color=fff',
+        'badgeImage':
+            'https://ui-avatars.com/api/?name=Bronze+Badge&background=CD7F32&color=fff',
         'isDemo': true,
       },
       {
@@ -1679,7 +1729,8 @@ class FirebaseService {
         'badgeLevel': 'Silver',
         'minScore': 75.0,
         'maxScore': 90.0,
-        'badgeImage': 'https://ui-avatars.com/api/?name=Silver+Badge&background=C0C0C0&color=fff',
+        'badgeImage':
+            'https://ui-avatars.com/api/?name=Silver+Badge&background=C0C0C0&color=fff',
         'isDemo': true,
       },
       {
@@ -1688,7 +1739,8 @@ class FirebaseService {
         'badgeLevel': 'Gold',
         'minScore': 90.0,
         'maxScore': 100.0,
-        'badgeImage': 'https://ui-avatars.com/api/?name=Gold+Badge&background=FFD700&color=fff',
+        'badgeImage':
+            'https://ui-avatars.com/api/?name=Gold+Badge&background=FFD700&color=fff',
         'isDemo': true,
       },
     ];
@@ -1720,10 +1772,22 @@ class FirebaseService {
       'shortDescription': 'Full-Stack Engineer',
       'experienceLevel': 'Senior',
       'skillCount': 3,
-      'passedResultIDs': ['DEMO_result_Sara_flutter', 'DEMO_result_Sara_react', 'DEMO_result_Sara_python'],
-      'mySkillTestsResultList': ['DEMO_result_Sara_flutter', 'DEMO_result_Sara_react', 'DEMO_result_Sara_python'],
+      'passedResultIDs': [
+        'DEMO_result_Sara_flutter',
+        'DEMO_result_Sara_react',
+        'DEMO_result_Sara_python',
+      ],
+      'mySkillTestsResultList': [
+        'DEMO_result_Sara_flutter',
+        'DEMO_result_Sara_react',
+        'DEMO_result_Sara_python',
+      ],
       'totalTestsTaken': 3,
-      'earnedBadges': ['DEMO_badge_bronze', 'DEMO_badge_silver', 'DEMO_badge_gold'],
+      'earnedBadges': [
+        'DEMO_badge_bronze',
+        'DEMO_badge_silver',
+        'DEMO_badge_gold',
+      ],
       'totalBadgesEarned': 3,
       'portfolio': ['DEMO_project_Sara_1'],
       'postList': <String>[],
@@ -1733,7 +1797,7 @@ class FirebaseService {
       'followedCompanies': [nexcoreUid],
       'appliedJobRequests': <String>[],
       'becomeEmployee': <String>[],
-      'careerGuidanceTasks': <String>[],
+      'careerGuidanceTasks': ['DEMO_task_Sara_1', 'DEMO_task_Sara_2'],
       'education': [
         {'title': 'BS Computer Science', 'school': 'NED University'},
       ],
@@ -1804,6 +1868,32 @@ class FirebaseService {
       'techFileUrls': [_demoFileDownloadUrl],
       'mediaFiles': <String>[],
       'createdAt': now.subtract(const Duration(days: 60)).toIso8601String(),
+      'isDemo': true,
+    });
+
+    await db.collection('careerGuidance').doc('DEMO_task_Sara_1').set({
+      'taskID': 'DEMO_task_Sara_1',
+      'jobSeekerID': saraUid,
+      'title': 'Complete Advanced Flutter Certification',
+      'description':
+          'Take the advanced Flutter architecture course to improve state management skills.',
+      'priority': 'High',
+      'isCompleted': false,
+      'aiGenerated': true,
+      'createdAt': now.toIso8601String(),
+      'isDemo': true,
+    });
+
+    await db.collection('careerGuidance').doc('DEMO_task_Sara_2').set({
+      'taskID': 'DEMO_task_Sara_2',
+      'jobSeekerID': saraUid,
+      'title': 'Update Portfolio',
+      'description':
+          'Add 2 recent projects to your portfolio to increase visibility.',
+      'priority': 'Medium',
+      'isCompleted': false,
+      'aiGenerated': true,
+      'createdAt': now.toIso8601String(),
       'isDemo': true,
     });
 
@@ -2084,7 +2174,10 @@ class FirebaseService {
     // ── 4. Extra Rich Seeding for Top-Notch Demo (Sara Khan & NexCore) ─────
     // Sara Khan follows multiple companies
     await db.collection('jobSeekers').doc(saraUid).update({
-      'followedCompanies': FieldValue.arrayUnion([nexcoreUid, ...smallCompanyUids]),
+      'followedCompanies': FieldValue.arrayUnion([
+        nexcoreUid,
+        ...smallCompanyUids,
+      ]),
     });
 
     // NexCore employee reviews
@@ -2133,7 +2226,8 @@ class FirebaseService {
       'jobID': 'DEMO_job_NexCore_2',
       'companyID': nexcoreUid,
       'title': 'Frontend React Developer',
-      'description': 'Help us build beautiful web dashboards with React and Tailwind.',
+      'description':
+          'Help us build beautiful web dashboards with React and Tailwind.',
       'requiredSkills': ['skill_react'],
       'requiredBadges': <String>[],
       'salary': '150,000 - 220,000 PKR/month',
@@ -2151,7 +2245,8 @@ class FirebaseService {
       'jobID': 'DEMO_job_NexCore_3',
       'companyID': nexcoreUid,
       'title': 'AI Python Engineer',
-      'description': 'Develop backend API endpoints and integrate Gemini/OpenAI models.',
+      'description':
+          'Develop backend API endpoints and integrate Gemini/OpenAI models.',
       'requiredSkills': ['skill_python'],
       'requiredBadges': <String>[],
       'salary': '180,000 - 250,000 PKR/month',
@@ -2166,7 +2261,10 @@ class FirebaseService {
       'isDemo': true,
     });
     await db.collection('companies').doc(nexcoreUid).update({
-      'postedJobs': FieldValue.arrayUnion(['DEMO_job_NexCore_2', 'DEMO_job_NexCore_3']),
+      'postedJobs': FieldValue.arrayUnion([
+        'DEMO_job_NexCore_2',
+        'DEMO_job_NexCore_3',
+      ]),
       'activeJobs': 3,
     });
 
@@ -2175,10 +2273,12 @@ class FirebaseService {
       'postID': 'DEMO_post_NexCore_1',
       'authorID': nexcoreUid,
       'authorName': 'NexCore Technologies',
-      'authorProfilePic': 'https://ui-avatars.com/api/?name=NexCore&background=1A1A2E&color=fff&size=256',
+      'authorProfilePic':
+          'https://ui-avatars.com/api/?name=NexCore&background=1A1A2E&color=fff&size=256',
       'authorType': 'Company',
       'title': 'Excited to announce our new AI Division!',
-      'content': 'We are officially launching our new division dedicated to custom AI solutions. Looking forward to driving innovation on Elevate!',
+      'content':
+          'We are officially launching our new division dedicated to custom AI solutions. Looking forward to driving innovation on Elevate!',
       'likes': 15,
       'likedByUserIDs': <String>[],
       'totalCommentCount': 0,
@@ -2189,10 +2289,12 @@ class FirebaseService {
       'postID': 'DEMO_post_NexCore_2',
       'authorID': nexcoreUid,
       'authorName': 'NexCore Technologies',
-      'authorProfilePic': 'https://ui-avatars.com/api/?name=NexCore&background=1A1A2E&color=fff&size=256',
+      'authorProfilePic':
+          'https://ui-avatars.com/api/?name=NexCore&background=1A1A2E&color=fff&size=256',
       'authorType': 'Company',
       'title': 'Join our growing team!',
-      'content': 'We have 3 open positions for Flutter, React, and Python developers. Explore our job board and apply directly on the app!',
+      'content':
+          'We have 3 open positions for Flutter, React, and Python developers. Explore our job board and apply directly on the app!',
       'likes': 8,
       'likedByUserIDs': <String>[],
       'totalCommentCount': 0,
@@ -2255,7 +2357,8 @@ class FirebaseService {
         'industry': 'Testing',
         'website': 'https://www.reviewco$i.com',
         'logo': 'https://ui-avatars.com/api/?name=Review+Company+$i',
-        'description': 'Dummy company for testing pending reviews and follow requests.',
+        'description':
+            'Dummy company for testing pending reviews and follow requests.',
         'location': 'Islamabad, Pakistan',
         'companySize': 50,
         'activeJobs': 0,
