@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Search_Bar/custom_search_bar.dart';
-import 'package:elevate_app/Custom_Widgets/Text/icon_text.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/short_description_round_circle_icon_tile.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_seeker_model.dart';
 import 'package:elevate_app/Pages/User_Screens/Company_Screens/Company_Search_users_Screens/company_view_profile.dart';
@@ -34,16 +34,14 @@ class _CompanySearchUserState extends State<CompanySearchUser> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const IconText(
-                text: "Explore Profiles",
-                iconData: Icons.people_alt_outlined,
-                textWeight: FontWeight.w600,
-                iconSize: 25,
-                textSize: 17,
+              ElevateHeader(
+                title: "Search Job Seeker Profile",
+                subTitle: "Explore all job seekers",
+                showBackButton: false,
               ),
               const SizedBox(height: 25),
               CustomSearchBar(
-                hintText: "Search candidates...",
+                hintText: "Search job seekers...",
                 backgroundColor: ElevateColor.white,
                 width: 330,
                 height: 50,
@@ -66,8 +64,14 @@ class _CompanySearchUserState extends State<CompanySearchUser> {
                     }
 
                     final docs = snapshot.data?.docs ?? [];
+                    final seen = <String>{};
                     final seekers = docs
-                        .map((d) => JobSeekerModel.fromMap(d.data() as Map<String, dynamic>))
+                        .map(
+                          (d) => JobSeekerModel.fromMap(
+                            d.data() as Map<String, dynamic>,
+                          ),
+                        )
+                        .where((s) => seen.add(s.jobSeekerID))
                         .where((s) {
                           if (_query.trim().isEmpty) return true;
                           final q = _query.toLowerCase();
@@ -77,7 +81,7 @@ class _CompanySearchUserState extends State<CompanySearchUser> {
                         .toList();
 
                     if (seekers.isEmpty) {
-                      return const Center(child: Text("No candidates found."));
+                      return const Center(child: Text("No job seekers found."));
                     }
 
                     return ListView.separated(
@@ -105,7 +109,8 @@ class _CompanySearchUserState extends State<CompanySearchUser> {
                           onTap: () {
                             Navigator.of(context, rootNavigator: true).push(
                               MaterialPageRoute(
-                                builder: (context) => CompanyViewProfile(seeker: seeker),
+                                builder: (context) =>
+                                    CompanyViewProfile(seeker: seeker),
                               ),
                             );
                           },
@@ -122,4 +127,3 @@ class _CompanySearchUserState extends State<CompanySearchUser> {
     );
   }
 }
-

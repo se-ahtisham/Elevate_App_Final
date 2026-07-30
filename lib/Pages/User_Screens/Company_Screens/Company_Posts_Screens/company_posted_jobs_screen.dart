@@ -1,14 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Database/Online_Database/auth_service.dart';
 import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_post_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/post_model.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/company_model.dart';
 import 'package:elevate_app/Pages/User_Screens/Company_Screens/Company_Posts_Screens/company_upload_job_screen.dart';
+import 'package:elevate_app/Pages/User_Screens/Company_Screens/Company_Posts_Screens/company_job_detail_screen.dart';
 import 'package:elevate_app/Pages/User_Screens/Company_Screens/Company_Posts_Screens/show_applied_candidates_screen.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/user_post_tile.dart';
 import 'package:elevate_app/Custom_Widgets/User_Widgets/user_post_new.dart';
+import 'package:elevate_app/Pages/User_Screens/Job_Seeker_Screens/Job_Seeker_Community_Screens/community_comments.dart';
 import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/comment_model.dart';
 import 'package:flutter/material.dart';
 
 enum PostTab { jobs, community }
@@ -170,13 +174,17 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
     final String currentUserId = _authService.currentUser?.uid ?? '';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F4F4),
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
           child: Column(
             children: [
-              _topHeader(),
+              const ElevateHeader(
+                title: "Company Portal",
+                subTitle: "Let's Upload Opportunity",
+                showBackButton: false,
+              ),
               const SizedBox(height: 18),
               _searchBar(),
               const SizedBox(height: 15),
@@ -336,6 +344,19 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
                       } catch (e) {
                         debugPrint("Like post failed: $e");
                       }
+                    },
+                    onCommentsTap: () {
+                      Navigator.of(context, rootNavigator: true).push(
+                        MaterialPageRoute(
+                          builder: (_) => CommunityComments(
+                            postID: post.postID,
+                            postAuthorName: post.authorName.isNotEmpty
+                                ? post.authorName
+                                : (_company?.companyName ?? 'Company'),
+                            postTitle: post.title,
+                          ),
+                        ),
+                      );
                     },
                     onDeleteTap: () async {
                       try {
@@ -532,94 +553,97 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
     return Row(
       children: [
         Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 5),
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              Navigator.of(context, rootNavigator: true).push(
+                MaterialPageRoute(
+                  builder: (context) => CompanyJobDetailScreen(job: job),
                 ),
-              ],
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF4A4A4A),
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    initials,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF4A4A4A),
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      initials,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        job.title.isNotEmpty ? job.title : "Untitled",
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 17,
-                          color: Color(0xFF2B2B2B),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          job.title.isNotEmpty ? job.title : "Untitled",
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 17,
+                            color: Color(0xFF2B2B2B),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        job.location.isNotEmpty ? job.location : 'Remote',
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 11.5,
-                          color: Color(0xFF8B8B8B),
-                          fontWeight: FontWeight.w500,
+                        const SizedBox(height: 3),
+                        Text(
+                          job.location.isNotEmpty ? job.location : 'Remote',
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            color: Color(0xFF8B8B8B),
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 7,
-                        runSpacing: 7,
-                        children: tags
-                            .map(
-                              (tag) => Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFF3F3F3),
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                                child: Text(
-                                  tag,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    color: Color(0xFF777777),
-                                    fontWeight: FontWeight.w500,
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 7,
+                          runSpacing: 7,
+                          children: tags
+                              .map(
+                                (tag) => Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF3F3F3),
+                                    borderRadius: BorderRadius.circular(30),
+                                  ),
+                                  child: Text(
+                                    tag,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: Color(0xFF777777),
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            )
-                            .toList(),
-                      ),
-                    ],
+                              )
+                              .toList(),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -667,4 +691,3 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
     );
   }
 }
-

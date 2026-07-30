@@ -24,7 +24,8 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
   late TextEditingController requiredSkillsController;
   late TextEditingController experienceLevelController;
   late TextEditingController benefitsController;
-  late TextEditingController salaryController;
+  late TextEditingController salaryMinController;
+  late TextEditingController salaryMaxController;
   late TextEditingController locationController;
 
   // For Drop down
@@ -34,8 +35,8 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
   List<String> workModeoptions = ["Remote", "On-Site", "Hybrid"];
   String? testRequiredselectedValue = "Pure";
   List<String> testRequiredoptions = ["Pure", "Vibe", "Experienced"];
-  String? skillBadgeselectedValue = "Level-1";
-  List<String> skillBadgeoptions = ["Level-1", "Level-2", "Level-3"];
+  String? skillBadgeselectedValue = "Bronze";
+  List<String> skillBadgeoptions = ["Bronze", "Silver", "Gold"];
 
   final AuthService _authService = AuthService();
   bool isPosting = false;
@@ -44,7 +45,8 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
   void initState() {
     super.initState();
     jobTitleController = TextEditingController();
-    salaryController = TextEditingController();
+    salaryMinController = TextEditingController();
+    salaryMaxController = TextEditingController();
     jobDescriptionController = TextEditingController();
     requiredSkillsController = TextEditingController();
     experienceLevelController = TextEditingController();
@@ -59,7 +61,8 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
     requiredSkillsController.dispose();
     experienceLevelController.dispose();
     benefitsController.dispose();
-    salaryController.dispose();
+    salaryMinController.dispose();
+    salaryMaxController.dispose();
     locationController.dispose();
     super.dispose();
   }
@@ -69,7 +72,8 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
         jobTitleController.text.trim().isEmpty ||
         jobDescriptionController.text.trim().isEmpty ||
         locationController.text.trim().isEmpty ||
-        salaryController.text.trim().isEmpty;
+        salaryMinController.text.trim().isEmpty ||
+        salaryMaxController.text.trim().isEmpty;
 
     if (isInvalid) {
       if (mounted) {
@@ -103,7 +107,8 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
             .map((e) => e.trim())
             .toList(),
         requiredBadges: [skillBadgeselectedValue ?? ''],
-        salary: salaryController.text.trim(),
+        salary:
+            '${salaryMinController.text.trim()} - ${salaryMaxController.text.trim()} PKR/month',
         jobType: jobTypeselectedValue ?? 'Full Time',
         location: locationController.text.trim(),
         experienceLevel: experienceLevelController.text.trim(),
@@ -113,12 +118,7 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
       await docRef.set(jobPost.toMap());
 
       if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const CompanyPostedJobsScreen(),
-          ),
-        );
+        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
@@ -201,12 +201,28 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
                         underlineColor: ElevateColor.black,
                       ),
                       SizedBox(height: 30),
-                      CustomTextField(
-                        hintText: "Salary Per Month",
-                        hintWeight: FontWeight.bold,
-                        controller: salaryController,
-                        cursorColor: ElevateColor.black,
-                        underlineColor: ElevateColor.black,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CustomTextField(
+                              hintText: "Min Salary",
+                              hintWeight: FontWeight.bold,
+                              controller: salaryMinController,
+                              cursorColor: ElevateColor.black,
+                              underlineColor: ElevateColor.black,
+                            ),
+                          ),
+                          const SizedBox(width: 20),
+                          Expanded(
+                            child: CustomTextField(
+                              hintText: "Max Salary",
+                              hintWeight: FontWeight.bold,
+                              controller: salaryMaxController,
+                              cursorColor: ElevateColor.black,
+                              underlineColor: ElevateColor.black,
+                            ),
+                          ),
+                        ],
                       ),
 
                       SizedBox(height: 30),
@@ -323,7 +339,7 @@ class _CompanyUploadJobScreenState extends State<CompanyUploadJobScreen> {
                           ),
                           SizedBox(width: 58),
                           CustomDropDown(
-                            hintText: "Level-1",
+                            hintText: "Select Badge",
                             items: skillBadgeoptions,
                             value: skillBadgeselectedValue,
                             width: 200,

@@ -1,4 +1,5 @@
 import "package:cloud_firestore/cloud_firestore.dart";
+import "package:firebase_auth/firebase_auth.dart";
 import "package:elevate_app/Custom_Widgets/Buttons/icon_text_button.dart";
 import "package:elevate_app/Custom_Widgets/Header/elevate_header.dart";
 import "package:elevate_app/Custom_Widgets/Text/custom_text.dart";
@@ -49,9 +50,60 @@ class CompanyProfile extends StatelessWidget {
               child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    ElevateHeader(
-                      title: "Your Digital Identity",
-                      subTitle: "Account Control Center",
+                    Stack(
+                      children: [
+                        ElevateHeader(
+                          title: "Your Digital Identity",
+                          subTitle: "Account Control Center",
+                        ),
+                        Positioned(
+                          top: 50,
+                          right: 16,
+                          child: SafeArea(
+                            child: IconButton(
+                              tooltip: "Logout",
+                              icon: const Icon(
+                                Icons.logout_rounded,
+                                color: Colors.white,
+                              ),
+                              onPressed: () async {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text("Logout"),
+                                    content: const Text(
+                                      "Are you sure you want to logout?",
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(context, false),
+                                        child: const Text("Cancel"),
+                                      ),
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(context, true),
+                                        child: const Text("Logout"),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                                if (confirm == true && context.mounted) {
+                                  await FirebaseAuth.instance.signOut();
+                                  if (context.mounted) {
+                                    Navigator.of(
+                                      context,
+                                    ).pushNamedAndRemoveUntil(
+                                      '/login',
+                                      (route) => false,
+                                    );
+                                  }
+                                }
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     Padding(
                       padding: const EdgeInsets.only(left: 10.0, right: 20),
@@ -92,9 +144,13 @@ class CompanyProfile extends StatelessWidget {
                                 height: 40,
                                 width: 130,
                                 onTap: () {
-                                  Navigator.of(context, rootNavigator: true).push(
+                                  Navigator.of(
+                                    context,
+                                    rootNavigator: true,
+                                  ).push(
                                     MaterialPageRoute(
-                                      builder: (context) => const CompanyFollowRequests(),
+                                      builder: (context) =>
+                                          const CompanyFollowRequests(),
                                     ),
                                   );
                                 },
@@ -113,9 +169,15 @@ class CompanyProfile extends StatelessWidget {
                                 height: 40,
                                 width: 150,
                                 onTap: () {
-                                  Navigator.of(context, rootNavigator: true).push(
+                                  Navigator.of(
+                                    context,
+                                    rootNavigator: true,
+                                  ).push(
                                     MaterialPageRoute(
-                                      builder: (context) => UpdateCompanyProfile(company: company),
+                                      builder: (context) =>
+                                          UpdateCompanyProfile(
+                                            company: company,
+                                          ),
                                     ),
                                   );
                                 },
@@ -246,4 +308,3 @@ class CompanyProfile extends StatelessWidget {
     );
   }
 }
-

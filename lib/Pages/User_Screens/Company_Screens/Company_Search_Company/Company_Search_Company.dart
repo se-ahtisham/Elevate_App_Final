@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
 import 'package:elevate_app/Custom_Widgets/Search_Bar/custom_search_bar.dart';
-import 'package:elevate_app/Custom_Widgets/Text/icon_text.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/short_description_round_circle_icon_tile.dart';
 import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/company_model.dart';
 import 'package:elevate_app/Pages/User_Screens/Company_Screens/Company_Search_Company/Compnay_View_Company_Profile.dart';
@@ -34,12 +34,10 @@ class _CompanySearchCompanyState extends State<CompanySearchCompany> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const IconText(
-                text: "Explore Companies",
-                iconData: Icons.people_alt_outlined,
-                textWeight: FontWeight.w600,
-                iconSize: 25,
-                textSize: 17,
+              ElevateHeader(
+                title: "Explore Companies",
+                subTitle: "Find companies to follow",
+                showBackButton: false,
               ),
               const SizedBox(height: 25),
               CustomSearchBar(
@@ -54,7 +52,9 @@ class _CompanySearchCompanyState extends State<CompanySearchCompany> {
               const SizedBox(height: 15),
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance.collection('companies').snapshots(),
+                  stream: FirebaseFirestore.instance
+                      .collection('companies')
+                      .snapshots(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
@@ -64,8 +64,16 @@ class _CompanySearchCompanyState extends State<CompanySearchCompany> {
                     }
 
                     final docs = snapshot.data?.docs ?? [];
+                    final seen = <String>{};
                     final companies = docs
-                        .map((d) => CompanyModel.fromMap(d.data() as Map<String, dynamic>))
+                        .map((d) {
+                          final data = Map<String, dynamic>.from(
+                            d.data() as Map<String, dynamic>,
+                          );
+                          data['companyID'] = d.id;
+                          return CompanyModel.fromMap(data);
+                        })
+                        .where((c) => seen.add(c.companyID))
                         .where((c) {
                           if (_query.trim().isEmpty) return true;
                           final q = _query.toLowerCase();
@@ -103,7 +111,8 @@ class _CompanySearchCompanyState extends State<CompanySearchCompany> {
                           onTap: () {
                             Navigator.of(context, rootNavigator: true).push(
                               MaterialPageRoute(
-                                builder: (context) => CompnayViewCompanyProfile(company: company),
+                                builder: (context) =>
+                                    CompnayViewCompanyProfile(company: company),
                               ),
                             );
                           },
@@ -120,4 +129,3 @@ class _CompanySearchCompanyState extends State<CompanySearchCompany> {
     );
   }
 }
-

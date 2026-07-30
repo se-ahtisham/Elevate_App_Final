@@ -26,8 +26,6 @@ class _UpdateCompanyProfileState extends State<UpdateCompanyProfile> {
   late final TextEditingController emailController;
   late final TextEditingController websiteController;
   late final TextEditingController achievementsController;
-  late final TextEditingController strengthsController;
-  late final TextEditingController weaknessesController;
 
   static const _hintColor = Color(0xFF8E8E8E);
   static const _underlineColor = Color(0xFFE1E1E1);
@@ -57,8 +55,6 @@ class _UpdateCompanyProfileState extends State<UpdateCompanyProfile> {
     emailController = TextEditingController(text: widget.company.email);
     websiteController = TextEditingController(text: widget.company.website);
     achievementsController = TextEditingController(text: widget.company.achievementList.join(', '));
-    strengthsController = TextEditingController(text: widget.company.companyStrengthList.join(', '));
-    weaknessesController = TextEditingController(text: widget.company.companyWeaknessList.join(', '));
   }
 
   @override
@@ -68,8 +64,6 @@ class _UpdateCompanyProfileState extends State<UpdateCompanyProfile> {
     emailController.dispose();
     websiteController.dispose();
     achievementsController.dispose();
-    strengthsController.dispose();
-    weaknessesController.dispose();
     super.dispose();
   }
 
@@ -92,8 +86,6 @@ class _UpdateCompanyProfileState extends State<UpdateCompanyProfile> {
         'email': emailController.text.trim(),
         'website': websiteController.text.trim(),
         'achievementList': achievementsController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
-        'companyStrengthList': strengthsController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
-        'companyWeaknessList': weaknessesController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
       };
       if (uploadedLogoUrl != null) {
         updateData['logo'] = uploadedLogoUrl;
@@ -143,47 +135,57 @@ class _UpdateCompanyProfileState extends State<UpdateCompanyProfile> {
 
                       Align(
                         alignment: Alignment.center,
-                        child: GestureDetector(
-                          onTap: pickLogoImage,
+                        child: SizedBox(
+                          width: 90,
+                          height: 90,
                           child: Stack(
+                            clipBehavior: Clip.none,
                             children: [
-                              CircleAvatar(
-                                radius: 45,
-                                backgroundColor: Colors.grey.shade200,
-                                backgroundImage: selectedLogoImage != null
-                                    ? FileImage(selectedLogoImage!)
-                                    : (widget.company.logo.isNotEmpty
-                                            ? NetworkImage(widget.company.logo)
-                                            : null)
-                                        as ImageProvider?,
-                                child:
-                                    selectedLogoImage == null &&
-                                        widget.company.logo.isEmpty
-                                    ? Text(
-                                        widget.company.companyName.isNotEmpty
-                                            ? widget.company.companyName[0].toUpperCase()
-                                            : "?",
-                                        style: const TextStyle(
-                                          fontSize: 32,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black54,
-                                        ),
-                                      )
-                                    : null,
+                              GestureDetector(
+                                onTap: pickLogoImage,
+                                behavior: HitTestBehavior.opaque,
+                                child: CircleAvatar(
+                                  radius: 45,
+                                  backgroundColor: Colors.grey.shade200,
+                                  backgroundImage: selectedLogoImage != null
+                                      ? FileImage(selectedLogoImage!)
+                                      : (widget.company.logo.isNotEmpty
+                                              ? NetworkImage(widget.company.logo)
+                                              : null)
+                                          as ImageProvider?,
+                                  child:
+                                      selectedLogoImage == null &&
+                                          widget.company.logo.isEmpty
+                                      ? Text(
+                                          widget.company.companyName.isNotEmpty
+                                              ? widget.company.companyName[0].toUpperCase()
+                                              : "?",
+                                          style: const TextStyle(
+                                            fontSize: 32,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black54,
+                                          ),
+                                        )
+                                      : null,
+                                ),
                               ),
                               Positioned(
                                 bottom: 0,
                                 right: 0,
-                                child: Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.black,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.camera_alt,
-                                    size: 16,
-                                    color: Colors.white,
+                                child: GestureDetector(
+                                  onTap: pickLogoImage,
+                                  behavior: HitTestBehavior.opaque,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.black,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.camera_alt,
+                                      size: 16,
+                                      color: Colors.white,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -261,30 +263,6 @@ class _UpdateCompanyProfileState extends State<UpdateCompanyProfile> {
                         contentPadding: const EdgeInsets.symmetric(vertical: 10),
                       ),
                       
-                      const SizedBox(height: 30),
-
-                      CustomTextField(
-                        hintText: "Company Strengths (comma separated)",
-                        hintWeight: FontWeight.w700,
-                        hintColor: _hintColor,
-                        controller: strengthsController,
-                        cursorColor: ElevateColor.gray,
-                        underlineColor: _underlineColor,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                      ),
-
-                      const SizedBox(height: 30),
-
-                      CustomTextField(
-                        hintText: "Company Weaknesses (comma separated)",
-                        hintWeight: FontWeight.w700,
-                        hintColor: _hintColor,
-                        controller: weaknessesController,
-                        cursorColor: ElevateColor.gray,
-                        underlineColor: _underlineColor,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                      ),
-
                       const SizedBox(height: 18),
 
                       TextButtonGradient(

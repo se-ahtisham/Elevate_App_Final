@@ -8,12 +8,16 @@ import "package:elevate_app/Custom_Widgets/User_Widgets/user_socialMedia.dart";
 import "package:elevate_app/Custom_Widgets/User_Widgets/user_work.dart";
 import "package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_post_model.dart";
 import "package:elevate_app/Data_Model_Classes/Firebase_Online_Models/job_seeker_model.dart";
-import "package:elevate_app/Pages/User_Screens/Company_Screens/Company_Dashboard_Screens/company_message_screen.dart";
+import "package:elevate_app/Pages/Shared_Screens/chat_room_screen.dart";
 import "package:elevate_app/Pages/User_Screens/Company_Screens/Company_Dashboard_Screens/company_portfolio_check.dart";
 import "package:elevate_app/Pages/User_Screens/Company_Screens/Company_Dashboard_Screens/company_view_user_post.dart";
 import "package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart";
 import "package:flutter/material.dart";
 import 'package:flutter/services.dart';
+
+import 'package:elevate_app/Database/Online_Database/auth_service.dart';
+import 'package:elevate_app/Database/Online_Database/chat_service.dart';
+import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
 
 class CompanyViewAppliedCandidateProfileScreen extends StatelessWidget {
   final JobSeekerModel candidate;
@@ -24,6 +28,47 @@ class CompanyViewAppliedCandidateProfileScreen extends StatelessWidget {
     required this.candidate,
     required this.job,
   });
+  Future<void> _onMessageTap(BuildContext context) async {
+    final authService = AuthService();
+    final firebaseService = FirebaseService();
+
+    final companyID = authService.currentUser?.uid ?? '';
+    if (companyID.isEmpty) return;
+
+    final company = await firebaseService.getCompany(companyID);
+    final myName = company?.companyName ?? 'Company';
+    final myAvatar = company?.logo ?? '';
+
+    final otherAvatar = candidate.profilePic.isNotEmpty
+        ? candidate.profilePic
+        : 'https://ui-avatars.com/api/?name=${Uri.encodeComponent(candidate.name)}&background=random&color=fff&size=128';
+
+    try {
+      final chatID = await ChatService().getOrCreateChat(
+        myID: companyID,
+        myName: myName,
+        myAvatar: myAvatar,
+        otherID: candidate.jobSeekerID,
+        otherName: candidate.name,
+        otherAvatar: otherAvatar,
+      );
+      if (!context.mounted) return;
+      Navigator.of(context, rootNavigator: true).push(
+        MaterialPageRoute(
+          builder: (_) => ChatRoomScreen(
+            chatID: chatID,
+            otherUserName: candidate.name,
+            otherUserAvatar: otherAvatar,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open chat. Try again.')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,17 +123,7 @@ class CompanyViewAppliedCandidateProfileScreen extends StatelessWidget {
                               backgroundColor: Colors.transparent,
                               borderColor: ElevateColor.gray,
                               borderWidth: 1,
-                              onTap: () {
-                                Navigator.of(context, rootNavigator: true).push(
-                                  MaterialPageRoute(
-                                    builder: (context) => CompanyMessageScreen(
-                                      receiverId: candidate.jobSeekerID,
-                                      receiverName: candidate.name,
-                                      receiverImage: candidate.profilePic,
-                                    ),
-                                  ),
-                                );
-                              },
+                              onTap: () => _onMessageTap(context),
                             ),
                           ),
                         ],
@@ -183,7 +218,12 @@ class CompanyViewAppliedCandidateProfileScreen extends StatelessWidget {
                                 color: const Color.fromARGB(255, 240, 240, 240),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: const Color.fromARGB(255, 173, 173, 173),
+                                  color: const Color.fromARGB(
+                                    255,
+                                    173,
+                                    173,
+                                    173,
+                                  ),
                                   width: 1,
                                 ),
                               ),
@@ -226,7 +266,12 @@ class CompanyViewAppliedCandidateProfileScreen extends StatelessWidget {
                                 color: const Color.fromARGB(255, 240, 240, 240),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: const Color.fromARGB(255, 173, 173, 173),
+                                  color: const Color.fromARGB(
+                                    255,
+                                    173,
+                                    173,
+                                    173,
+                                  ),
                                   width: 1,
                                 ),
                               ),
@@ -269,7 +314,12 @@ class CompanyViewAppliedCandidateProfileScreen extends StatelessWidget {
                                 color: const Color.fromARGB(255, 240, 240, 240),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: const Color.fromARGB(255, 173, 173, 173),
+                                  color: const Color.fromARGB(
+                                    255,
+                                    173,
+                                    173,
+                                    173,
+                                  ),
                                   width: 1,
                                 ),
                               ),
@@ -319,16 +369,20 @@ class CompanyViewAppliedCandidateProfileScreen extends StatelessWidget {
                         children: candidate.education.isEmpty
                             ? [const Text("No education listed.")]
                             : candidate.education
-                                .map((edu) => Padding(
-                                      padding: const EdgeInsets.only(bottom: 15.0),
+                                  .map(
+                                    (edu) => Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: 15.0,
+                                      ),
                                       child: UserEducation(
                                         text: edu.title,
                                         subText: edu.school,
                                         iconData: Icons.school_outlined,
                                         iconSize: 25,
                                       ),
-                                    ))
-                                .toList(),
+                                    ),
+                                  )
+                                  .toList(),
                       ),
 
                       const SizedBox(height: 22),
@@ -346,17 +400,23 @@ class CompanyViewAppliedCandidateProfileScreen extends StatelessWidget {
                         children: candidate.jobExperience.isEmpty
                             ? [const Text("No work experience listed.")]
                             : candidate.jobExperience
-                                .map((exp) => Padding(
-                                      padding: const EdgeInsets.only(bottom: 15.0),
+                                  .map(
+                                    (exp) => Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: 15.0,
+                                      ),
                                       child: UserWork(
                                         title: exp.jobTitle,
                                         subtitle: exp.company,
                                         iconData: Icons.work_outline,
                                         startDate: exp.from,
-                                        endDate: exp.to.isNotEmpty ? exp.to : "Present",
+                                        endDate: exp.to.isNotEmpty
+                                            ? exp.to
+                                            : "Present",
                                       ),
-                                    ))
-                                .toList(),
+                                    ),
+                                  )
+                                  .toList(),
                       ),
 
                       const SizedBox(height: 40),
@@ -408,4 +468,3 @@ class CompanyViewAppliedCandidateProfileScreen extends StatelessWidget {
     );
   }
 }
-

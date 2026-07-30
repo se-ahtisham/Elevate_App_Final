@@ -26,12 +26,26 @@ class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
   final AuthService _authService = AuthService();
   String _searchQuery = '';
 
+  late Future<List<Map<String, dynamic>>> _employeesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _employeesFuture = _fetchActiveEmployees();
+  }
+
+  void _refreshEmployees() {
+    setState(() {
+      _employeesFuture = _fetchActiveEmployees();
+    });
+  }
+
   Future<List<Map<String, dynamic>>> _fetchActiveEmployees() async {
     final String companyId = _authService.currentUser?.uid ?? '';
     if (companyId.isEmpty) return [];
 
-    final List<CompanyEmployeeModel> allEmployees = 
-        await _firebaseService.getEmployeesByCompany(companyId);
+    final List<CompanyEmployeeModel> allEmployees = await _firebaseService
+        .getEmployeesByCompany(companyId);
 
     final List<CompanyEmployeeModel> activeEmployees = allEmployees
         .where((emp) => emp.employeeStatus == 'Active')
@@ -39,13 +53,13 @@ class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
 
     List<Map<String, dynamic>> employeeData = [];
     for (var emp in activeEmployees) {
-      final JobSeekerModel? seeker = await _firebaseService.getJobSeeker(emp.jobSeekerID);
+      final JobSeekerModel? seeker = await _firebaseService.getJobSeeker(
+        emp.jobSeekerID,
+      );
       if (seeker != null) {
-        if (_searchQuery.isEmpty || seeker.name.toLowerCase().contains(_searchQuery.toLowerCase())) {
-          employeeData.add({
-            'employeeModel': emp,
-            'jobSeeker': seeker,
-          });
+        if (_searchQuery.isEmpty ||
+            seeker.name.toLowerCase().contains(_searchQuery.toLowerCase())) {
+          employeeData.add({'employeeModel': emp, 'jobSeeker': seeker});
         }
       }
     }
@@ -85,6 +99,7 @@ class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
                           onChanged: (val) {
                             setState(() {
                               _searchQuery = val;
+                              _employeesFuture = _fetchActiveEmployees();
                             });
                           },
                         ),
@@ -93,13 +108,17 @@ class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
                             iconData: Icons.person_add,
                             circleSize: 50,
                             circleColor: ElevateColor.lightgray,
-                            onTap: () {
-                              Navigator.of(context, rootNavigator: true).push(
+                            onTap: () async {
+                              await Navigator.of(
+                                context,
+                                rootNavigator: true,
+                              ).push(
                                 MaterialPageRoute(
                                   builder: (context) =>
                                       ComapanyEmployeeRequest(),
                                 ),
                               );
+                              _refreshEmployees();
                             },
                           ),
                         ),
@@ -117,14 +136,22 @@ class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
                     SizedBox(height: 20),
                     Expanded(
                       child: FutureBuilder<List<Map<String, dynamic>>>(
-                        future: _fetchActiveEmployees(),
+                        future: _employeesFuture,
                         builder: (context, snapshot) {
-                          if (snapshot.connectionState == ConnectionState.waiting) {
-                            return const Center(child: CircularProgressIndicator());
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
                           } else if (snapshot.hasError) {
-                            return Center(child: Text("Error: ${snapshot.error}"));
-                          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                            return const Center(child: Text("No active employees found"));
+                            return Center(
+                              child: Text("Error: ${snapshot.error}"),
+                            );
+                          } else if (!snapshot.hasData ||
+                              snapshot.data!.isEmpty) {
+                            return const Center(
+                              child: Text("No active employees found"),
+                            );
                           }
 
                           final employees = snapshot.data!;
@@ -133,8 +160,10 @@ class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
                             itemCount: employees.length,
                             itemBuilder: (context, index) {
                               final data = employees[index];
-                              final JobSeekerModel jobSeeker = data['jobSeeker'];
-                              final CompanyEmployeeModel employee = data['employeeModel'];
+                              final JobSeekerModel jobSeeker =
+                                  data['jobSeeker'];
+                              final CompanyEmployeeModel employee =
+                                  data['employeeModel'];
 
                               return Padding(
                                 padding: const EdgeInsets.only(bottom: 10.0),
@@ -146,7 +175,9 @@ class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
                                   imageURL: jobSeeker.profilePic.isNotEmpty
                                       ? jobSeeker.profilePic
                                       : 'lib/Resources/Images/Profile_Images/default_profile.png',
-                                  name: jobSeeker.name.isNotEmpty ? jobSeeker.name : 'Unknown User',
+                                  name: jobSeeker.name.isNotEmpty
+                                      ? jobSeeker.name
+                                      : 'Unknown User',
                                   shortDescription: employee.position,
                                   iconData: Icons.arrow_forward,
                                   iconSize: 24,
@@ -155,16 +186,21 @@ class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
                                   circleColor: ElevateColor.lightgray,
                                   borderWidth: 2,
                                   borderColor: ElevateColor.lightgray,
-                                  onTap: () {
-                                    Navigator.of(context, rootNavigator: true).push(
+                                  onTap: () async {
+                                    await Navigator.of(
+                                      context,
+                                      rootNavigator: true,
+                                    ).push(
                                       MaterialPageRoute(
                                         builder: (context) =>
                                             CompanyViewEmployeeProfile(
-                                              jobSeekerID: jobSeeker.jobSeekerID,
+                                              jobSeekerID:
+                                                  jobSeeker.jobSeekerID,
                                               employeeID: employee.employeeID,
                                             ),
                                       ),
                                     );
+                                    _refreshEmployees();
                                   },
                                 ),
                               );
@@ -183,4 +219,3 @@ class _CompanyHomeScreenState extends State<CompanyHomeScreen> {
     );
   }
 }
-

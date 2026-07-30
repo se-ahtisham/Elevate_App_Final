@@ -1,8 +1,10 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:elevate_app/Custom_Widgets/Header/elevate_header.dart';
-import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/project_model.dart';
+import 'package:elevate_app/Custom_Widgets/Text/custom_text.dart';
 import 'package:elevate_app/Custom_Widgets/Tiles/job_seeker_portfolio_tile.dart';
+import 'package:elevate_app/Database/Online_Database/firebase_service.dart';
+import 'package:elevate_app/Data_Model_Classes/Firebase_Online_Models/project_model.dart';
 import 'package:elevate_app/Pages/User_Screens/Company_Screens/Company_Dashboard_Screens/company_portfolio_check_des.dart';
+import 'package:elevate_app/Resources/Colors/Solid_Colors/solid_colors.dart';
 import 'package:flutter/material.dart';
 
 class CompanyPortfolioCheck extends StatefulWidget {
@@ -10,13 +12,12 @@ class CompanyPortfolioCheck extends StatefulWidget {
   const CompanyPortfolioCheck({super.key, required this.jobSeekerID});
 
   @override
-  State<CompanyPortfolioCheck> createState() =>
-      _CompanyPortfolioCheckState();
+  State<CompanyPortfolioCheck> createState() => _CompanyPortfolioCheckState();
 }
 
 class _CompanyPortfolioCheckState extends State<CompanyPortfolioCheck> {
-  int currentIndex = 0;
-  final ScrollController _scrollController = ScrollController();
+  final firebaseService = FirebaseService();
+
   List<ProjectModel> portfolioList = [];
   bool isLoading = true;
 
@@ -24,46 +25,23 @@ class _CompanyPortfolioCheckState extends State<CompanyPortfolioCheck> {
   void initState() {
     super.initState();
     _fetchPortfolio();
-
-    _scrollController.addListener(() {
-      if (portfolioList.isEmpty) return;
-      double offset = _scrollController.offset;
-      double itemHeight = 180;
-      int newIndex = (offset / itemHeight).round();
-
-      if (newIndex != currentIndex &&
-          newIndex >= 0 &&
-          newIndex < portfolioList.length) {
-        setState(() {
-          currentIndex = newIndex;
-        });
-      }
-    });
   }
 
   Future<void> _fetchPortfolio() async {
-    try {
-      final snap = await FirebaseFirestore.instance
-          .collection('projects')
-          .where('jobSeekerID', isEqualTo: widget.jobSeekerID)
-          .get();
-      
-      final projects = snap.docs.map((doc) => ProjectModel.fromMap(doc.data())).toList();
-      setState(() {
-        portfolioList = projects;
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
+    if (!mounted) return;
+    setState(() => isLoading = true);
 
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
+    // Use the shared service method instead of querying Firestore
+    // directly, matching PorfolioScreen and the rest of the codebase.
+    final projects = await firebaseService.getProjectsForJobSeeker(
+      widget.jobSeekerID,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      portfolioList = projects;
+      isLoading = false;
+    });
   }
 
   @override
@@ -73,38 +51,87 @@ class _CompanyPortfolioCheckState extends State<CompanyPortfolioCheck> {
       body: SafeArea(
         child: Column(
           children: [
-            const ElevateHeader(
-              title: "PORTFOLIO",
-              subTitle: "Showcasing technical abilities",
-              showBackButton: true,
+            Stack(
+              children: [
+                const ElevateHeader(
+                  title: "PORTFOLIO",
+                  subTitle: "Proven technical abilities",
+                  titleSize: 25,
+                  subtitleSize: 15,
+                  showBackButton: false,
+                ),
+
+                // Same custom back button used by PorfolioScreen when
+                // viewing someone else's portfolio.
+                Positioned(
+                  top: 60,
+                  left: 16,
+                  child: GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 18,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
 
             Expanded(
               child: isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const Center(
+                      child: CircularProgressIndicator(color: Colors.black),
+                    )
                   : portfolioList.isEmpty
-                      ? const Center(child: Text("No projects found."))
-                      : ListView.separated(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 16,
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.work_outline,
+                            size: 48,
+                            color: Colors.grey.shade400,
                           ),
-                          itemCount: portfolioList.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 14),
-                          itemBuilder: (context, index) {
-                            final project = portfolioList[index];
-                            return JobSeekerPortfolioTile(
-                              project: project,
-                              onTap: () {
-                                Navigator.of(context, rootNavigator: true).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => CompanyPortfolioCheckDes(project: project),
-                                  ),
-                                );
-                              },
+                          const SizedBox(height: 12),
+                          const CustomText(
+                            text: "No projects yet",
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                            color: ElevateColor.gray,
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
+                      itemCount: portfolioList.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 14),
+                      itemBuilder: (context, index) {
+                        final project = portfolioList[index];
+                        return JobSeekerPortfolioTile(
+                          project: project,
+                          onTap: () {
+                            Navigator.of(context, rootNavigator: true).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    CompanyPortfolioCheckDes(project: project),
+                              ),
                             );
                           },
-                        ),
+                        );
+                      },
+                    ),
             ),
           ],
         ),
@@ -112,4 +139,3 @@ class _CompanyPortfolioCheckState extends State<CompanyPortfolioCheck> {
     );
   }
 }
-
