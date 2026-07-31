@@ -884,7 +884,7 @@ class _GuidanceTaskCardState extends State<_GuidanceTaskCard>
                                 if (task.aiGenerated) ...[
                                   const SizedBox(width: 6),
                                   _buildBadge(
-                                    '✨ AI Generated',
+                                    'AI Generated',
                                     const Color(0xFF1A6B3C),
                                     textColor: Colors.white,
                                     filled: true,

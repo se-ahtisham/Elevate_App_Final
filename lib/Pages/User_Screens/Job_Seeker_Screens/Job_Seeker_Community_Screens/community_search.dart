@@ -107,7 +107,9 @@ class CommunitySearchState extends ConsumerState<CommunitySearch> {
     }
 
     final seenNames = <String>{};
-    results = results.where((m) => seenNames.add((m['name'] ?? '').toLowerCase())).toList();
+    results = results
+        .where((m) => seenNames.add((m['name'] ?? '').toLowerCase()))
+        .toList();
 
     return results;
   }
@@ -186,7 +188,7 @@ class CommunitySearchState extends ConsumerState<CommunitySearch> {
                 ),
                 Positioned(
                   top: 170,
-                  right: 120,
+                  right: 50,
                   child: TexxtButton(
                     text: "Community",
                     width: 130,

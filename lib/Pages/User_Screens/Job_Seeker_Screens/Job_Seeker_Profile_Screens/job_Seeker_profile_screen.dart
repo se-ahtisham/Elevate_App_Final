@@ -219,7 +219,7 @@ class _JobSeekerProfileScreenState
                           borderRadius: 50,
                           textSize: 12,
                           height: 40,
-                          width: 140,
+                          width: 180,
                           onTap: () async {
                             await Navigator.of(
                               context,

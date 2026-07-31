@@ -95,7 +95,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             ),
 
             Padding(
-              padding: const EdgeInsets.only(top: 15.0, left: 40, bottom: 20),
+              padding: const EdgeInsets.only(
+                top: 15.0,
+                left: 40,
+                bottom: 20,
+                right: 40,
+              ),
               child: Container(
                 height: 50,
                 width: 370,

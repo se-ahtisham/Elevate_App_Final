@@ -33,7 +33,7 @@ class _CompanySearchUserState extends State<CompanySearchUser> {
           children: [
             // Header without padding
             ElevateHeader(
-              title: "Search Job Seeker Profile",
+              title: "Job Seeker Profile",
               subTitle: "Explore all job seekers",
               showBackButton: false,
             ),

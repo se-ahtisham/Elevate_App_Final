@@ -38,7 +38,7 @@ class _CompanyBottomNavigationState extends State<CompanyBottomNavigation> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.white,
       body: IndexedStack(index: currentIndex, children: screens),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.only(left: 20, right: 20, bottom: 30),

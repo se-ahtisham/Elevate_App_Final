@@ -136,7 +136,7 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
         _tabButton("Jobs", PostTab.jobs),
         const SizedBox(width: 10),
         _tabButton("Community Posts", PostTab.community),
-        SizedBox(width: 120),
+        SizedBox(width: 80),
         InkWell(
           child: Container(
             width: 46,
@@ -450,10 +450,7 @@ class _CompanyPostedJobsScreenState extends State<CompanyPostedJobsScreen> {
   Widget _topHeader() {
     return Column(
       children: [
-        ElevateHeader(
-          title: "Let's Upload Opportunity",
-          subTitle: "Company Portal",
-        ),
+        ElevateHeader(title: "Upload Opportunity", subTitle: "Company Portal"),
       ],
     );
   }

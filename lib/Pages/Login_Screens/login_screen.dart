@@ -347,7 +347,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                       SizedBox(height: 20),
 
-                      // ── SEED DEMO DATA (single seeder call) ─────────────
+                      /* // ── SEED DEMO DATA (single seeder call) ─────────────
                       TexxtButton(
                         text: "Seed Demo Data (TESTING)",
                         textSize: 13,
@@ -386,9 +386,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
 
                       SizedBox(height: 12),
-
-                      // ── DELETE DEMO DATA (cleanup) ──────────────────────
-                      TexxtButton(
+*/
+                      // ── DELETE DEMO DATA (cleanup)
+                      /*TexxtButton(
                         text: "Delete Demo Data (TESTING)",
                         textSize: 13,
                         textColor: Colors.white,
@@ -421,7 +421,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             );
                           }
                         },
-                      ),
+                      ),*/
                     ],
                   ),
                 ),
