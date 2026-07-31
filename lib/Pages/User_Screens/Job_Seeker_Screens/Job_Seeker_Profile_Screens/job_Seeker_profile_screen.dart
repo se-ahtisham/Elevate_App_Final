@@ -285,7 +285,7 @@ class _JobSeekerProfileScreenState
                     ),
 
                     const SizedBox(height: 22),
-                    Container(
+                    /*Container(
                       height: 80,
                       decoration: BoxDecoration(
                         color: const Color.fromARGB(255, 240, 240, 240),
@@ -323,7 +323,7 @@ class _JobSeekerProfileScreenState
                         ),
                       ),
                     ),
-
+*/
                     // ══════════════════════════════════════════════════════════
                     // EARNED BADGES SECTION — simple vertical list
                     // ══════════════════════════════════════════════════════════

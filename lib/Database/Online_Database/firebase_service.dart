@@ -1695,8 +1695,10 @@ class FirebaseService {
     // ── Skills + Tests (shared by everyone) ──────────────────────────────────
     const skillDefs = [
       {'id': 'skill_flutter', 'name': 'Flutter', 'cat': 'Mobile Development'},
-      {'id': 'skill_react', 'name': 'React', 'cat': 'Frontend Development'},
-      {'id': 'skill_python', 'name': 'Python', 'cat': 'Backend Development'},
+      {'id': 'skill_dart', 'name': 'Dart', 'cat': 'Mobile Development'},
+      {'id': 'skill_aiml', 'name': 'AI/ML', 'cat': 'Artificial Intelligence'},
+      {'id': 'skill_nlp', 'name': 'NLP', 'cat': 'Artificial Intelligence'},
+      {'id': 'skill_java', 'name': 'Java', 'cat': 'Backend Development'},
     ];
     for (final s in skillDefs) {
       await db.collection('skills').doc(s['id']).set({
@@ -1765,9 +1767,9 @@ class FirebaseService {
       await db.collection('badges').doc(b['badgeID'] as String).set(b);
     }
 
-    // ── 1. Top-notch job seeker (Sara Khan) + top-notch company (NexCore) ────
+    // ── 1. Top-notch job seeker (Ahtisham) + top-notch company (NexCore) ────
     final saraUid = await _ensureDemoUserAuth(
-      'sara.demo@elevate.demo',
+      'ahtisham.demo@elevate.demo',
       'Test@123',
     );
     final nexcoreUid = await _ensureDemoUserAuth(
@@ -1777,35 +1779,38 @@ class FirebaseService {
 
     await db.collection('jobSeekers').doc(saraUid).set({
       'jobSeekerID': saraUid,
-      'name': 'Sara Khan',
-      'email': 'sara.demo@elevate.demo',
+      'name': 'Ahtisham',
+      'email': 'ahtisham.demo@elevate.demo',
       'password': 'Test@123',
       'userType': 'JobSeeker',
       'profilePic':
-          'https://ui-avatars.com/api/?name=Sara+Khan&background=6C63FF&color=fff&size=256',
-      'location': 'Karachi, Pakistan',
+          'https://ui-avatars.com/api/?name=Ahtisham&background=6C63FF&color=fff&size=256',
+      'location': 'Lahore, Pakistan',
       'about':
-          'Full-Stack Engineer with 5+ years of experience. Gold-badge holder.',
-      'shortDescription': 'Full-Stack Engineer',
+          'Flutter & AI/ML Engineer with 5+ years of experience. Gold-badge holder.',
+      'shortDescription': 'Flutter & AI/ML Engineer',
       'experienceLevel': 'Senior',
-      'skillCount': 3,
+      'skillCount': 5,
       'passedResultIDs': [
         'DEMO_result_Sara_flutter',
-        'DEMO_result_Sara_react',
-        'DEMO_result_Sara_python',
+        'DEMO_result_Sara_dart',
+        'DEMO_result_Sara_aiml',
+        'DEMO_result_Sara_nlp',
+        'DEMO_result_Sara_java',
       ],
       'mySkillTestsResultList': [
         'DEMO_result_Sara_flutter',
-        'DEMO_result_Sara_react',
-        'DEMO_result_Sara_python',
+        'DEMO_result_Sara_dart',
+        'DEMO_result_Sara_aiml',
+        'DEMO_result_Sara_nlp',
+        'DEMO_result_Sara_java',
       ],
-      'totalTestsTaken': 3,
+      'totalTestsTaken': 5,
       'earnedBadges': [
-        'DEMO_badge_bronze',
         'DEMO_badge_silver',
         'DEMO_badge_gold',
       ],
-      'totalBadgesEarned': 3,
+      'totalBadgesEarned': 2,
       'portfolio': ['DEMO_project_Sara_1'],
       'postList': <String>[],
       'following': <String>[],
@@ -1829,48 +1834,88 @@ class FirebaseService {
       'isDemo': true,
     });
 
+    // Flutter – Gold (score ≥ 90)
     await db.collection('results').doc('DEMO_result_Sara_flutter').set({
       'resultID': 'DEMO_result_Sara_flutter',
       'jobSeekerID': saraUid,
       'testID': 'DEMO_test_skill_flutter',
       'score': 95.0,
       'isPassed': true,
-      'startedAt': now.subtract(const Duration(days: 10)).toIso8601String(),
-      'completedAt': now.subtract(const Duration(days: 10)).toIso8601String(),
+      'startedAt': now.subtract(const Duration(days: 12)).toIso8601String(),
+      'completedAt': now.subtract(const Duration(days: 12)).toIso8601String(),
       'timeTakenSeconds': 1200,
       'attemptNumber': 1,
-      'lastAttemptAt': now.subtract(const Duration(days: 10)).toIso8601String(),
+      'lastAttemptAt': now.subtract(const Duration(days: 12)).toIso8601String(),
       'experienceLevel': 'Advanced',
+      'badgeLevel': 'Gold',
       'isDemo': true,
     });
 
-    await db.collection('results').doc('DEMO_result_Sara_react').set({
-      'resultID': 'DEMO_result_Sara_react',
+    // Dart – Gold (score ≥ 90)
+    await db.collection('results').doc('DEMO_result_Sara_dart').set({
+      'resultID': 'DEMO_result_Sara_dart',
       'jobSeekerID': saraUid,
-      'testID': 'DEMO_test_skill_react',
-      'score': 82.0,
+      'testID': 'DEMO_test_skill_dart',
+      'score': 92.0,
+      'isPassed': true,
+      'startedAt': now.subtract(const Duration(days: 11)).toIso8601String(),
+      'completedAt': now.subtract(const Duration(days: 11)).toIso8601String(),
+      'timeTakenSeconds': 1100,
+      'attemptNumber': 1,
+      'lastAttemptAt': now.subtract(const Duration(days: 11)).toIso8601String(),
+      'experienceLevel': 'Advanced',
+      'badgeLevel': 'Gold',
+      'isDemo': true,
+    });
+
+    // AI/ML – Silver (score 75–89)
+    await db.collection('results').doc('DEMO_result_Sara_aiml').set({
+      'resultID': 'DEMO_result_Sara_aiml',
+      'jobSeekerID': saraUid,
+      'testID': 'DEMO_test_skill_aiml',
+      'score': 84.0,
+      'isPassed': true,
+      'startedAt': now.subtract(const Duration(days: 10)).toIso8601String(),
+      'completedAt': now.subtract(const Duration(days: 10)).toIso8601String(),
+      'timeTakenSeconds': 1050,
+      'attemptNumber': 1,
+      'lastAttemptAt': now.subtract(const Duration(days: 10)).toIso8601String(),
+      'experienceLevel': 'Intermediate',
+      'badgeLevel': 'Silver',
+      'isDemo': true,
+    });
+
+    // NLP – Silver (score 75–89)
+    await db.collection('results').doc('DEMO_result_Sara_nlp').set({
+      'resultID': 'DEMO_result_Sara_nlp',
+      'jobSeekerID': saraUid,
+      'testID': 'DEMO_test_skill_nlp',
+      'score': 78.0,
       'isPassed': true,
       'startedAt': now.subtract(const Duration(days: 9)).toIso8601String(),
       'completedAt': now.subtract(const Duration(days: 9)).toIso8601String(),
-      'timeTakenSeconds': 1000,
+      'timeTakenSeconds': 900,
       'attemptNumber': 1,
       'lastAttemptAt': now.subtract(const Duration(days: 9)).toIso8601String(),
-      'experienceLevel': 'Advanced',
+      'experienceLevel': 'Intermediate',
+      'badgeLevel': 'Silver',
       'isDemo': true,
     });
 
-    await db.collection('results').doc('DEMO_result_Sara_python').set({
-      'resultID': 'DEMO_result_Sara_python',
+    // Java – Silver (score 75–89)
+    await db.collection('results').doc('DEMO_result_Sara_java').set({
+      'resultID': 'DEMO_result_Sara_java',
       'jobSeekerID': saraUid,
-      'testID': 'DEMO_test_skill_python',
-      'score': 65.0,
+      'testID': 'DEMO_test_skill_java',
+      'score': 80.0,
       'isPassed': true,
       'startedAt': now.subtract(const Duration(days: 8)).toIso8601String(),
       'completedAt': now.subtract(const Duration(days: 8)).toIso8601String(),
-      'timeTakenSeconds': 800,
+      'timeTakenSeconds': 950,
       'attemptNumber': 1,
       'lastAttemptAt': now.subtract(const Duration(days: 8)).toIso8601String(),
       'experienceLevel': 'Intermediate',
+      'badgeLevel': 'Silver',
       'isDemo': true,
     });
 

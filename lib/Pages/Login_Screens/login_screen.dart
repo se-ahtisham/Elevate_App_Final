@@ -347,8 +347,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                       SizedBox(height: 20),
 
-                      /* // ── SEED DEMO DATA (single seeder call) ─────────────
-                      TexxtButton(
+                      // ── SEED DEMO DATA (single seeder call) ─────────────
+                     /* TexxtButton(
                         text: "Seed Demo Data (TESTING)",
                         textSize: 13,
                         textColor: Colors.white,
@@ -370,7 +370,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text(
-                                  '✅ Demo Data Seeded! Login: sara.demo@elevate.demo / Test@123',
+                                  '✅ Demo Data Seeded! Login: ahtisham.demo@elevate.demo / Test@123',
                                 ),
                                 backgroundColor: Colors.green,
                                 duration: Duration(seconds: 6),
@@ -386,9 +386,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
 
                       SizedBox(height: 12),
-*/
+
                       // ── DELETE DEMO DATA (cleanup)
-                      /*TexxtButton(
+                      TexxtButton(
                         text: "Delete Demo Data (TESTING)",
                         textSize: 13,
                         textColor: Colors.white,
